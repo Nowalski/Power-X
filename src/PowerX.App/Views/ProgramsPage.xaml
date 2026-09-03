@@ -1,0 +1,65 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.ProgramsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PowerX.App.Views">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Installed programs" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Loading…" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search programs…" TextChanged="Filter_Changed" />
+            <ComboBox x:Name="SortBox" Grid.Column="1" MinWidth="150" SelectedIndex="0" SelectionChanged="Sort_Changed">
+                <ComboBoxItem Content="Sort: Name" />
+                <ComboBoxItem Content="Sort: Size" />
+                <ComboBoxItem Content="Sort: Installed" />
+            </ComboBox>
+            <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
+        </Grid>
+
+        <ListView Grid.Row="2" x:Name="List" SelectionMode="None" ShowsScrollingPlaceholders="True">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0,3" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:ProgramVm">
+                    <Border Style="{StaticResource CardStyle}" Padding="14,10">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                    <Run Text="{x:Bind Publisher}" /><Run Text="   " /><Run Text="{x:Bind Meta}" />
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{x:Bind Size}" VerticalAlignment="Center"
+                                       Style="{StaticResource MonoStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <Button Grid.Column="2" Content="Uninstall" VerticalAlignment="Center" Tag="{x:Bind Name}" Click="Uninstall_Click" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

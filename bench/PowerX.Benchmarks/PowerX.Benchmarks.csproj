@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RootNamespace>PowerX.Benchmarks</RootNamespace>
+    <Optimize>true</Optimize>
+    <!-- not part of PowerX.sln; run with: dotnet run -c Release --project bench/PowerX.Benchmarks -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PowerX.Core\PowerX.Core.csproj" />
+  </ItemGroup>
+
+</Project>

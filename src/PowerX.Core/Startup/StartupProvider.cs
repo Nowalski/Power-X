@@ -1,0 +1,272 @@
+using System.Diagnostics;
+using Microsoft.Win32;
+using PowerX.Core.Processes;
+
+namespace PowerX.Core.Startup;
+
+public enum StartupSource
+{
+    RunUser,
+    RunMachine,
+    RunOnceUser,
+    RunOnceMachine,
+    StartupFolderUser,
+    StartupFolderCommon,
+    ScheduledTask,
+}
+
+public sealed record StartupEntry
+{
+    public required string Name { get; init; }
+    public required string Command { get; init; }
+    public required StartupSource Source { get; init; }
+    public required bool Enabled { get; init; }
+    public string? ExecutablePath { get; init; }
+    public string? Publisher { get; init; }
+
+    public string SourceLabel => Source switch
+    {
+        StartupSource.RunUser => "Registry · this user",
+        StartupSource.RunMachine => "Registry · all users",
+        StartupSource.RunOnceUser => "Registry · run once (this user)",
+        StartupSource.RunOnceMachine => "Registry · run once (all users)",
+        StartupSource.StartupFolderUser => "Startup folder · this user",
+        StartupSource.StartupFolderCommon => "Startup folder · all users",
+        StartupSource.ScheduledTask => "Scheduled task · at logon or boot",
+        _ => Source.ToString(),
+    };
+
+    /// <summary>The Task Scheduler path, for scheduled-task entries.</summary>
+    public string? TaskPath { get; init; }
+
+    public bool RequiresAdmin => Source is StartupSource.RunMachine or StartupSource.RunOnceMachine or StartupSource.StartupFolderCommon;
+}
+
+/// <summary>
+/// Enumerates the common documented auto-start locations and toggles them the same way
+/// Task Manager does — via the <c>StartupApproved</c> keys, so disabling is fully reversible
+/// and never deletes the entry.
+/// </summary>
+public static class StartupProvider
+{
+    private const string RunKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+    private const string RunOnceKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce";
+    private const string ApprovedRun = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+    private const string ApprovedFolder = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
+
+    public static IReadOnlyList<StartupEntry> Enumerate()
+    {
+        var list = new List<StartupEntry>();
+        ReadRun(list, Registry.CurrentUser, RunKey, StartupSource.RunUser, ApprovedRun, Registry.CurrentUser);
+        ReadRun(list, Registry.LocalMachine, RunKey, StartupSource.RunMachine, ApprovedRun, Registry.LocalMachine);
+        ReadRun(list, Registry.CurrentUser, RunOnceKey, StartupSource.RunOnceUser, null, null);
+        ReadRun(list, Registry.LocalMachine, RunOnceKey, StartupSource.RunOnceMachine, null, null);
+        ReadFolder(list, UserStartupFolder, StartupSource.StartupFolderUser, Registry.CurrentUser);
+        ReadFolder(list, CommonStartupFolder, StartupSource.StartupFolderCommon, Registry.LocalMachine);
+
+        foreach (var task in ScheduledTasks.Enumerate())
+        {
+            list.Add(new StartupEntry
+            {
+                Name = task.Name,
+                Command = task.Action,
+                Source = StartupSource.ScheduledTask,
+                Enabled = task.Enabled,
+                ExecutablePath = null,
+                Publisher = string.IsNullOrWhiteSpace(task.Author) ? null : task.Author,
+                TaskPath = task.Path,
+            });
+        }
+
+        return list.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>True when <see cref="SetEnabled"/> can actually change this entry's state.</summary>
+    public static bool CanToggle(StartupEntry entry) =>
+        entry.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine);
+
+    /// <summary>
+    /// True when <see cref="Remove"/> can delete this entry. Only RunOnce values, which can't be
+    /// disabled any other way. Regular Run entries use the reversible toggle; folder / task
+    /// entries are left for the user to handle at their source.
+    /// </summary>
+    public static bool CanRemove(StartupEntry entry) =>
+        entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine;
+
+    private const string RemovedBackup = @"SOFTWARE\PowerX\RemovedRunOnce";
+
+    /// <summary>
+    /// Delete a RunOnce value so it won't run at the next sign-in. The name + value + hive are
+    /// stashed under HKCU\SOFTWARE\PowerX\RemovedRunOnce first so it can be put back by hand.
+    /// </summary>
+    public static ActionResult Remove(StartupEntry entry)
+    {
+        if (!CanRemove(entry))
+            return ActionResult.Fail("Only RunOnce entries can be removed here. Use the On/Off switch for the others.");
+        try
+        {
+            var root = entry.Source == StartupSource.RunOnceMachine ? Registry.LocalMachine : Registry.CurrentUser;
+            using var key = root.OpenSubKey(RunOnceKey, writable: true);
+            if (key is null) return ActionResult.Fail("The RunOnce key is not present.");
+
+            object? current = key.GetValue(entry.Name);
+            if (current is null) return ActionResult.Ok;   // already gone
+
+            // stash for manual recovery (best-effort, always in HKCU)
+            try
+            {
+                using var bak = Registry.CurrentUser.CreateSubKey(RemovedBackup, writable: true);
+                string hive = entry.Source == StartupSource.RunOnceMachine ? "HKLM" : "HKCU";
+                bak.SetValue($"{hive}\\{entry.Name}", current.ToString() ?? "", RegistryValueKind.String);
+            }
+            catch (Exception) { /* backup is a courtesy, not a requirement */ }
+
+            key.DeleteValue(entry.Name, throwOnMissingValue: false);
+            return ActionResult.Ok;
+        }
+        catch (UnauthorizedAccessException) { return ActionResult.Fail("Administrator rights required for this entry."); }
+        catch (Exception ex) { return ActionResult.Fail(ex.Message); }
+    }
+
+    public static ActionResult SetEnabled(StartupEntry entry, bool enabled)
+    {
+        if (entry.Source == StartupSource.ScheduledTask)
+            return entry.TaskPath is not null
+                ? ScheduledTasks.SetEnabled(entry.TaskPath, enabled)
+                : ActionResult.Fail("Missing task path.");
+
+        // RunOnce is not governed by StartupApproved — Windows runs the entry once at the next
+        // start regardless. Writing a "disabled" marker here would be a silent no-op, so refuse.
+        if (entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine)
+            return ActionResult.Fail(
+                "RunOnce entries run a single time at the next sign-in and cannot be disabled. " +
+                "Use \"Remove entry\" from the … menu if you don't want it to run.");
+
+        try
+        {
+            bool folder = entry.Source is StartupSource.StartupFolderUser or StartupSource.StartupFolderCommon;
+            var root = entry.RequiresAdmin ? Registry.LocalMachine : Registry.CurrentUser;
+            string approvedKey = folder ? ApprovedFolder : ApprovedRun;
+
+            using var key = root.CreateSubKey(approvedKey, writable: true);
+            // 12-byte value: first byte 0x02 (enabled) or 0x03 (disabled), rest = timestamp (left 0).
+            byte[] value = new byte[12];
+            value[0] = (byte)(enabled ? 0x02 : 0x03);
+            key.SetValue(entry.Name, value, RegistryValueKind.Binary);
+            return ActionResult.Ok;
+        }
+        catch (UnauthorizedAccessException) { return ActionResult.Fail("Administrator rights required for this entry."); }
+        catch (Exception ex) { return ActionResult.Fail(ex.Message); }
+    }
+
+    public static ActionResult OpenLocation(StartupEntry entry)
+    {
+        try
+        {
+            if (entry.Source is StartupSource.StartupFolderUser)
+                Process.Start(new ProcessStartInfo(UserStartupFolder) { UseShellExecute = true });
+            else if (entry.Source is StartupSource.StartupFolderCommon)
+                Process.Start(new ProcessStartInfo(CommonStartupFolder) { UseShellExecute = true });
+            else if (!string.IsNullOrEmpty(entry.ExecutablePath) && File.Exists(entry.ExecutablePath))
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{entry.ExecutablePath}\"") { UseShellExecute = true });
+            else
+                return ActionResult.Fail("No file location available for this entry.");
+            return ActionResult.Ok;
+        }
+        catch (Exception ex) { return ActionResult.Fail(ex.Message); }
+    }
+
+    // ---------------------------------------------------------------- internals
+
+    private static void ReadRun(List<StartupEntry> list, RegistryKey hive, string subKey, StartupSource source,
+        string? approvedKey, RegistryKey? approvedHive)
+    {
+        using var key = hive.OpenSubKey(subKey);
+        if (key is null) return;
+
+        var approved = approvedKey is not null && approvedHive is not null
+            ? approvedHive.OpenSubKey(approvedKey)
+            : null;
+
+        foreach (var name in key.GetValueNames())
+        {
+            if (string.IsNullOrEmpty(name)) continue;
+            string command = key.GetValue(name)?.ToString() ?? "";
+            string? exe = ResolveExe(command);
+            list.Add(new StartupEntry
+            {
+                Name = name,
+                Command = command,
+                Source = source,
+                Enabled = IsApproved(approved, name),
+                ExecutablePath = exe,
+                Publisher = exe is not null ? SafeCompany(exe) : null,
+            });
+        }
+        approved?.Dispose();
+    }
+
+    private static void ReadFolder(List<StartupEntry> list, string folder, StartupSource source, RegistryKey approvedHive)
+    {
+        if (!Directory.Exists(folder)) return;
+        using var approved = approvedHive.OpenSubKey(ApprovedFolder);
+        foreach (var file in Directory.EnumerateFiles(folder))
+        {
+            if (file.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)) continue;
+            string name = Path.GetFileName(file);
+            list.Add(new StartupEntry
+            {
+                Name = name,
+                Command = file,
+                Source = source,
+                Enabled = IsApproved(approved, name),
+                ExecutablePath = file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? file : null,
+                Publisher = null,
+            });
+        }
+    }
+
+    private static bool IsApproved(RegistryKey? approved, string name)
+    {
+        if (approved?.GetValue(name) is not byte[] b || b.Length == 0) return true;
+        return (b[0] & 0x01) == 0; // bit 0 set => disabled
+    }
+
+    private static string? ResolveExe(string command)
+    {
+        command = command.Trim();
+        if (command.Length == 0) return null;
+
+        string path;
+        if (command[0] == '"')
+        {
+            int end = command.IndexOf('"', 1);
+            path = end > 1 ? command[1..end] : command[1..];
+        }
+        else
+        {
+            path = command.Split(' ', 2)[0];
+        }
+
+        try
+        {
+            path = Environment.ExpandEnvironmentVariables(path);
+            return File.Exists(path) ? Path.GetFullPath(path) : null;
+        }
+        catch { return null; }
+    }
+
+    private static string? SafeCompany(string exe)
+    {
+        try { return FileVersionInfo.GetVersionInfo(exe).CompanyName?.Trim() is { Length: > 0 } c ? c : null; }
+        catch { return null; }
+    }
+
+    private static string UserStartupFolder => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        @"Microsoft\Windows\Start Menu\Programs\Startup");
+
+    private static string CommonStartupFolder => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        @"Microsoft\Windows\Start Menu\Programs\Startup");
+}

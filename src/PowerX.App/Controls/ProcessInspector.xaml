@@ -1,0 +1,76 @@
+<UserControl
+    x:Class="PowerX.App.Controls.ProcessInspector"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctl="using:PowerX.App.Controls"
+    Width="700" Height="540">
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock x:Name="HeaderName" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+                <TextBlock x:Name="HeaderPid" Style="{StaticResource MonoStyle}" VerticalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <StackPanel x:Name="Chips" Orientation="Horizontal" Spacing="6" />
+        </StackPanel>
+
+        <SelectorBar x:Name="Tabs" Grid.Row="1" SelectionChanged="Tabs_SelectionChanged">
+            <SelectorBarItem Text="Overview" IsSelected="True" />
+            <SelectorBarItem Text="Performance" />
+            <SelectorBarItem Text="Modules" />
+        </SelectorBar>
+
+        <Grid Grid.Row="2">
+            <ScrollViewer x:Name="OverviewPanel" Style="{StaticResource PageScrollStyle}">
+                <ItemsControl x:Name="Overview">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ctl:KV">
+                            <Grid Padding="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind K}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind V}" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <StackPanel x:Name="PerfPanel" Spacing="12" Visibility="Collapsed">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="CPU" Style="{StaticResource MutedStyle}" />
+                    <TextBlock x:Name="PerfCpu" Style="{StaticResource MetricValueStyle}" FontSize="30" Text="—" />
+                    <ctl:AreaChart x:Name="CpuChart" Height="90" />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Working set" Style="{StaticResource MutedStyle}" />
+                    <TextBlock x:Name="PerfMem" Style="{StaticResource MonoStyle}" FontSize="18" Text="—" />
+                    <ctl:AreaChart x:Name="MemChart" Height="90" />
+                </StackPanel>
+            </StackPanel>
+
+            <ScrollViewer x:Name="ModulesPanel" Style="{StaticResource PageScrollStyle}" Visibility="Collapsed">
+                <ItemsControl x:Name="Modules">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ctl:KV">
+                            <StackPanel Padding="0,4">
+                                <TextBlock Text="{x:Bind K}" FontSize="12" />
+                                <TextBlock Text="{x:Bind V}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           IsTextSelectionEnabled="True" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

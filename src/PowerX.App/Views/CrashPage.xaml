@@ -1,0 +1,33 @@
+<Page
+    x:Class="PowerX.App.Views.CrashPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctl="using:PowerX.App.Controls">
+    <ScrollViewer Style="{StaticResource PageScrollStyle}">
+        <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
+
+            <StackPanel Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Crash insights" Style="{StaticResource PageTitleStyle}" />
+                    <ctl:InfoButton Title="Where this comes from"
+                                    Body="PowerX reads what Windows already recorded about recent crashes, hangs and stop errors. That means the Windows Error Reporting store, the Application and System event logs, and, only if you ask and only as administrator, the metadata inside a user-mode crash dump. It never downloads debugging symbols, never opens a dump in a debugger, and never uploads anything. Each report keeps what was observed separate from what PowerX thinks it means, gives a confidence level, and lists what is missing instead of guessing." />
+                </StackPanel>
+                <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="Show" VerticalAlignment="Center" Style="{StaticResource MutedStyle}" />
+                <ComboBox x:Name="RangeBox" SelectionChanged="Range_Changed" MinWidth="140">
+                    <ComboBoxItem Content="last 7 days" />
+                    <ComboBoxItem Content="last 30 days" IsSelected="True" />
+                    <ComboBoxItem Content="last 90 days" />
+                </ComboBox>
+                <CheckBox x:Name="DumpsBox" Content="Inspect crash dumps (needs admin)" Checked="Dumps_Changed" Unchecked="Dumps_Changed" />
+                <Button x:Name="RescanButton" Content="Rescan" Click="Rescan_Click" />
+            </StackPanel>
+
+            <StackPanel x:Name="List" Spacing="8" />
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,162 @@
+<Page
+    x:Class="PowerX.App.Views.ToolsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctl="using:PowerX.App.Controls">
+    <ScrollViewer Style="{StaticResource PageScrollStyle}">
+        <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
+            <TextBlock Text="Tools" Style="{StaticResource PageTitleStyle}" />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Power plan" Style="{StaticResource SectionHeaderStyle}" />
+                        <ctl:InfoButton Title="Power plans"
+                                        Body="A power plan controls how hard Windows works to lower CPU frequency and park cores when idle. Balanced is right for almost everyone. High and Ultimate performance keep clocks high and cut some idle latency. That is worth a few percent in latency-sensitive work, costs battery on a laptop, and does nothing measurable for FPS in most games. Power saver caps performance to stretch battery life." />
+                    </StackPanel>
+                    <TextBlock x:Name="PowerCurrent" Style="{StaticResource MutedStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Balanced" Click="Balanced_Click" />
+                        <Button Content="High performance" Click="HighPerf_Click" />
+                        <Button Content="Ultimate performance" Click="Ultimate_Click" />
+                        <Button Content="Power saver" Click="Saver_Click" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="High and Ultimate keep the CPU at higher clocks and cut some power-saving latency. Marginal on desktops, worse battery on laptops, and not a magic FPS switch." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Windows Update" Style="{StaticResource SectionHeaderStyle}" />
+                            <TextBlock x:Name="WuStatus" Style="{StaticResource MutedStyle}" Text="Checking…" />
+                        </StackPanel>
+                        <InfoBadge x:Name="WuBadge" Grid.Column="1" VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Pause 7 days" Tag="7" Click="WuPause_Click" />
+                        <Button Content="Pause 35 days (max)" Tag="35" Click="WuPause_Click" />
+                        <Button x:Name="WuDisableButton" Content="Disable completely" Click="WuDisable_Click" />
+                        <Button Content="Restore defaults" Style="{StaticResource AccentButtonStyle}" Click="WuRestore_Click" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="Disable completely stops the update services, tasks and policy, so the machine stops getting security patches. It is a security trade-off. Use Restore to undo it. Windows caps Pause at 35 days." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Disk cleanup" Style="{StaticResource SectionHeaderStyle}" />
+                            <TextBlock x:Name="CleanupTotal" Style="{StaticResource MutedStyle}" Text="Scanning…" />
+                        </StackPanel>
+                        <Button x:Name="CleanButton" Grid.Column="1" Content="Clean selected"
+                                Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Click="Clean_Click"
+                                VerticalAlignment="Center" />
+                    </Grid>
+
+                    <StackPanel Spacing="6">
+                        <ctl:SegmentBar x:Name="CleanupBar" />
+                        <ProgressBar x:Name="CleanProgress" Minimum="0" Maximum="100" Visibility="Collapsed" ShowPaused="False" />
+                        <TextBlock x:Name="CleanProgressText" Style="{StaticResource MutedStyle}" Visibility="Collapsed" />
+                    </StackPanel>
+
+                    <StackPanel x:Name="CleanupList" Spacing="2" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Disks" Style="{StaticResource SectionHeaderStyle}" />
+                        <Button Grid.Column="1" Content="Open Disk Management" Click="DiskMgmt_Click" />
+                    </Grid>
+                    <StackPanel x:Name="DiskList" Spacing="8" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Environment variables" Style="{StaticResource SectionHeaderStyle}" />
+                            <TextBlock x:Name="EnvSummary" Style="{StaticResource MutedStyle}" />
+                        </StackPanel>
+                        <Button x:Name="EnvAdd" Grid.Column="1" Content="Add" Click="EnvAdd_Click" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBox x:Name="EnvFilter" PlaceholderText="Filter…" TextChanged="EnvFilter_Changed" />
+                    <ItemsControl x:Name="EnvList" MaxHeight="320" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="System protection" Style="{StaticResource SectionHeaderStyle}" />
+                        <ctl:InfoButton Title="Restore points"
+                                        Body="A restore point is a snapshot of system files, drivers, the registry and installed programs. It does not include your documents. If a change breaks Windows you can roll back to one. Make one before a batch of tweaks or a driver update. Windows does the rollback itself, and it needs a restart." />
+                    </StackPanel>
+                    <TextBlock x:Name="RestoreStatus" Style="{StaticResource MutedStyle}" Text="Checking…" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="CreateRpButton" Content="Create restore point" Click="CreateRp_Click" />
+                        <Button Content="View restore points" Click="ListRp_Click" />
+                        <Button Content="Open System Restore" Click="OpenRp_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="System shortcuts" Style="{StaticResource SectionHeaderStyle}" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Files &amp; folders" Style="{StaticResource MutedStyle}" />
+                        <ctl:WrapPanel x:Name="ShortcutRow1" HorizontalSpacing="8" VerticalSpacing="8" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Diagnostics" Style="{StaticResource MutedStyle}" />
+                        <ctl:WrapPanel x:Name="ShortcutRow2" HorizontalSpacing="8" VerticalSpacing="8" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Management consoles" Style="{StaticResource MutedStyle}" />
+                        <ctl:WrapPanel x:Name="ShortcutRow3" HorizontalSpacing="8" VerticalSpacing="8" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Settings pages" Style="{StaticResource MutedStyle}" />
+                        <ctl:WrapPanel x:Name="ShortcutRow4" HorizontalSpacing="8" VerticalSpacing="8" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Learn" Style="{StaticResource SectionHeaderStyle}" />
+                        <ctl:InfoButton Title="About these notes"
+                                        Body="Short, vendor-neutral explanations of the settings PowerX can change, so you can decide for yourself. No affiliate links, no scare tactics." />
+                    </StackPanel>
+                    <StackPanel x:Name="LearnList" Spacing="8" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

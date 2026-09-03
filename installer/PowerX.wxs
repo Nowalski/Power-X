@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PowerX installer (WiX 5). Per-machine install to Program Files, a single Start-menu
+  shortcut (NO desktop shortcut, by design), clean uninstall, in-place major upgrade.
+  The app itself is unpackaged and unchanged; the installer only lays down the published folder.
+
+  Build:  installer\build.ps1     (publishes the app, then `wix build`)
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <?ifndef Version ?><?define Version = "0.1.0" ?><?endif ?>
+  <?ifndef PublishDir ?><?define PublishDir = "..\publish\app" ?><?endif ?>
+
+  <Package Name="PowerX"
+           Manufacturer="PowerX contributors"
+           Version="$(Version)"
+           UpgradeCode="5539BFFE-561E-485D-A65B-25C082AF2D3E"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="PowerX — a native Windows control center" />
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of PowerX is already installed. Uninstall it first to go back." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="ARPPRODUCTICON" Value="PowerXIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Nowalski/PowerX" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Nowalski/PowerX" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Icon Id="PowerXIcon" SourceFile="..\src\PowerX.App\Assets\PowerX.ico" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="PowerX" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="PowerX" />
+    </StandardDirectory>
+
+    <!-- Every file under the published folder, harvested at build time. Any stray .lnk in
+         the publish output is excluded so it can never become a phantom shortcut. -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(PublishDir)\**">
+        <Exclude Files="$(PublishDir)\*.pdb" />
+        <Exclude Files="$(PublishDir)\**\*.lnk" />
+      </Files>
+    </ComponentGroup>
+
+    <!-- Exactly ONE shortcut, in Start menu > PowerX. No DesktopFolder anywhere in this file. -->
+    <Component Id="StartMenuShortcut" Directory="AppShortcutFolder"
+               Guid="1ABF4F02-F2A8-45D2-BA5D-C8C05E6C923A">
+      <Shortcut Id="PowerXStartMenu"
+                Name="PowerX"
+                Description="A native Windows control center"
+                Target="[INSTALLFOLDER]PowerX.App.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="PowerXIcon" />
+      <RemoveFolder Id="CleanShortcutFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\PowerX" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="Main" Title="PowerX" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+  </Package>
+</Wix>

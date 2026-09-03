@@ -1,0 +1,23 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <Authors>PowerX contributors</Authors>
+    <Product>PowerX</Product>
+    <Company>PowerX</Company>
+    <Copyright>Copyright (c) PowerX contributors</Copyright>
+    <RepositoryUrl>https://github.com/Nowalski/PowerX</RepositoryUrl>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <NoWarn>$(NoWarn);CA1848;CA1031;CA1000;CA1720;CA1305;CA1307;CA1862;CA1707;CA1861;CA1806</NoWarn>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,131 @@
+<Page
+    x:Class="PowerX.App.Views.MemoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctl="using:PowerX.App.Controls"
+    xmlns:local="using:PowerX.App.Views">
+    <ScrollViewer Style="{StaticResource PageScrollStyle}">
+        <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
+
+            <StackPanel Spacing="2">
+                <TextBlock Text="Memory" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock x:Name="HwSummary" Style="{StaticResource SectionHeaderStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Reading hardware…"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="120" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4">
+                        <ctl:RingGauge x:Name="Gauge" Caption="in use" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="Sub" Style="{StaticResource MutedStyle}" HorizontalAlignment="Center"
+                                   TextWrapping="Wrap" TextAlignment="Center" />
+                    </StackPanel>
+                    <ctl:AreaChart x:Name="Spark" Grid.Column="1" Height="120" />
+                </Grid>
+            </Border>
+
+            <Grid x:Name="DetailGrid" ColumnSpacing="16" RowSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="SecondCol" Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="WidthStates">
+                        <VisualState x:Name="Narrow">
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="0" />
+                            </VisualState.StateTriggers>
+                            <VisualState.Setters>
+                                <Setter Target="SecondCol.Width" Value="0" />
+                                <Setter Target="AboutCard.(Grid.Row)" Value="1" />
+                                <Setter Target="AboutCard.(Grid.Column)" Value="0" />
+                                <Setter Target="ModulesCard.(Grid.Row)" Value="1" />
+                                <Setter Target="ModulesCard.(Grid.Column)" Value="0" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Wide">
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="1100" />
+                            </VisualState.StateTriggers>
+                            <VisualState.Setters>
+                                <Setter Target="SecondCol.Width" Value="*" />
+                                <Setter Target="AboutCard.(Grid.Row)" Value="0" />
+                                <Setter Target="AboutCard.(Grid.Column)" Value="1" />
+                                <Setter Target="ModulesCard.(Grid.Row)" Value="0" />
+                                <Setter Target="ModulesCard.(Grid.Column)" Value="1" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+
+                <Border x:Name="UsageCard" Grid.Row="0" Grid.Column="0" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+                            <TextBlock Text="Usage" Style="{StaticResource SectionHeaderStyle}" />
+                            <ctl:InfoButton Title="Windows memory terms"
+                                            Body="In use is RAM actively held by processes and the kernel. Cached is standby data, mostly the file cache. It can be reclaimed instantly, so Windows counts it as available. Committed is the total memory the OS has promised to processes, backed by RAM plus the page file, and the commit limit is the ceiling. High commit with low in-use is normal. Paged and non-paged pool are kernel allocations." />
+                        </StackPanel>
+                        <ItemsControl x:Name="Breakdown">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:NameValueVm">
+                                    <Grid Padding="0,5" ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="90" />
+                                            <ColumnDefinition Width="*" MinWidth="80" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Value, Mode=OneWay}" Style="{StaticResource MonoStyle}"
+                                                   HorizontalAlignment="Right" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="AboutCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="About your memory" Style="{StaticResource SectionHeaderStyle}" />
+                        <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                                   Text="Committed memory is what Windows has promised to processes, backed by RAM plus the page file. The commit limit is the ceiling." />
+                        <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                                   Text="Cached memory is standby pages backing the file cache. It can be reclaimed and is already counted as available. High in-use with plenty cached is a healthy state." />
+                        <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                                   Text="If committed keeps getting close to the limit, more RAM or a larger page file helps. Freeing cached memory does not." />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ModulesCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}"
+                        VerticalAlignment="Top" Visibility="Collapsed">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Installed modules" Style="{StaticResource SectionHeaderStyle}" />
+                        <ItemsControl x:Name="Modules">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:NameValueVm">
+                                    <StackPanel Padding="0,6" Spacing="1">
+                                        <TextBlock Text="{x:Bind Name}" FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{x:Bind Value}" FontSize="12" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

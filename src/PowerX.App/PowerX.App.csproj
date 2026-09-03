@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>PowerX.App</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <Platforms>x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\PowerX.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\PowerX.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\logo-32.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\logo-64.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\logo-128.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PowerX.Core\PowerX.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    A self-contained WinUI 3 publish does NOT include the Visual C++ runtime, but the native
+    Microsoft.UI.Xaml.dll links against it. On a machine without the VC++ 2015-2022
+    Redistributable the app dies during MainWindow XAML load ("nothing happens after UAC").
+    Fold the runtime into the publish so both the folder build AND the single-file build carry
+    it — with PublishSingleFile + IncludeNativeLibrariesForSelfExtract these get embedded and
+    self-extracted at launch. These DLLs are redistributable.
+  -->
+  <Target Name="AddVcRuntimeToPublish" BeforeTargets="ComputeFilesToPublish"
+          Condition="$([MSBuild]::ValueOrDefault('$(RuntimeIdentifier)', '').StartsWith('win'))">
+    <PropertyGroup>
+      <_VcArch Condition="$(RuntimeIdentifier.Contains('arm64'))">arm64</_VcArch>
+      <_VcArch Condition="'$(_VcArch)' == ''">x64</_VcArch>
+      <_VcRedistDir Condition="'$(VCToolsRedistDir)' != ''">$(VCToolsRedistDir)$(_VcArch)\</_VcRedistDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_VcRedistDir)' != '' and Exists('$(_VcRedistDir)')">
+      <_VcCrt Include="$(_VcRedistDir)**\vcruntime140*.dll;$(_VcRedistDir)**\msvcp140*.dll;$(_VcRedistDir)**\concrt140.dll;$(_VcRedistDir)**\vccorlib140.dll" />
+    </ItemGroup>
+    <!-- Fallback: the same binaries from System32 (present on any x64 build host). -->
+    <ItemGroup Condition="'@(_VcCrt)' == '' and '$(_VcArch)' == 'x64'">
+      <_VcCrt Include="$(WinDir)\System32\vcruntime140.dll;$(WinDir)\System32\vcruntime140_1.dll;$(WinDir)\System32\msvcp140.dll;$(WinDir)\System32\msvcp140_1.dll;$(WinDir)\System32\msvcp140_2.dll;$(WinDir)\System32\concrt140.dll" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(_VcCrt)' != ''">
+      <ResolvedFileToPublish Include="@(_VcCrt->Distinct())">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <PostprocessAssembly>true</PostprocessAssembly>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+    <Warning Text="VC++ runtime not found to bundle — the published build may not start on machines without the VC++ 2015-2022 Redistributable."
+             Condition="'@(_VcCrt)' == ''" />
+  </Target>
+
+</Project>

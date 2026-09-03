@@ -1,0 +1,10 @@
+{
+  "version": "0.1.0",
+  "published": "2026-09-03",
+  "notes": "First public milestone: live telemetry, processes, tweaks, debloat, startup, services, repair, tools, crash insights.",
+  "url": "https://github.com/Nowalski/Power-X/releases",
+  "minimumWindowsBuild": 19041,
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.0/PowerX-Setup-0.1.0-win-x64.msi",
+  "installerSha256": "7b2d07bf682968eb9e1d3acf598523ac152f77eecb6d177a6c79aa8d9c1e924c",
+  "installerBytes": 56175537
+}

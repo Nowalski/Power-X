@@ -1,0 +1,52 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.DebloatPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PowerX.App.Views">
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Debloat" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Scanning installed apps…" />
+        </StackPanel>
+
+        <InfoBar Grid.Row="1" IsOpen="True" Severity="Informational" IsClosable="False"
+                 Message="These are per-user Store/consumer apps. Nothing is selected by default. Most can be reinstalled from the Microsoft Store afterwards." />
+
+        <Grid Grid.Row="2" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search apps…" TextChanged="Filter_Changed" />
+            <ComboBox x:Name="CategoryBox" Grid.Column="1" MinWidth="150" SelectionChanged="Category_Changed" />
+            <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+            <StackPanel x:Name="Sections" Spacing="6" Padding="0,0,0,12" />
+        </ScrollViewer>
+
+        <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="14,10">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="SelectionText" VerticalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Nothing selected" />
+                <Button x:Name="RemoveSelected" Grid.Column="1" Content="Remove selected"
+                        Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Click="RemoveSelected_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

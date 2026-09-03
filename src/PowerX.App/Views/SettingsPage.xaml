@@ -1,0 +1,129 @@
+<Page
+    x:Class="PowerX.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Style="{StaticResource PageScrollStyle}">
+        <StackPanel x:Name="Root" Spacing="14" Padding="0,0,0,24">
+            <TextBlock Text="Settings" Style="{StaticResource PageTitleStyle}" />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Appearance" Style="{StaticResource SectionHeaderStyle}" />
+
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Theme" />
+                            <TextBlock Style="{StaticResource MutedStyle}" Text="Match Windows, or force a theme." />
+                        </StackPanel>
+                        <ComboBox x:Name="ThemeBox" Grid.Column="1" MinWidth="160" VerticalAlignment="Center"
+                                  SelectionChanged="Theme_Changed">
+                            <ComboBoxItem Content="System" />
+                            <ComboBoxItem Content="Light" />
+                            <ComboBoxItem Content="Dark" />
+                        </ComboBox>
+                    </Grid>
+
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Window material" />
+                            <TextBlock Style="{StaticResource MutedStyle}"
+                                       Text="Mica tints the desktop wallpaper behind the app. Acrylic is a stronger blur. None is a solid background and the cheapest to render." />
+                        </StackPanel>
+                        <ComboBox x:Name="BackdropBox" Grid.Column="1" MinWidth="160" VerticalAlignment="Center"
+                                  SelectionChanged="Backdrop_Changed">
+                            <ComboBoxItem Content="Mica" Tag="Mica" />
+                            <ComboBoxItem Content="Acrylic" Tag="Acrylic" />
+                            <ComboBoxItem Content="None (solid)" Tag="None" />
+                        </ComboBox>
+                    </Grid>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Accent colour" />
+                        <TextBlock Style="{StaticResource MutedStyle}"
+                                   Text="Applies after PowerX restarts. 'System' follows your Windows accent." />
+                        <StackPanel x:Name="AccentSwatches" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Monitoring" Style="{StaticResource SectionHeaderStyle}" />
+
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Sampling interval" />
+                            <TextBlock Style="{StaticResource MutedStyle}"
+                                       Text="How often PowerX queries Windows. Charts animate smoothly regardless." />
+                        </StackPanel>
+                        <ComboBox x:Name="IntervalBox" Grid.Column="1" MinWidth="140" VerticalAlignment="Center"
+                                  SelectionChanged="Interval_Changed">
+                            <ComboBoxItem Content="0.5 s" Tag="500" />
+                            <ComboBoxItem Content="1 s" Tag="1000" />
+                            <ComboBoxItem Content="2 s" Tag="2000" />
+                            <ComboBoxItem Content="5 s" Tag="5000" />
+                        </ComboBox>
+                    </Grid>
+
+                    <ToggleSwitch x:Name="ThrottleSwitch" Header="Slow down sampling when the window is hidden"
+                                  Toggled="Throttle_Toggled" />
+                    <ToggleSwitch x:Name="ConfirmSwitch" Header="Confirm before ending or changing processes"
+                                  Toggled="Confirm_Toggled" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Updates" Style="{StaticResource SectionHeaderStyle}" />
+                    <ToggleSwitch x:Name="AutoUpdateSwitch" Header="Check for updates automatically"
+                                  Toggled="AutoUpdate_Toggled" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="CheckUpdatesButton" Content="Check now" Click="CheckUpdates_Click" />
+                        <TextBlock x:Name="UpdateCheckStatus" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="PowerX checks a small version file in the public repo once a day. When an update has a verified installer it can download and run it after you confirm. Otherwise it just points you to the releases page." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Maintenance" Style="{StaticResource SectionHeaderStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Open logs folder" Click="OpenLogs_Click" />
+                        <Button Content="Restore all PowerX tweaks" Click="RestoreTweaks_Click" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="Restore all PowerX tweaks reverts every tweak this tool applied back to the Windows default, using the change history." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="About" Style="{StaticResource SectionHeaderStyle}" />
+                    <TextBlock x:Name="AboutText" Style="{StaticResource MonoStyle}" />
+                    <TextBlock x:Name="AboutRuntime" Style="{StaticResource MutedStyle}" />
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="PowerX is an open-source Windows control center. There is no telemetry. Everything stays on this machine, and every change is written to the local change history." />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <HyperlinkButton Content="Project on GitHub" NavigateUri="https://github.com/Nowalski/Power-X" />
+                        <HyperlinkButton Content="Change history" Click="OpenHistory_Click" />
+                        <HyperlinkButton Content="Third-party notices" Click="OpenNotices_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

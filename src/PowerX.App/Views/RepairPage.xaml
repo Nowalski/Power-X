@@ -1,0 +1,99 @@
+<Page
+    x:Class="PowerX.App.Views.RepairPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctl="using:PowerX.App.Controls">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="Repair &amp; diagnostics" Style="{StaticResource PageTitleStyle}" />
+                <ctl:InfoButton Title="How to repair Windows"
+                                Body="Corruption usually clears up by running DISM /RestoreHealth (rebuilds the component store from Windows Update) then SFC /scannow (repairs protected system files from the now-healthy store). The Run recommended repair button does both in order. Everything here is a standard Microsoft tool, and the output is shown live." />
+            </StackPanel>
+            <TextBlock Style="{StaticResource MutedStyle}"
+                       Text="Standard Windows repair tools. Output streams live on the right. One job runs at a time." />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+            <Button x:Name="RecommendedButton" Content="Run recommended repair (DISM + SFC)"
+                    Style="{StaticResource AccentButtonStyle}" Click="Recommended_Click" />
+            <Button x:Name="StopButton" Content="Stop" IsEnabled="False" Click="Stop_Click" />
+            <Button Content="Clear output" Click="Clear_Click" />
+        </StackPanel>
+
+        <Grid Grid.Row="2" ColumnSpacing="16" MinHeight="180">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*" />
+                <ColumnDefinition Width="1.4*" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" Style="{StaticResource PageScrollStyle}">
+                <StackPanel x:Name="JobList" Spacing="6" Padding="0,0,0,12" />
+            </ScrollViewer>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="0">
+                <Grid RowSpacing="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Padding="14,10" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ConsoleTitle" Text="Console" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                        <ProgressRing x:Name="RunSpinner" Grid.Column="1" Width="18" Height="18" IsActive="False" />
+                    </Grid>
+                    <TextBox x:Name="OutputBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                             BorderThickness="0" Background="Transparent" Padding="12"
+                             FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             Text="Select a job on the left to run it. Its output appears here." />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Expander Grid.Row="3" Margin="0,0,0,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Memory test" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                    <ctl:InfoButton Title="About this test"
+                                    Body="Grabs a large block of free RAM and runs pattern write/verify and moving-inversion passes over it. It catches an unstable overclock or a failing module, but it only tests free memory and runs alongside Windows. For a full test use Windows Memory Diagnostic (needs a reboot) or MemTest86." />
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Spacing="10" Padding="0,6,0,10">
+                <Grid ColumnSpacing="12" RowSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Size" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Slider x:Name="MemSize" Grid.Column="1" Minimum="1" Maximum="8" Value="4" StepFrequency="1" VerticalAlignment="Center" MinWidth="120" />
+                    <TextBlock x:Name="MemSizeText" Grid.Column="2" Text="4 GB" VerticalAlignment="Center"
+                               Style="{StaticResource MonoStyle}" MinWidth="48" />
+                    <ComboBox x:Name="MemPasses" Grid.Column="3" SelectedIndex="1" VerticalAlignment="Center">
+                        <ComboBoxItem Content="1 pass" />
+                        <ComboBoxItem Content="2 passes" />
+                        <ComboBoxItem Content="4 passes" />
+                        <ComboBoxItem Content="8 passes" />
+                    </ComboBox>
+                    <Button x:Name="MemStart" Grid.Column="4" Content="Start" Click="MemStart_Click" VerticalAlignment="Center" />
+                </Grid>
+                <ProgressBar x:Name="MemProgress" Minimum="0" Maximum="100" Visibility="Collapsed" />
+                <TextBlock x:Name="MemResult" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Expander>
+    </Grid>
+</Page>

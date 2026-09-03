@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore PowerX.sln
+
+      - name: Build
+        run: dotnet build PowerX.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test PowerX.sln --configuration Release --no-build --logger "trx;LogFileName=results.trx" --results-directory artifacts/test
+
+      - name: Build WinUI app (x64)
+        run: dotnet build src/PowerX.App/PowerX.App.csproj --configuration Release -p:Platform=x64
+
+      - name: Verify generated tweak catalog is current
+        shell: pwsh
+        run: |
+          dotnet run --project src/PowerX.Cli --configuration Release --no-build -- tweak docs > docs/TWEAK_CATALOG.generated.md
+          if ((Get-Content docs/TWEAK_CATALOG.md -Raw) -ne (Get-Content docs/TWEAK_CATALOG.generated.md -Raw)) {
+            Write-Error "docs/TWEAK_CATALOG.md is stale. Run: dotnet run --project src/PowerX.Cli -- tweak docs > docs/TWEAK_CATALOG.md"
+            exit 1
+          }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test
+
+  audit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Vulnerable / deprecated packages
+        run: |
+          dotnet restore PowerX.sln
+          dotnet list PowerX.sln package --vulnerable --include-transitive
+          dotnet list PowerX.sln package --deprecated

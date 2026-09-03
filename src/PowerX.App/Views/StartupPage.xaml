@@ -1,0 +1,27 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.StartupPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Startup" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
+        </StackPanel>
+
+        <InfoBar Grid.Row="1" IsOpen="True" Severity="Informational" IsClosable="False"
+                 Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the RunOnce value." />
+
+        <TextBox x:Name="Filter" Grid.Row="2" PlaceholderText="Search startup entries…" TextChanged="Filter_Changed" />
+
+        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+            <StackPanel x:Name="List" Spacing="6" Padding="0,0,0,16" />
+        </ScrollViewer>
+    </Grid>
+</Page>
