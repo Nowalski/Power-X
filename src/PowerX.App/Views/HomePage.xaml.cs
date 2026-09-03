@@ -31,8 +31,9 @@ public sealed partial class HomePage : Page
         for (int i = 0; i < TopCount; i++) _top.Add(new NameValueVm());
 
         var info = SystemInfoProvider.Collect();
+        bool showElevationWarning = !info.IsElevated && !DemoData.Active;
         SubHeadline.Text = $"{info.WindowsEdition} · build {info.BuildString} · {info.CpuName} · {Fmt.Bytes(info.TotalPhysicalMemory)} RAM"
-                           + (info.IsElevated ? "" : "  ·  not running as administrator");
+                           + (showElevationWarning ? "  ·  not running as administrator" : "");
 
         BuildQuickActions();
         LoadRecommendations();

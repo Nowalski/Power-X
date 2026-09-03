@@ -72,8 +72,26 @@ public sealed class TelemetryHub
     {
         if (_loop is not null) return;
         _ui = DispatcherQueue.GetForCurrentThread();
+        if (DemoData.Active)
+        {
+            try { if (_mem.Sample().Value is { } m) DemoData.RealTotalRam = m.TotalPhysical; } catch { /* keep the default */ }
+            SeedDemoHistory();
+        }
         _loop = new CancellationTokenSource();
         _ = Task.Run(() => RunAsync(_loop.Token));
+    }
+
+    private void SeedDemoHistory()
+    {
+        for (long t = -HistoryCapacity; t < 0; t++)
+        {
+            CpuHistory.Add(DemoData.Cpu(t).TotalUsagePercent);
+            MemHistory.Add(DemoData.Memory(t).UsedPercent);
+            GpuHistory.Add(DemoData.Gpu(t).UtilizationPercent);
+            var n = DemoData.Network(t);
+            NetDownHistory.Add(n.TotalReceiveBytesPerSec);
+            NetUpHistory.Add(n.TotalSendBytesPerSec);
+        }
     }
 
     /// <summary>Stop sampling and release the GPU PDH query. Called when the main window closes.</summary>
@@ -130,6 +148,17 @@ public sealed class TelemetryHub
     {
         _tick++;
         bool sampleNet = _tick % 2 == 0;   // network enumeration is the priciest part of a tick
+
+        if (DemoData.Active)
+        {
+            var dcpu = ProviderResult<CpuMetrics>.Ok(DemoData.Cpu(_tick));
+            var dmem = ProviderResult<MemoryMetrics>.Ok(DemoData.Memory(_tick));
+            var dproc = DemoData.Processes(_tick);
+            var dgpu = ProviderResult<GpuMetrics>.Ok(DemoData.Gpu(_tick));
+            var dnet = ProviderResult<NetworkMetrics>.Ok(DemoData.Network(_tick));
+            _ui?.TryEnqueue(() => Commit(dcpu, dmem, dproc, dgpu, dnet, true));
+            return;
+        }
 
         var cpu = _cpu.Sample();
         var mem = _mem.Sample();

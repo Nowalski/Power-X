@@ -20,7 +20,8 @@ public sealed partial class MainWindow : Window
 
         var v = typeof(MainWindow).Assembly.GetName().Version;
         FooterVersion.Text = $"PowerX {v?.ToString(3)}";
-        FooterElevation.Text = PowerX.Core.Diagnostics.PrivilegeCheck.IsElevated() ? "administrator" : "⚠ not elevated";
+        FooterElevation.Text = PowerX.Core.Diagnostics.PrivilegeCheck.IsElevated() || Services.DemoData.Active
+            ? "administrator" : "⚠ not elevated";
 
         ApplyTheme();
         ApplyBackdrop();

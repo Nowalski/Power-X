@@ -45,7 +45,9 @@ public sealed partial class CrashPage : Page
         IReadOnlyList<CrashInsight> insights;
         try
         {
-            insights = await Task.Run(() => CrashScanner.Scan(opt));
+            insights = Services.DemoData.Active
+                ? Services.DemoData.Crashes()
+                : await Task.Run(() => CrashScanner.Scan(opt));
         }
         catch (Exception ex)
         {

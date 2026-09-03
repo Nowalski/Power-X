@@ -21,7 +21,7 @@ Grab the latest build from the [releases page](https://github.com/Nowalski/Power
 
 | | |
 |---|---|
-| **Installer** | `PowerX-Setup-<version>-win-x64.msi`. Per-machine install to Program Files, one Start-menu entry, no desktop shortcut, clean uninstall, in-place upgrade. |
+| **Installer** | `PowerX-Setup-<version>-win-x64.msi`. Per-machine install to Program Files, a Start-menu entry and a desktop shortcut, clean uninstall, in-place upgrade. |
 | **Portable** | `PowerX-<version>-portable-win-x64.zip`. Unpack and run `PowerX.App.exe`. Nothing is written outside the folder except a small change history and settings under `%LOCALAPPDATA%\PowerX`. |
 
 Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as administrator because it manages system state. It is **not code-signed yet**, so SmartScreen shows an "unknown publisher" prompt: choose *More info*, then *Run anyway*. Each release lists a SHA-256 for every file so you can verify what you downloaded.
