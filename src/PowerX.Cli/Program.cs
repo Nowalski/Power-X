@@ -26,6 +26,8 @@ try
         "repair" => RepairCommand.Run(rest),
         "memtest" => MemTestCommand.Run(rest),
         "crashes" or "crash" => CrashCommand.Run(rest),
+        "security" or "defender" => SecurityCommand.Run(rest),
+        "hash" => HashCommand.Run(rest),
         "report" => ReportCommand.Run(rest),
         "update" => UpdateCommand.Run(rest),
         "history" => HistoryCommand.Run(rest),

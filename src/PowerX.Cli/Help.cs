@@ -11,7 +11,7 @@ internal static class Help
         var grid = new Grid();
         grid.AddColumn(new GridColumn().PadRight(4));
         grid.AddColumn();
-        void Row(string a, string b) => grid.AddRow($"[teal]{a}[/]", b);
+        void Row(string a, string b) => grid.AddRow(new Markup($"[teal]{Markup.Escape(a)}[/]"), new Markup(Markup.Escape(b)));
         Row("powerx status", "System overview + live CPU / memory sample");
         Row("powerx scan", "Scan tweak state and surface recommendations");
         Row("powerx process list", "List processes  [--sort cpu|mem|io|name] [--top N] [--tree]");
@@ -27,6 +27,8 @@ internal static class Help
         Row("powerx repair run <#>", "Run one repair job, streaming its output");
         Row("powerx memtest", "User-space RAM test  [--gb N] [--passes N]");
         Row("powerx crashes", "Recent crashes / hangs / bugchecks  [--since 7d] [--dumps] [show <id>]");
+        Row("powerx security", "Microsoft Defender status and threat history  (scan [--full])");
+        Row("powerx hash <file>", "SHA-256 of a file, checked against the CIRCL hash database");
         Row("powerx report", "Write a system report for support  [--out PATH] [--no-redact] [--print]");
         Row("powerx update", "Check the public repo for a newer version");
         Row("powerx history", "Change history timeline  [--revertable]");

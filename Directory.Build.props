@@ -16,7 +16,7 @@
     <Company>PowerX</Company>
     <Copyright>Copyright (c) PowerX contributors</Copyright>
     <RepositoryUrl>https://github.com/Nowalski/Power-X</RepositoryUrl>
-    <VersionPrefix>0.1.1</VersionPrefix>
+    <VersionPrefix>0.1.2</VersionPrefix>
     <NoWarn>$(NoWarn);CA1848;CA1031;CA1000;CA1720;CA1305;CA1307;CA1862;CA1707;CA1861;CA1806</NoWarn>
   </PropertyGroup>
 

@@ -87,6 +87,10 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 
 ## Tier 3, nice, low priority / needs care
 
+- **Security page, SHIPPED 0.1.2.** Defender status (WMI), threat history, start a Defender scan,
+  and a SHA-256 lookup against CIRCL hashlookup (free, open, no key). PowerX is not an antivirus:
+  no signatures, no quarantine, no all-clear, no auto-removal. See D-025. Fast-follow: opt-in
+  VirusTotal / MalwareBazaar keys for an engine-count verdict.
 - **Context-menu / "Open with" editor**, popular in Winhance; medium risk (shell hive edits).
 - **Storage treemap** (WizTree-style), high value, but big rendering effort; a folder-size
  table is the S version.

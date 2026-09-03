@@ -222,6 +222,7 @@ public sealed partial class MainWindow : Window
             "debloat" => typeof(DebloatPage),
             "repair" => typeof(RepairPage),
             "crashes" => typeof(CrashPage),
+            "security" => typeof(SecurityPage),
             "tools" => typeof(ToolsPage),
             "history" => typeof(HistoryPage),
             _ => typeof(HomePage),

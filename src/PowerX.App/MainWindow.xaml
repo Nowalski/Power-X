@@ -87,6 +87,9 @@
                 <muxc:NavigationViewItem Content="Crash insights" Tag="crashes">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE7BA;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Security" Tag="security">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE72E;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Change history" Tag="history">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE81C;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>

@@ -4,6 +4,16 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 
 ---
 
+## D-025. Security page: surface Defender, never be the antivirus
+**Date** 2026-09-03
+**Decision** A "Security" page (under Optimize and fix) plus `powerx security` and `powerx hash`. It does four things and refuses to do more:
+1. **Defender status** from its WMI provider (`root\Microsoft\Windows\Defender`): running mode (Normal, Passive, EDR), real-time, cloud, behavior, tamper and network protection, PUA setting, definition version and age, last scan times. A red bar when there is no active real-time antivirus at all.
+2. **Threat history** from `MSFT_MpThreat` joined with `MSFT_MpThreatDetection`: what Defender has already caught, with name, severity, date, state and the file. Read what Windows recorded, the same pattern as crash insights.
+3. **Scan**: launches `MpCmdRun.exe -Scan`, streams the output, and cancel kills it.
+4. **Hash check**: a file's SHA-256 looked up against CIRCL hashlookup (`hashlookup.circl.lu`), a free, open, no-key database of known files. It reports "known good", "low trust", "known malicious", or "not catalogued, which proves nothing". Only the hash is sent, over HTTPS, on an explicit click, and results are cached.
+**Why** People asked for malware scanning. A half-working antivirus that people trust instead of Defender is actively harmful, so PowerX will not build one: no signatures, no quarantine, no "you are clean" all-clear, no auto-removal. What is safe and useful is showing the protection that is already there, what it caught, and an open second-opinion hash lookup. VirusTotal and MalwareBazaar were considered but both now need an API key; CIRCL needs none.
+**Status** Active (0.1.2).
+
 ## D-024. `powerx report` and the network deep-dive: read-only, redacted by default, no automatic lookups
 **Date** 2026-09-03
 **Decision** Two "Understand" features shipped in 0.1.1.

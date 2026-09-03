@@ -1,10 +1,10 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "published": "2026-09-03",
-  "notes": "Network deep-dive: listening ports, connection-state summary, opt-in reverse DNS, copy. New system report (powerx report and a Settings button), redacted by default. Installer now adds a desktop shortcut.",
+  "notes": "New Security page: Microsoft Defender status and threat history, start a Defender scan, and check a file's SHA-256 against the open CIRCL hash database. PowerX is not an antivirus. powerx security and powerx hash added.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.1/PowerX-Setup-0.1.1-win-x64.msi",
-  "installerSha256": "551759ff24fa701699326d1a08257a2a6c5467736168799e2b8f2ff21710e376",
-  "installerBytes": 56192053
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.2/PowerX-Setup-0.1.2-win-x64.msi",
+  "installerSha256": "ac494f239a86b3b67942cfb8405d01deab10688edf23920c9680dccfaefb9d2c",
+  "installerBytes": 56204341
 }

@@ -1,3 +1,4 @@
+using PowerX.Core.Diagnostics;
 using PowerX.Core.Diagnostics.Crash;
 using PowerX.Core.Processes;
 using PowerX.Core.Telemetry;
@@ -307,6 +308,44 @@ internal static class DemoData
             LocalAddress = "0.0.0.0", LocalPort = 5353,
             RemoteAddress = null, RemotePort = 0,
             State = "", IsListening = true, Exposed = true,
+        },
+    ];
+
+    // ---- security ------------------------------------------------------
+
+    public static DefenderStatus DefenderStatus() => new()
+    {
+        Mode = DefenderMode.Normal,
+        ModeText = "Microsoft Defender is the active antivirus",
+        RealTimeProtection = true,
+        CloudProtection = true,
+        BehaviorMonitor = true,
+        TamperProtection = true,
+        NetworkProtection = true,
+        PuaProtection = "on",
+        SignatureVersion = "1.421.88.0",
+        SignatureUpdated = DateTimeOffset.Now.AddHours(-5),
+        SignatureAgeDays = 0,
+        LastQuickScan = DateTimeOffset.Now.AddHours(-14),
+        LastFullScan = DateTimeOffset.Now.AddDays(-6),
+        ExclusionCount = 2,
+    };
+
+    public static IReadOnlyList<DefenderThreat> DefenderThreats() =>
+    [
+        new()
+        {
+            Name = "Trojan:Win32/Wacatac.B!ml", Severity = "Severe",
+            When = DateTimeOffset.Now.AddDays(-19).AddHours(-2),
+            State = DefenderThreatState.Removed, DidExecute = false, Active = false,
+            Resource = "C:\\Users\\user\\Downloads\\setup_x64_1042.exe",
+        },
+        new()
+        {
+            Name = "PUA:Win32/Presenoker", Severity = "Low",
+            When = DateTimeOffset.Now.AddDays(-41).AddHours(-6),
+            State = DefenderThreatState.Quarantined, DidExecute = false, Active = false,
+            Resource = "C:\\Users\\user\\AppData\\Local\\Temp\\driver-booster-setup.exe",
         },
     ];
 

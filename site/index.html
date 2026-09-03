@@ -280,7 +280,7 @@
 <main id="main">
 
   <section class="hero shell">
-    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.1, an early milestone build</p>
+    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.2, an early milestone build</p>
     <h1 class="r r2">The Windows control center <span class="em">that respects your machine</span></h1>
     <p class="lead r r3">
       Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one
@@ -442,6 +442,29 @@
              alt="The PowerX Network page: live download and upload charts, adapter details, a listening-ports table showing which ports are reachable from the network, and a per-process connection list." />
       </figure>
     </div>
+
+    <div class="feature">
+      <div class="copy">
+        <p class="eyebrow reveal">Security</p>
+        <h2 class="reveal">Not an antivirus. A window onto the one you have.</h2>
+        <p class="reveal">
+          PowerX will never be your antivirus, because a half-working one you trust instead of
+          Defender is worse than none. What it does: show Defender's real status, list the threats
+          it has already caught, start a scan, and check any file's SHA-256 against
+          <a href="https://hashlookup.circl.lu">CIRCL hashlookup</a>, a free open database of known
+          files. Only the hash is sent, and only when you click.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Defender status and history</span>
+          <span class="tag">Start a scan</span>
+          <span class="tag">Open hash lookup</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-security.png" width="1600" height="980"
+             alt="The PowerX Security page: Microsoft Defender's protection state, the threats it has caught with dates and severity, quick and full scan buttons, and a box to check a file's hash against an open database." />
+      </figure>
+    </div>
   </section>
 
   <section id="cli" class="shell cli">
@@ -461,7 +484,9 @@ dotnet run --project src/PowerX.Cli -- <span class="k">scan</span>
 dotnet run --project src/PowerX.Cli -- <span class="k">tweak show</span> privacy.advertising-id
 dotnet run --project src/PowerX.Cli -- <span class="k">profile apply</span> lowspec --dry-run
 dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d
-dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print</pre>
+dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print
+dotnet run --project src/PowerX.Cli -- <span class="k">security</span>
+dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\System32\curl.exe</pre>
   </section>
 
   <section id="safety" class="safety">
@@ -485,7 +510,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print</pr
   <section id="download" class="download">
     <div class="shell">
       <p class="eyebrow reveal">Download</p>
-      <h2 class="reveal">Get PowerX 0.1.1</h2>
+      <h2 class="reveal">Get PowerX 0.1.2</h2>
       <p class="lead prose reveal" style="margin-top:var(--s3)">
         64-bit Windows 10 (build 19041) or Windows 11. PowerX runs as administrator because it
         manages system state. It is not code-signed yet, so Windows SmartScreen will show an
@@ -507,7 +532,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print</pr
 
       <p class="dl-note reveal">
         Every release lists a SHA-256 for each file. To check the installer:
-        <code>Get-FileHash .\PowerX-Setup-0.1.1-win-x64.msi</code> in PowerShell, and compare it to
+        <code>Get-FileHash .\PowerX-Setup-0.1.2-win-x64.msi</code> in PowerShell, and compare it to
         the value on the <a href="https://github.com/Nowalski/Power-X/releases" style="color:var(--accent-2)">releases page</a>.
       </p>
     </div>
