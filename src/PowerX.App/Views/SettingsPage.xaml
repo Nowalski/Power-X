@@ -104,9 +104,12 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button Content="Open logs folder" Click="OpenLogs_Click" />
                         <Button Content="Restore all PowerX tweaks" Click="RestoreTweaks_Click" />
+                        <Button x:Name="ReportButton" Content="Create system report" Click="Report_Click" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
                                Text="Restore all PowerX tweaks reverts every tweak this tool applied back to the Windows default, using the change history." />
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="The system report collects hardware, OS, storage, applied tweaks, recent changes and an event-log and crash summary into one text file for support. The user name, machine name and hardware identifiers are redacted. You see the full text before it is saved." />
                 </StackPanel>
             </Border>
 

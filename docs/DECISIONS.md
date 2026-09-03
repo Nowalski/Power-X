@@ -4,6 +4,14 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 
 ---
 
+## D-024. `powerx report` and the network deep-dive: read-only, redacted by default, no automatic lookups
+**Date** 2026-09-03
+**Decision** Two "Understand" features shipped in 0.1.1.
+`SystemReport.BuildMarkdown` collects OS, hardware, storage and SMART, applied tweaks (with dates from the change log), recent change history, an event-log error summary (Application and System, Level 1-2, grouped by source and id) and a crash summary. Redaction is on by default: the user name, machine name, MAC addresses and serial-looking strings are scrubbed from the final text. Every section is best-effort, so a section that fails says so rather than failing the report. Surfaces: `powerx report [--out PATH] [--no-redact] [--print]` and a Settings button that shows the full text in a dialog before it is saved.
+Network page: a listening-ports view (port, process, bound address, and whether it is reachable from the network rather than only loopback), a connection-state summary, opt-in reverse DNS (only after the user turns "Resolve names" on, cached, public routable addresses only, never automatic) and copy-to-clipboard for the connection list. `NetworkConnection` gained structured local and remote address and port fields, `IsListening` and `Exposed`.
+**Why** The support report is the highest-value item for the "Understand" pillar and for the project's own bug reports, but a report that leaks identifiers is worse than none. Reverse DNS answers "what is this program talking to", but doing it automatically would be a passive data-exfil pattern and generate constant DNS traffic. Same stance as D-017 and D-022: read what is already there, never phone out without consent.
+**Status** Active (0.1.1).
+
 ## D-023. Distribution: a WiX MSI installer is the primary channel; portable exe secondary
 **Date** 2026-09-03
 **Decision** The main way to get PowerX is **`PowerX-Setup-<ver>-win-x64.msi`** (WiX 5, `installer/PowerX.wxs`, built by `installer/build.ps1`). One 53 MB file: per-machine install to `Program Files\PowerX`, a Start-menu shortcut and a desktop shortcut, Add/Remove Programs entry, in-place major upgrade (shared `UpgradeCode`), clean uninstall. The WinUI app stays **unpackaged and unchanged**, the MSI only lays down the self-contained publish folder (with the bundled VC++ runtime). WiX 5 (not 7, v7 needs the paid OSMF EULA) as a `dotnet tool`, build-time only. A single-file self-contained `PowerX.exe` remains available as a no-install portable option but is not the recommended one (slow first launch, AV false positives).

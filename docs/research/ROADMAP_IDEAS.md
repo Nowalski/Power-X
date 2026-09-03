@@ -20,12 +20,12 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 - **Effort** M, **Risk** low (read-only + disable is reversible), **Prior art** Autoruns, Task Manager.
 - **Verdict** Yes next. Extends an existing page, strong user value.
 
-### 2. Network activity page, per-process connections + rate
+### 2. Network activity page, per-process connections + rate  [SHIPPED 0.1.1]
 - **Value** High. "What is this program talking to?" is a top support question.
 - Current: `NetTools` + `GetExtendedTcpTable` exist. Need a live page: per-process rows,
  remote address, state, up/down rate, and **opt-in** reverse-DNS / WHOIS (never automatic).
 - **Effort** M, **Risk** low (remote lookups gated), **Prior art** TCPView, System Informer.
-- **Verdict** Yes next. Interop already in place.
+- **Verdict** Shipped in 0.1.1: live rate charts, per-process connections, a listening-ports view with a network-reachable flag, a connection-state summary, opt-in reverse DNS, and copy. Per-connection byte rate needs ETW and is a fast-follow.
 
 ### 3. Scheduled Tasks viewer/curator
 - **Value** Medium-high. Lots of OEM + telemetry tasks; users want them visible.
@@ -35,12 +35,12 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
  same detect to show to confirm to log to undo flow and a KeepSystem list.
 - **Verdict** Yes after #1.
 
-### 4. System report export (support bundle)
+### 4. System report export (support bundle)  [SHIPPED 0.1.1]
 - **Value** High for the "Understand" pillar and for the project's own bug reports.
 - One command produces a reviewed, PII-aware Markdown or JSON report: hardware, OS build, drivers, top
  processes, applied tweaks, recent change history, disk health, event-log error summary.
 - **Effort** M, **Risk** low (must scrub serials / usernames by default, show a preview).
-- **Verdict** Yes. `powerx report` + a Settings button.
+- **Verdict** Shipped in 0.1.1. `powerx report` (--print / --no-redact / --out) and a Settings button that previews the full text before saving. Redaction of the user name, machine name, MAC and serials is on by default. JSON output is a fast-follow.
 
 ---
 

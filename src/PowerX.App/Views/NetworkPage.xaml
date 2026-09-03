@@ -67,15 +67,63 @@
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
-                    <Grid>
+                    <TextBlock Text="Listening ports" Style="{StaticResource SectionHeaderStyle}" />
+                    <TextBlock x:Name="ListenSummary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
+                    <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0.7*" MinWidth="60" />
+                            <ColumnDefinition Width="0.6*" MinWidth="52" />
+                            <ColumnDefinition Width="1.6*" MinWidth="100" />
+                            <ColumnDefinition Width="1.6*" MinWidth="100" />
+                            <ColumnDefinition Width="0.9*" MinWidth="80" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Port" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="Proto" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="2" Text="Process" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="3" Text="Bound to" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="4" Text="Reach" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+                        <ItemsControl x:Name="ListenList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:ListenVm">
+                                    <Grid Padding="8,3" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="0.7*" MinWidth="60" />
+                                            <ColumnDefinition Width="0.6*" MinWidth="52" />
+                                            <ColumnDefinition Width="1.6*" MinWidth="100" />
+                                            <ColumnDefinition Width="1.6*" MinWidth="100" />
+                                            <ColumnDefinition Width="0.9*" MinWidth="80" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Port}" Style="{StaticResource MonoStyle}" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Proto}" Style="{StaticResource MonoStyle}" />
+                                        <TextBlock Grid.Column="2" Text="{x:Bind Process}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3" Text="{x:Bind Bound}" Style="{StaticResource MonoStyle}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="4" Text="{x:Bind Reach}" FontSize="11" Foreground="{x:Bind ReachBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Active connections" Style="{StaticResource SectionHeaderStyle}" />
-                        <TextBox x:Name="ConnFilter" Grid.Column="1" MinWidth="180" PlaceholderText="Filter by process…"
+                        <TextBlock Text="Active connections" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
+                        <TextBox x:Name="ConnFilter" Grid.Column="1" MinWidth="170" PlaceholderText="Filter"
                                  TextChanged="ConnFilter_Changed" />
+                        <ToggleButton x:Name="ResolveToggle" Grid.Column="2" Content="Resolve names" Checked="Resolve_Toggled" Unchecked="Resolve_Toggled" />
+                        <Button x:Name="CopyConnButton" Grid.Column="3" Content="Copy" Click="CopyConn_Click" />
                     </Grid>
+                    <TextBlock x:Name="ConnSummary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
                     <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1.6*" MinWidth="90" />

@@ -1,10 +1,10 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "published": "2026-09-03",
-  "notes": "First public milestone: live telemetry, processes, tweaks, debloat, startup, services, repair, tools, crash insights.",
+  "notes": "Network deep-dive: listening ports, connection-state summary, opt-in reverse DNS, copy. New system report (powerx report and a Settings button), redacted by default. Installer now adds a desktop shortcut.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.0/PowerX-Setup-0.1.0-win-x64.msi",
-  "installerSha256": "271ff6f5790e7a99e2846dcf84aa77433cdef5d2928f21d18ef629030c544abd",
-  "installerBytes": 56175669
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.1/PowerX-Setup-0.1.1-win-x64.msi",
+  "installerSha256": "551759ff24fa701699326d1a08257a2a6c5467736168799e2b8f2ff21710e376",
+  "installerBytes": 56192053
 }

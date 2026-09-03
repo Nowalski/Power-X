@@ -280,7 +280,7 @@
 <main id="main">
 
   <section class="hero shell">
-    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.0, the first milestone build</p>
+    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.1, an early milestone build</p>
     <h1 class="r r2">The Windows control center <span class="em">that respects your machine</span></h1>
     <p class="lead r r3">
       Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one
@@ -420,6 +420,28 @@
              alt="The PowerX Crash insights page: a list of recent crashes and hangs, each expandable into observed facts, a likely cause, a confidence level, what to try, and what is still missing." />
       </figure>
     </div>
+
+    <div class="feature flip">
+      <div class="copy">
+        <p class="eyebrow reveal">Network</p>
+        <h2 class="reveal">See what your machine is talking to</h2>
+        <p class="reveal">
+          Live up and down rate, per-process connections with remote address and state, and a
+          listening-ports view that flags anything reachable from the network rather than just
+          loopback. Reverse DNS is opt-in and only ever runs for public addresses, so nothing
+          phones out unless you ask. Ping, traceroute and DNS lookups are built in.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Per-process connections</span>
+          <span class="tag">Listening ports</span>
+          <span class="tag">Opt-in reverse DNS</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-network.png" width="1560" height="1400"
+             alt="The PowerX Network page: live download and upload charts, adapter details, a listening-ports table showing which ports are reachable from the network, and a per-process connection list." />
+      </figure>
+    </div>
   </section>
 
   <section id="cli" class="shell cli">
@@ -438,7 +460,8 @@ dotnet run --project src/PowerX.Cli -- <span class="k">process list</span> --sor
 dotnet run --project src/PowerX.Cli -- <span class="k">scan</span>
 dotnet run --project src/PowerX.Cli -- <span class="k">tweak show</span> privacy.advertising-id
 dotnet run --project src/PowerX.Cli -- <span class="k">profile apply</span> lowspec --dry-run
-dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d</pre>
+dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d
+dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print</pre>
   </section>
 
   <section id="safety" class="safety">
@@ -462,7 +485,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d
   <section id="download" class="download">
     <div class="shell">
       <p class="eyebrow reveal">Download</p>
-      <h2 class="reveal">Get PowerX 0.1.0</h2>
+      <h2 class="reveal">Get PowerX 0.1.1</h2>
       <p class="lead prose reveal" style="margin-top:var(--s3)">
         64-bit Windows 10 (build 19041) or Windows 11. PowerX runs as administrator because it
         manages system state. It is not code-signed yet, so Windows SmartScreen will show an
@@ -484,7 +507,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d
 
       <p class="dl-note reveal">
         Every release lists a SHA-256 for each file. To check the installer:
-        <code>Get-FileHash .\PowerX-Setup-0.1.0-win-x64.msi</code> in PowerShell, and compare it to
+        <code>Get-FileHash .\PowerX-Setup-0.1.1-win-x64.msi</code> in PowerShell, and compare it to
         the value on the <a href="https://github.com/Nowalski/Power-X/releases" style="color:var(--accent-2)">releases page</a>.
       </p>
     </div>

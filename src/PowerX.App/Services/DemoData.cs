@@ -244,6 +244,72 @@ internal static class DemoData
         return new ProcessSnapshot(list, DateTimeOffset.Now, list.Count, list.Sum(p => p.ThreadCount));
     }
 
+    // ---- connections ---------------------------------------------------
+
+    private static NetworkConnection Est(string proc, int lport, string raddr, int rport) => new()
+    {
+        Protocol = "TCP", Pid = 1000, ProcessName = proc,
+        LocalAddress = "192.0.2.24", LocalPort = lport,
+        RemoteAddress = raddr, RemotePort = rport,
+        State = "ESTABLISHED", IsListening = false, Exposed = false,
+    };
+
+    private static NetworkConnection Listen(string proc, int port, string bound) => new()
+    {
+        Protocol = "TCP", Pid = 900, ProcessName = proc,
+        LocalAddress = bound, LocalPort = port,
+        RemoteAddress = null, RemotePort = 0,
+        State = "LISTEN", IsListening = true,
+        Exposed = !(bound.StartsWith("127.") || bound == "::1"),
+    };
+
+    public static IReadOnlyList<NetworkConnection> Connections() =>
+    [
+        Est("chrome.exe", 51840, "142.250.72.196", 443),
+        Est("chrome.exe", 51841, "142.250.72.196", 443),
+        Est("chrome.exe", 51852, "104.18.32.47", 443),
+        Est("chrome.exe", 51877, "151.101.1.140", 443),
+        Est("Code.exe", 52010, "20.190.190.1", 443),
+        Est("Code.exe", 52044, "140.82.113.25", 443),
+        Est("Teams.exe", 52101, "52.113.194.132", 443),
+        Est("Teams.exe", 52102, "13.107.42.14", 443),
+        Est("Spotify.exe", 52140, "35.186.224.25", 443),
+        Est("steam.exe", 27036, "155.133.248.53", 27021),
+        Est("Discord.exe", 52200, "162.159.128.233", 443),
+        Est("OneDrive.exe", 52233, "13.107.42.12", 443),
+        Est("PowerX.App.exe", 52990, "185.199.108.133", 443),
+        Listen("svchost.exe", 135, "0.0.0.0"),
+        Listen("System", 445, "0.0.0.0"),
+        Listen("svchost.exe", 5040, "0.0.0.0"),
+        Listen("svchost.exe", 7680, "0.0.0.0"),   // Delivery Optimization
+        Listen("spoolsv.exe", 49664, "0.0.0.0"),
+        Listen("steam.exe", 27060, "0.0.0.0"),
+        Listen("Code.exe", 6463, "127.0.0.1"),
+        Listen("Discord.exe", 6463, "127.0.0.1"),
+        Listen("PowerX.App.exe", 51999, "127.0.0.1"),
+        new()
+        {
+            Protocol = "TCP", Pid = 1200, ProcessName = "SearchHost.exe",
+            LocalAddress = "192.0.2.24", LocalPort = 52310,
+            RemoteAddress = "204.79.197.200", RemotePort = 443,
+            State = "TIME-WAIT", IsListening = false, Exposed = false,
+        },
+        new()
+        {
+            Protocol = "UDP", Pid = 1400, ProcessName = "svchost.exe",
+            LocalAddress = "0.0.0.0", LocalPort = 53,
+            RemoteAddress = null, RemotePort = 0,
+            State = "", IsListening = true, Exposed = true,
+        },
+        new()
+        {
+            Protocol = "UDP", Pid = 1400, ProcessName = "svchost.exe",
+            LocalAddress = "0.0.0.0", LocalPort = 5353,
+            RemoteAddress = null, RemotePort = 0,
+            State = "", IsListening = true, Exposed = true,
+        },
+    ];
+
     // ---- crashes --------------------------------------------------------
 
     public static IReadOnlyList<CrashInsight> Crashes()

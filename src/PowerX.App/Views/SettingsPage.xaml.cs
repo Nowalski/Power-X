@@ -180,6 +180,82 @@ public sealed partial class SettingsPage : Page
         CheckUpdatesButton.IsEnabled = true;
     }
 
+    private async void Report_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        ReportButton.IsEnabled = false;
+        ReportButton.Content = "Building…";
+        string md;
+        try
+        {
+            md = await Task.Run(() => SystemReport.BuildMarkdown());
+        }
+        catch (Exception ex)
+        {
+            App.Log("SystemReport", ex);
+            await Info("Could not build the report", ex.Message);
+            return;
+        }
+        finally
+        {
+            ReportButton.IsEnabled = true;
+            ReportButton.Content = "Create system report";
+        }
+
+        var box = new TextBox
+        {
+            Text = md, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
+            FontFamily = new FontFamily("Consolas, Cascadia Mono, monospace"), FontSize = 12,
+            Height = 420, MinWidth = 560,
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(box, ScrollBarVisibility.Auto);
+        ScrollViewer.SetHorizontalScrollBarVisibility(box, ScrollBarVisibility.Auto);
+
+        var dialog = new ContentDialog
+        {
+            Title = "System report",
+            Content = box,
+            PrimaryButtonText = "Save to Desktop",
+            SecondaryButtonText = "Copy",
+            CloseButtonText = "Close",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+
+        while (true)
+        {
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Secondary)
+            {
+                var pkg = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                pkg.SetText(md);
+                Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(pkg);
+                continue;   // keep the dialog open so they can also save
+            }
+            if (result == ContentDialogResult.Primary)
+            {
+                try
+                {
+                    var path = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                        $"PowerX-report-{DateTime.Now:yyyy-MM-dd-HHmm}.md");
+                    File.WriteAllText(path, md);
+                    Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    App.Log("SystemReport.Save", ex);
+                    await Info("Could not save the report", ex.Message);
+                }
+            }
+            return;
+        }
+    }
+
+    private async Task Info(string title, string body) => await new ContentDialog
+    {
+        Title = title, Content = body, CloseButtonText = "OK", XamlRoot = XamlRoot,
+    }.ShowAsync();
+
     private void OpenLogs_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         try

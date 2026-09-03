@@ -9,12 +9,32 @@ public sealed record NetworkConnection
     public required string Protocol { get; init; }     // TCP / TCPv6 / UDP / UDPv6
     public required int Pid { get; init; }
     public required string ProcessName { get; init; }
-    public required string LocalEndpoint { get; init; }
-    public required string RemoteEndpoint { get; init; }
-    public required string State { get; init; }
+
+    public required string LocalAddress { get; init; }
+    public required int LocalPort { get; init; }
+
+    /// <summary>Null for a listening socket or an unbound UDP endpoint.</summary>
+    public required string? RemoteAddress { get; init; }
+    public required int RemotePort { get; init; }
+
+    public required string State { get; init; }         // "" for UDP
+    public required bool IsListening { get; init; }     // TCP LISTEN, or a UDP endpoint with no peer
+    /// <summary>A listening socket bound to something other than loopback, so it is reachable from the network.</summary>
+    public required bool Exposed { get; init; }
+
+    public bool IsV6 => Protocol.EndsWith("v6", StringComparison.Ordinal);
+    public bool IsTcp => Protocol.StartsWith("TCP", StringComparison.Ordinal);
+
+    public string LocalEndpoint => Endpoint(LocalAddress, LocalPort);
+    public string RemoteEndpoint => RemoteAddress is null ? "*" : Endpoint(RemoteAddress, RemotePort);
+
+    private static string Endpoint(string addr, int port) =>
+        addr.Contains(':') ? $"[{addr}]:{port}" : $"{addr}:{port}";
 }
 
-/// <summary>Active TCP/UDP endpoints with the owning process — TCPView-style, documented APIs.</summary>
+public sealed record ConnectionSummary(int Total, int Established, int Listening, int TimeWait, int OtherTcp, int Udp);
+
+/// <summary>Active TCP/UDP endpoints with the owning process, TCPView style, documented APIs.</summary>
 public static class ConnectionProvider
 {
     private const uint ErrorInsufficientBuffer = 122;
@@ -35,13 +55,27 @@ public static class ConnectionProvider
         return result
             .OrderBy(c => c.ProcessName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(c => c.Protocol, StringComparer.Ordinal)
+            .ThenBy(c => c.LocalPort)
             .ToList();
     }
 
-    /// <summary>
-    /// Probe for the table size, allocate, and read — retrying if the table grew between the two
-    /// calls (a new socket appearing would otherwise make the whole read fail and return nothing).
-    /// </summary>
+    public static ConnectionSummary Summarize(IReadOnlyList<NetworkConnection> conns) => new(
+        conns.Count,
+        conns.Count(c => c.State == "ESTABLISHED"),
+        conns.Count(c => c.IsListening),
+        conns.Count(c => c.State == "TIME-WAIT"),
+        conns.Count(c => c.IsTcp && c.State is not ("ESTABLISHED" or "TIME-WAIT" or "LISTEN" or "")),
+        conns.Count(c => !c.IsTcp));
+
+    /// <summary>The listening sockets only, one row per bound port, sorted by port.</summary>
+    public static IReadOnlyList<NetworkConnection> ListeningPorts(IReadOnlyList<NetworkConnection> conns) => conns
+        .Where(c => c.IsListening)
+        .GroupBy(c => (c.Protocol, c.LocalPort, c.Pid))
+        .Select(g => g.First())
+        .OrderBy(c => c.LocalPort)
+        .ThenBy(c => c.Protocol, StringComparer.Ordinal)
+        .ToList();
+
     private static void ReadTable(bool udp, int af, Action<nint> parse)
     {
         uint size = 0;
@@ -60,8 +94,7 @@ public static class ConnectionProvider
                     : IpHlpApi.GetExtendedTcpTable(buf, ref size, true, af, IpHlpApi.TCP_TABLE_OWNER_PID_ALL, 0);
 
                 if (status == 0) { parse(buf); return; }
-                if (status != ErrorInsufficientBuffer) return;   // real failure — give up quietly
-                // else: the table grew; `size` was updated, loop and retry with the bigger buffer
+                if (status != ErrorInsufficientBuffer) return;
             }
             finally
             {
@@ -73,6 +106,35 @@ public static class ConnectionProvider
     private static string Name(IReadOnlyDictionary<int, string> names, int pid) =>
         names.GetValueOrDefault(pid, pid == 0 ? "System" : $"pid {pid}");
 
+    private static bool IsLoopback(string ip) => ip.StartsWith("127.", StringComparison.Ordinal) || ip == "::1";
+
+    private static NetworkConnection Tcp(string proto, int pid, string name, string localAddr, int localPort,
+        string remoteAddr, int remotePort, uint stateCode)
+    {
+        string state = stateCode < TcpStates.Length ? TcpStates[stateCode] : stateCode.ToString();
+        bool listening = state == "LISTEN";
+        return new NetworkConnection
+        {
+            Protocol = proto, Pid = pid, ProcessName = name,
+            LocalAddress = localAddr, LocalPort = localPort,
+            RemoteAddress = listening ? null : remoteAddr, RemotePort = listening ? 0 : remotePort,
+            State = state,
+            IsListening = listening,
+            Exposed = listening && !IsLoopback(localAddr),
+        };
+    }
+
+    private static NetworkConnection Udp(string proto, int pid, string name, string localAddr, int localPort) =>
+        new()
+        {
+            Protocol = proto, Pid = pid, ProcessName = name,
+            LocalAddress = localAddr, LocalPort = localPort,
+            RemoteAddress = null, RemotePort = 0,
+            State = "",
+            IsListening = true,   // an owned UDP endpoint is bound and can receive
+            Exposed = !IsLoopback(localAddr),
+        };
+
     private static unsafe void ReadTcp4(List<NetworkConnection> result, IReadOnlyDictionary<int, string> names) =>
         ReadTable(udp: false, IpHlpApi.AF_INET, buf =>
         {
@@ -81,15 +143,9 @@ public static class ConnectionProvider
             for (int i = 0; i < count; i++, row++)
             {
                 int pid = (int)row->OwningPid;
-                result.Add(new NetworkConnection
-                {
-                    Protocol = "TCP",
-                    Pid = pid,
-                    ProcessName = Name(names, pid),
-                    LocalEndpoint = $"{V4(row->LocalAddr)}:{Port(row->LocalPort)}",
-                    RemoteEndpoint = row->State == 2 ? "*" : $"{V4(row->RemoteAddr)}:{Port(row->RemotePort)}",
-                    State = row->State < TcpStates.Length ? TcpStates[row->State] : row->State.ToString(),
-                });
+                result.Add(Tcp("TCP", pid, Name(names, pid),
+                    V4(row->LocalAddr), Port(row->LocalPort),
+                    V4(row->RemoteAddr), Port(row->RemotePort), row->State));
             }
         });
 
@@ -101,15 +157,7 @@ public static class ConnectionProvider
             for (int i = 0; i < count; i++, row++)
             {
                 int pid = (int)row->OwningPid;
-                result.Add(new NetworkConnection
-                {
-                    Protocol = "UDP",
-                    Pid = pid,
-                    ProcessName = Name(names, pid),
-                    LocalEndpoint = $"{V4(row->LocalAddr)}:{Port(row->LocalPort)}",
-                    RemoteEndpoint = "*",
-                    State = "",
-                });
+                result.Add(Udp("UDP", pid, Name(names, pid), V4(row->LocalAddr), Port(row->LocalPort)));
             }
         });
 
@@ -122,15 +170,9 @@ public static class ConnectionProvider
             {
                 var r = Marshal.PtrToStructure<IpHlpApi.MIB_TCP6ROW_OWNER_PID>(buf + 4 + i * stride);
                 int pid = (int)r.OwningPid;
-                result.Add(new NetworkConnection
-                {
-                    Protocol = "TCPv6",
-                    Pid = pid,
-                    ProcessName = Name(names, pid),
-                    LocalEndpoint = $"[{new IPAddress(r.LocalAddr)}]:{Port(r.LocalPort)}",
-                    RemoteEndpoint = r.State == 2 ? "*" : $"[{new IPAddress(r.RemoteAddr)}]:{Port(r.RemotePort)}",
-                    State = r.State < TcpStates.Length ? TcpStates[r.State] : r.State.ToString(),
-                });
+                result.Add(Tcp("TCPv6", pid, Name(names, pid),
+                    new IPAddress(r.LocalAddr).ToString(), Port(r.LocalPort),
+                    new IPAddress(r.RemoteAddr).ToString(), Port(r.RemotePort), r.State));
             }
         });
 
@@ -143,15 +185,7 @@ public static class ConnectionProvider
             {
                 var r = Marshal.PtrToStructure<IpHlpApi.MIB_UDP6ROW_OWNER_PID>(buf + 4 + i * stride);
                 int pid = (int)r.OwningPid;
-                result.Add(new NetworkConnection
-                {
-                    Protocol = "UDPv6",
-                    Pid = pid,
-                    ProcessName = Name(names, pid),
-                    LocalEndpoint = $"[{new IPAddress(r.LocalAddr)}]:{Port(r.LocalPort)}",
-                    RemoteEndpoint = "*",
-                    State = "",
-                });
+                result.Add(Udp("UDPv6", pid, Name(names, pid), new IPAddress(r.LocalAddr).ToString(), Port(r.LocalPort)));
             }
         });
 

@@ -10,8 +10,8 @@
 
 ---
 
-> **Status: 0.1.0, the first milestone build.**
-> Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards (CPU, memory, GPU, network, processes), a tweak catalogue with one-click **profiles**, an app-debloat page, a Tools workbench and a diagnostics / repair runner.
+> **Status: 0.1.1, an early milestone build.**
+> Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards (CPU, memory, GPU, network, processes), a tweak catalogue with one-click **profiles**, an app-debloat page, a network view with listening ports and per-process connections, a Tools workbench and a diagnostics / repair runner.
 
 PowerX is **not another debloater**. It is a Windows utility that treats deep system monitoring, *safe* Windows configuration, and premium Windows-native design as equally important. It stays useful even if you never remove a single app.
 
@@ -35,6 +35,8 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 | **Debloat** | About ninety curated entries, Store and consumer apps only, no shell components, nothing pre-selected. Each entry states its removal class and how hard it is to reinstall. |
 | **Clean and repair** | Size-first disk cleanup with a per-category breakdown, and a runner for SFC, DISM, chkdsk, network reset and Windows Update repair with streamed output. |
 | **Crash insights** | Reads what Windows already recorded (WER, event logs, and only on request the metadata inside a crash dump) and separates observed facts from likely cause, with a confidence level. Never downloads symbols, never opens a dump in a debugger, never uploads anything. |
+| **Network** | Live up and down rate, per-process connections with remote address and state, a listening-ports view that flags what is reachable from the network, opt-in reverse DNS for public addresses, and built-in ping / traceroute / DNS. |
+| **System report** | `powerx report` or a Settings button writes hardware, OS, storage, applied tweaks, recent changes and an event-log and crash summary to one file for support. The user name, machine name and hardware identifiers are redacted, and you see the full text first. |
 | **Safety** | Detect, record, plan, show, apply, **verify**, log, undo. An append-only change history. Per-tweak revert. Honest about what cannot be undone. |
 
 ## Try the CLI
@@ -49,6 +51,7 @@ dotnet run --project src/PowerX.Cli -- tweak list
 dotnet run --project src/PowerX.Cli -- tweak show privacy.advertising-id
 dotnet run --project src/PowerX.Cli -- profile apply lowspec --dry-run
 dotnet run --project src/PowerX.Cli -- crashes --since 7d
+dotnet run --project src/PowerX.Cli -- report --print
 dotnet run --project src/PowerX.Cli -- history
 ```
 
@@ -83,7 +86,7 @@ installer/         WiX 5 source for the MSI
 site/              the homepage published to GitHub Pages
 bench/             BenchmarkDotNet harness for telemetry hot paths
 tests/             xUnit + FluentAssertions
-docs/              spec, architecture, design system, research, plans, audit, decisions
+docs/              spec, architecture, design system, decisions, research
 ```
 
 ## Principles

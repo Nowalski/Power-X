@@ -27,6 +27,7 @@ internal static class Help
         Row("powerx repair run <#>", "Run one repair job, streaming its output");
         Row("powerx memtest", "User-space RAM test  [--gb N] [--passes N]");
         Row("powerx crashes", "Recent crashes / hangs / bugchecks  [--since 7d] [--dumps] [show <id>]");
+        Row("powerx report", "Write a system report for support  [--out PATH] [--no-redact] [--print]");
         Row("powerx update", "Check the public repo for a newer version");
         Row("powerx history", "Change history timeline  [--revertable]");
         AnsiConsole.Write(grid);
