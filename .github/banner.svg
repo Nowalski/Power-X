@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="PowerX — Windows Control Center">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5f8fc"/>
+      <stop offset="1" stop-color="#e8eef7"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#63c8ff"/>
+      <stop offset="1" stop-color="#155fe0"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f8bf5"/>
+      <stop offset="1" stop-color="#38a6ff"/>
+    </linearGradient>
+    <clipPath id="fc"><rect x="10" y="10" width="1260" height="380" rx="26"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="400" fill="#eef2f8"/>
+  <rect x="10" y="10" width="1260" height="380" rx="26" fill="url(#bg)" stroke="#d8dfeb" stroke-width="1.5"/>
+
+  <g clip-path="url(#fc)" opacity="0.55">
+    <g fill="#c6cfdf">
+      <g id="d">
+        <circle cx="0" cy="0" r="2.3"/><circle cx="15" cy="0" r="2.3"/><circle cx="30" cy="0" r="2.3"/><circle cx="45" cy="0" r="2.3"/><circle cx="60" cy="0" r="2.3"/><circle cx="75" cy="0" r="2.3"/>
+        <circle cx="0" cy="15" r="2.3"/><circle cx="15" cy="15" r="2.3"/><circle cx="30" cy="15" r="2.3"/><circle cx="45" cy="15" r="2.3"/><circle cx="60" cy="15" r="2.3"/><circle cx="75" cy="15" r="2.3"/>
+        <circle cx="0" cy="30" r="2.3"/><circle cx="15" cy="30" r="2.3"/><circle cx="30" cy="30" r="2.3"/><circle cx="45" cy="30" r="2.3"/><circle cx="60" cy="30" r="2.3"/><circle cx="75" cy="30" r="2.3"/>
+        <circle cx="0" cy="45" r="2.3"/><circle cx="15" cy="45" r="2.3"/><circle cx="30" cy="45" r="2.3"/><circle cx="45" cy="45" r="2.3"/><circle cx="60" cy="45" r="2.3"/><circle cx="75" cy="45" r="2.3"/>
+      </g>
+      <use href="#d" transform="translate(52 44)"/>
+      <use href="#d" transform="translate(1150 44)"/>
+    </g>
+    <g fill="none" stroke="#cfd8e7" stroke-width="1.3">
+      <circle cx="60" cy="200" r="130"/><circle cx="60" cy="200" r="164"/><circle cx="60" cy="200" r="198"/>
+      <circle cx="1220" cy="200" r="130"/><circle cx="1220" cy="200" r="164"/><circle cx="1220" cy="200" r="198"/>
+    </g>
+  </g>
+
+  <!-- centered logo + wordmark row -->
+  <g transform="translate(330 88)">
+    <!-- logo, 176x176, centre (88,88) -->
+    <circle cx="88" cy="88" r="84" fill="none" stroke="url(#ring)" stroke-width="4" opacity="0.9"/>
+    <g fill="#37b7e8" opacity="0.9">
+      <rect x="66" y="28" width="5" height="12" rx="2"/>
+      <rect x="76" y="23" width="5" height="17" rx="2"/>
+      <rect x="86" y="17" width="5" height="23" rx="2"/>
+      <rect x="96" y="23" width="5" height="17" rx="2"/>
+      <rect x="106" y="30" width="5" height="10" rx="2"/>
+    </g>
+    <g transform="translate(88 92)">
+      <rect x="-62" y="-15" width="124" height="30" rx="9" fill="url(#blue)" transform="rotate(45)"/>
+      <rect x="-62" y="-15" width="124" height="30" rx="9" fill="url(#blue)" transform="rotate(-45)"/>
+    </g>
+    <path d="M50 150 H82 l7 -17 9 30 7 -12 h26" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <text x="210" y="120" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="98" font-weight="700" letter-spacing="0.5">
+      <tspan fill="#0f172a">Power</tspan><tspan fill="#1f6ff2">X</tspan>
+    </text>
+  </g>
+
+  <text x="640" y="310" text-anchor="middle" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="33" font-weight="700" fill="#1f6ff2" letter-spacing="0.4">Windows Control Center</text>
+
+  <text x="640" y="348" text-anchor="middle" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="18.5" fill="#5b6473">
+    Monitor &#160;&#183;&#160; Diagnose &#160;&#183;&#160; Optimize &#160;&#183;&#160; Configure &#160;&#183;&#160; Clean &#160;&#183;&#160; Repair &#160;&#183;&#160; Manage software &#160;&#183;&#160; Understand Windows
+  </text>
+
+  <path d="M492 374 H612 l9 -15 9 24 7 -18 7 11 h148" fill="none" stroke="#7fd4e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>

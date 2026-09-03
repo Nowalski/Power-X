@@ -1,19 +1,38 @@
-<h1 align="center">PowerX</h1>
-<p align="center"><em>A native Windows control center. Monitor, configure, debloat, clean, repair and understand Windows from one app.</em></p>
+<p align="center">
+  <img src=".github/banner.png" alt="PowerX — Windows Control Center" width="100%" />
+</p>
 
 <p align="center">
-  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;&nbsp;
-  <a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a> &nbsp;&nbsp;
-  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;&nbsp;
+  <a href="https://github.com/Nowalski/Power-X/releases/latest"><img src="https://img.shields.io/github/v/release/Nowalski/Power-X?sort=semver&label=release&color=1f6ff2" alt="Latest release" /></a>
+  <a href="https://github.com/Nowalski/Power-X/releases"><img src="https://img.shields.io/github/downloads/Nowalski/Power-X/total?label=downloads&color=1f6ff2" alt="Downloads" /></a>
+  <a href="https://github.com/Nowalski/Power-X/actions/workflows/ci.yml"><img src="https://github.com/Nowalski/Power-X/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Nowalski/Power-X?color=1f6ff2" alt="MIT licence" /></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6" alt="Windows 10 and 11" />
+  <img src="https://img.shields.io/badge/.NET-10-512BD4" alt=".NET 10" />
+</p>
+
+<p align="center">
+  <b><a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a></b> &nbsp;·&nbsp;
+  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Nowalski/Power-X/releases">What's new</a> &nbsp;·&nbsp;
+  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;·&nbsp;
   <a href="docs/DECISIONS.md">Decisions</a>
 </p>
 
 ---
 
-> **Status: 0.1.3, an early milestone build.**
-> Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards (CPU, memory, GPU, network, processes), a tweak catalogue with one-click **profiles**, an app-debloat page, a network view with listening ports and per-process connections, a Tools workbench and a diagnostics / repair runner.
+**PowerX** is a native Windows control center: Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one WinUI 3 app. It treats deep system monitoring, *safe* configuration, and premium Windows-native design as equally important, and stays useful even if you never remove a single app.
 
-PowerX is **not another debloater**. It is a Windows utility that treats deep system monitoring, *safe* Windows configuration, and premium Windows-native design as equally important. It stays useful even if you never remove a single app.
+> **Status: 0.1.3, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
+
+<p align="center">
+  <img src="site/assets/shot-home.png" width="49%" alt="Overview: live CPU, memory and GPU with a top-processes list and recommendations" />
+  <img src="site/assets/shot-processes.png" width="49%" alt="Processes: a dense table with resource-heat shading and a process tree" />
+</p>
+<p align="center">
+  <img src="site/assets/shot-tweaks.png" width="49%" alt="Tweaks: one-click profiles above an evidence-backed tweak catalogue" />
+  <img src="site/assets/shot-security.png" width="49%" alt="Security: Defender status and history, a scan, and an open hash lookup" />
+</p>
 
 ## Download
 
@@ -48,7 +67,6 @@ dotnet build
 dotnet run --project src/PowerX.Cli -- status
 dotnet run --project src/PowerX.Cli -- process list --sort cpu --top 20
 dotnet run --project src/PowerX.Cli -- scan
-dotnet run --project src/PowerX.Cli -- tweak list
 dotnet run --project src/PowerX.Cli -- tweak show privacy.advertising-id
 dotnet run --project src/PowerX.Cli -- profile apply lowspec --dry-run
 dotnet run --project src/PowerX.Cli -- crashes --since 7d
@@ -102,10 +120,11 @@ docs/              spec, architecture, design system, decisions, research
 
 ## Updates
 
-PowerX checks a small `version.json` in this repo once a day (opt-out in Settings). When a release
-has a hash-pinned installer it can download and run it after you confirm; otherwise it just points
-you at the releases page. It only ever fetches from this repo's own GitHub releases over HTTPS and
-verifies the size and SHA-256 before running anything.
+PowerX checks a small `version.json` in this repo once a day (opt-out in Settings). When a release has a hash-pinned installer it can download and run it after you confirm; otherwise it just points you at the releases page. It only ever fetches from this repo's own GitHub releases over HTTPS and verifies the size and SHA-256 before running anything.
+
+## Support the project
+
+PowerX is free and MIT-licensed, built in the open by one person. If it saved you time, [**GitHub Sponsors**](https://github.com/sponsors/Nowalski) helps pay for a code-signing certificate (so the SmartScreen warning goes away for everyone) and the time to keep building. Starring the repo and filing good bug reports helps just as much.
 
 ## Licence
 
