@@ -37,7 +37,8 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project src/PowerX.Cli --configuration Release --no-build -- tweak docs > docs/TWEAK_CATALOG.generated.md
-          if ((Get-Content docs/TWEAK_CATALOG.md -Raw) -ne (Get-Content docs/TWEAK_CATALOG.generated.md -Raw)) {
+          $norm = { (Get-Content $args[0] -Raw) -replace "`r`n", "`n" -replace "`n+$", "`n" }
+          if ((& $norm docs/TWEAK_CATALOG.md) -ne (& $norm docs/TWEAK_CATALOG.generated.md)) {
             Write-Error "docs/TWEAK_CATALOG.md is stale. Run: dotnet run --project src/PowerX.Cli -- tweak docs > docs/TWEAK_CATALOG.md"
             exit 1
           }
