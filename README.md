@@ -2,9 +2,9 @@
 <p align="center"><em>A native Windows control center. Monitor, configure, debloat, clean, repair and understand Windows from one app.</em></p>
 
 <p align="center">
-  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;·&nbsp;
-  <a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a> &nbsp;·&nbsp;
-  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;·&nbsp;
+  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;&nbsp;
+  <a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a> &nbsp;&nbsp;
+  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;&nbsp;
   <a href="docs/DECISIONS.md">Decisions</a>
 </p>
 

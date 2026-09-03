@@ -1,12 +1,12 @@
-# Windows APIs — telemetry & control surface
+# Windows APIs, telemetry & control surface
 
-Preference order: **documented Win32 → documented perf counters (PDH) → WMI/CIM (only where it's the sane source) → NT APIs (justified, tested) → kernel driver (never, in-box)**.
+Preference order: **documented Win32 then documented perf counters (PDH) then WMI/CIM (only where it's the sane source) then NT APIs (justified, tested) then kernel driver (never, in-box)**.
 
 ## CPU
 
 | Need | API | Status | Notes |
 |---|---|---|---|
-| Total CPU % | `GetSystemTimes` (idle/kernel/user, delta) | **in use** | kernel includes idle; busy = k+u−idle |
+| Total CPU % | `GetSystemTimes` (idle/kernel/user, delta) | **in use** | kernel includes idle; busy = k+u-idle |
 | Per-logical-processor % | `NtQuerySystemInformation(SystemProcessorPerformanceInformation=8)` | **in use** | array of `SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION`; also gives DPC/interrupt time |
 | Topology (cores, SMT, cache, groups) | `GetLogicalProcessorInformationEx` | planned | needed for P/E-core + NUMA + socket display |
 | Hybrid P/E core class | `GetSystemCpuSetInformation` (EfficiencyClass) | planned | class 0 = E, higher = P; capability-detect |
@@ -37,28 +37,28 @@ Preference order: **documented Win32 → documented perf counters (PDH) → WMI/
 | Control | `OpenProcess` + `TerminateProcess` / `NtSuspendProcess` / `NtResumeProcess` / `SetPriorityClass` / `SetProcessAffinityMask` / `SetProcessInformation(ProcessPowerThrottling)` for Efficiency mode | planned (M2) |
 
 ## GPU
-- `IDXGIFactory`/`IDXGIAdapter3::QueryVideoMemoryInfo` — dedicated/shared VRAM, budget. **Documented.**
+- `IDXGIFactory`/`IDXGIAdapter3::QueryVideoMemoryInfo`, dedicated/shared VRAM, budget. **Documented.**
 - Per-engine utilisation: PDH `\GPU Engine(*)\Utilization Percentage`, `\GPU Process Memory(*)`, `\GPU Adapter Memory(*)`. **Documented, this is what Task Manager uses.**
 - Temp/power/clocks: **vendor only** (NVML, ADLX, IGCL). Optional provider modules, capability-detected. Never invent.
 
 ## Storage
 - `\PhysicalDisk(*)` and `\LogicalDisk(*)` PDH counters (active time, read/write bytes, queue, latency).
-- `DeviceIoControl(IOCTL_STORAGE_QUERY_PROPERTY)` — bus type, model, SSD/HDD, TRIM.
+- `DeviceIoControl(IOCTL_STORAGE_QUERY_PROPERTY)`, bus type, model, SSD/HDD, TRIM.
 - SMART / disk health: `IOCTL_STORAGE_PREDICT_FAILURE`, or `MSStorageDriver_FailurePredict*` WMI. Label reliability.
 
 ## Network
-- `GetIfTable2` / `GetIfEntry2` — per-interface octets, link speed, oper status (delta for rate).
-- `GetExtendedTcpTable` / `GetExtendedUdpTable` (`*_OWNER_PID`) — endpoints + owning PID (TCPView).
-- `GetAdaptersAddresses` — addressing, DNS, gateway.
-- Per-connection byte rates: ETW `Microsoft-Windows-Kernel-Network` (needs a session) — later.
+- `GetIfTable2` / `GetIfEntry2`, per-interface octets, link speed, oper status (delta for rate).
+- `GetExtendedTcpTable` / `GetExtendedUdpTable` (`*_OWNER_PID`), endpoints + owning PID (TCPView).
+- `GetAdaptersAddresses`, addressing, DNS, gateway.
+- Per-connection byte rates: ETW `Microsoft-Windows-Kernel-Network` (needs a session), later.
 
 ## Sensors / power / battery
 - Battery: `GetSystemPowerStatus`, `CallNtPowerInformation(SystemBatteryState)`.
 - Energy estimation: `CallNtPowerInformation` / process energy via `SystemProcessInformation` power fields + EnergyEstimationEngine counters.
-- Temps: **no reliable in-box CPU/GPU temp API.** `MSAcpi_ThermalZoneTemperature` (WMI) is ACPI thermal zones — often just one, sometimes bogus. Treat as `Approximate` at best; prefer vendor provider modules.
+- Temps: **no reliable in-box CPU/GPU temp API.** `MSAcpi_ThermalZoneTemperature` (WMI) is ACPI thermal zones, often just one, sometimes bogus. Treat as `Approximate` at best; prefer vendor provider modules.
 
 ## ETW (later)
-`Microsoft-Windows-Kernel-Process`, `-Kernel-Network`, `-Kernel-Disk`, `-Kernel-File`, `TCPIP`. Real-time session via `TraceEvent`. Gives Process-Monitor-class file/registry/network activity and accurate per-process disk. Cost: a trace session + parsing budget — introduce deliberately.
+`Microsoft-Windows-Kernel-Process`, `-Kernel-Network`, `-Kernel-Disk`, `-Kernel-File`, `TCPIP`. Real-time session via `TraceEvent`. Gives Process-Monitor-class file/registry/network activity and accurate per-process disk. Cost: a trace session + parsing budget, introduce deliberately.
 
 ## Registry
-`Microsoft.Win32.Registry` for HKCU tweaks (no elevation). HKLM tweaks go through the elevated broker. All tweak keys documented in `TWEAK_CATALOG.md` — no bare constants.
+`Microsoft.Win32.Registry` for HKCU tweaks (no elevation). HKLM tweaks go through the elevated broker. All tweak keys documented in `TWEAK_CATALOG.md`, no bare constants.

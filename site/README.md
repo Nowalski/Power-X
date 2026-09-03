@@ -1,33 +1,27 @@
 # PowerX homepage
 
-Static, self-contained marketing page for GitHub Pages. No build step, no dependencies —
-`index.html` carries its own CSS; everything else is in `assets/`.
+The static page published to GitHub Pages at https://nowalski.github.io/Power-X/. No build
+step and no dependencies: `index.html` carries its own CSS, everything else is in `assets/`.
 
 ## Assets
 
 | File | Purpose |
 |---|---|
-| `assets/mark.png` / `mark-180.png` | Logo mark (512 / 180 px) |
-| `assets/wordmark.png` | Horizontal logo + wordmark |
-| `assets/favicon.ico` / `favicon.png` | Favicons |
-| `assets/shot-*.png` | App screenshots — regenerate from a real run when the UI changes |
+| `assets/mark.png`, `mark-180.png` | Logo mark (512 and 180 px) |
+| `assets/wordmark.png` | Logo plus wordmark |
+| `assets/favicon.ico`, `favicon.png` | Favicons |
+| `assets/shot-*.png` | App screenshots. Regenerate from a real run when the UI changes. |
 
-## Deploy (GitHub Pages)
+## Deploy
 
-The workflow at [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) publishes this
-folder on every push to `main` that touches `site/`. To turn it on:
+[`.github/workflows/pages.yml`](../.github/workflows/pages.yml) publishes this folder on every
+push to `main` that touches `site/`. It needs **Settings, Pages, Build and deployment, Source:
+GitHub Actions** set once on the repo.
 
-1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. Push to `main`. The site goes live at `https://nowalski.github.io/Power-X/`.
-
-To preview locally, just open `index.html` in a browser, or:
-
-```
-cd site && python -m http.server 8000
-```
+To preview locally, open `index.html` in a browser, or run `python -m http.server 8000` from
+this folder.
 
 ## Honesty rules
 
-This page must never claim a release that hasn't happened, link to a download that doesn't
-exist, or overstate what works. Keep the "Milestone 1 — not yet released" badge until there
-is a real tagged release.
+The page must not claim a release that has not happened, link to a download that does not
+exist, or overstate what works. When there is no current release, say so.

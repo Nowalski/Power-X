@@ -20,26 +20,26 @@
 | hellzerg/optimizer | GPL-3.0 | **No** | Ideas only |
 | builtbybel/* | MIT (varies per repo) | Case by case | App-inventory framing |
 | thedogecraft/sparkle | verify | Case by case | Feature-set comparison; verify tweak provenance before any adoption |
-| System Informer | MIT (core) / GPL bits historically (Process Hacker) — **verify per file** | **Only MIT-clean files, w/ decision here** | Concepts: handle/thread/module inspector layout, per-process services. Re-implement against NT APIs. |
+| System Informer | MIT (core) / GPL bits historically (Process Hacker), **verify per file** | **Only MIT-clean files, w/ decision here** | Concepts: handle/thread/module inspector layout, per-process services. Re-implement against NT APIs. |
 | Sysinternals (Process Explorer, Autoruns, TCPView, RAMMap, VMMap) | Proprietary (MS EULA), **not open source** | **No** | Concepts and the documented APIs behind them |
 | Microsoft PowerToys | MIT | Yes, w/ notice | Shell patterns, command-palette UX, release/signing hygiene. WinUI approach. |
 | TMOG / Task Manager OG | verify (site, not obviously OSS) | **No** unless a clear OSS licence is found | Visualization *ideas* only |
 
-## Dependencies (NuGet) — all permissive
+## Dependencies (NuGet), all permissive
 | Package | Licence |
 |---|---|
 | Spectre.Console | MIT |
 | YamlDotNet | MIT |
 | xunit, FluentAssertions, NSubstitute | Apache-2.0 / MIT / BSD-3 |
 | Microsoft.Extensions.* | MIT |
-| (future) Microsoft.WindowsAppSDK | MIT + proprietary redistributables under the MS SDK licence — standard for WinUI apps |
+| (future) Microsoft.WindowsAppSDK | MIT + proprietary redistributables under the MS SDK licence, standard for WinUI apps |
 
 ## Fonts / assets
-Segoe UI Variable + Segoe Fluent Icons ship with Windows and are licensed for use **on Windows** only — fine for an app that runs on Windows; do not embed/redistribute. Provide a fallback stack. Any custom icons: original work or CC0/MIT sets, tracked here.
+Segoe UI Variable + Segoe Fluent Icons ship with Windows and are licensed for use **on Windows** only, fine for an app that runs on Windows; do not embed/redistribute. Provide a fallback stack. Any custom icons: original work or CC0/MIT sets, tracked here.
 
 ## Action items before v0.1 tag
 - [x] Confirm MIT with project owner; add `LICENSE`.
 - [x] Re-verify Winhance and Sparkle licence text at time of any feature parity work.
-- [x] Per-file check of any System Informer concept we implement (we expect to write our own against NT APIs — no lift).
+- [x] Per-file check of any System Informer concept we implement (we expect to write our own against NT APIs, no lift).
 - [x] Generate `THIRD-PARTY-NOTICES.md` from the restore graph in CI.
 - Full Permission to use Codes from all MIT of them GTweak only research code and Visual,
