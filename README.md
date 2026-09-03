@@ -10,7 +10,7 @@
 
 ---
 
-> **Status: 0.1.2, an early milestone build.**
+> **Status: 0.1.3, an early milestone build.**
 > Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards (CPU, memory, GPU, network, processes), a tweak catalogue with one-click **profiles**, an app-debloat page, a network view with listening ports and per-process connections, a Tools workbench and a diagnostics / repair runner.
 
 PowerX is **not another debloater**. It is a Windows utility that treats deep system monitoring, *safe* Windows configuration, and premium Windows-native design as equally important. It stays useful even if you never remove a single app.

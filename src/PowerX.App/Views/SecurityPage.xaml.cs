@@ -178,18 +178,19 @@ public sealed partial class SecurityPage : Page
 
     // ---------------------------------------------------------------- hash check
 
-    private async void Browse_Click(object sender, RoutedEventArgs e)
+    private void Browse_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var picker = new Windows.Storage.Pickers.FileOpenPicker();
-            picker.FileTypeFilter.Add("*");
-            if (App.Window is { } w)
-                WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(w));
-            var file = await picker.PickSingleFileAsync();
-            if (file is not null) PathBox.Text = file.Path;
+            nint hwnd = App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+            string? path = Services.NativeFileDialog.PickFile(hwnd, "Choose a file to check");
+            if (!string.IsNullOrEmpty(path)) PathBox.Text = path;
         }
-        catch (Exception ex) { App.Log("Security.Browse", ex); }
+        catch (Exception ex)
+        {
+            App.Log("Security.Browse", ex);
+            Show(InfoBarSeverity.Warning, "Could not open the file picker", "Type or paste the file path instead.");
+        }
     }
 
     private async void Check_Click(object sender, RoutedEventArgs e)

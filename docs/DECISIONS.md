@@ -12,7 +12,7 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 3. **Scan**: launches `MpCmdRun.exe -Scan`, streams the output, and cancel kills it.
 4. **Hash check**: a file's SHA-256 looked up against CIRCL hashlookup (`hashlookup.circl.lu`), a free, open, no-key database of known files. It reports "known good", "low trust", "known malicious", or "not catalogued, which proves nothing". Only the hash is sent, over HTTPS, on an explicit click, and results are cached.
 **Why** People asked for malware scanning. A half-working antivirus that people trust instead of Defender is actively harmful, so PowerX will not build one: no signatures, no quarantine, no "you are clean" all-clear, no auto-removal. What is safe and useful is showing the protection that is already there, what it caught, and an open second-opinion hash lookup. VirusTotal and MalwareBazaar were considered but both now need an API key; CIRCL needs none.
-**Status** Active (0.1.2).
+**Status** Active (0.1.2). **0.1.3:** the "Check a file" Browse button used WinUI `FileOpenPicker`, which silently does nothing in an unpackaged elevated app. Replaced with the classic `GetOpenFileNameW` (comdlg32) in `App/Services/NativeFileDialog.cs`.
 
 ## D-024. `powerx report` and the network deep-dive: read-only, redacted by default, no automatic lookups
 **Date** 2026-09-03
