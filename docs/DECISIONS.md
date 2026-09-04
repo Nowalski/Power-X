@@ -4,6 +4,18 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 
 ---
 
+## D-028. Scheduled-tasks curator, drivers, firewall viewer, event log, config sharing, per-process network, delayed startup
+**Date** 2026-09-04
+**Decision** 0.1.7. Seven features. Six are read-only; config import applies tweaks behind a preview.
+- **Scheduled tasks** (new page). `TaskInventory` enumerates every task with its schedule and last result; `ScheduledTaskCatalog` carries about forty curated stances, matched by a substring of the task path: telemetry and reporting, third-party updaters, Windows components (left alone), and everything else (shown, unlabelled). Turning a task off reuses the reversible enable/disable and never deletes it. `powerx tasks`.
+- **Drivers** (new page). `DriverInventory` reads `Win32_PnPSignedDriver` and flags drivers three or more years old, and unsigned ones. Microsoft's inbox drivers are dated old on purpose and are never flagged. PowerX never downloads or installs a driver. `powerx drivers`.
+- **Firewall** (new page, read-only). `FirewallRules` reads `HNetCfg.FwPolicy2`: whether the firewall is on per profile, and every rule, with a flag on an enabled inbound-allow rule that opens a port for any program on the public profile and was not created by an app for its own sandbox. PowerX does not add, change or delete rules. `powerx firewall`.
+- **Event log** (new page). `EventLogBrowser` groups recent Application, System and Setup errors by source and id, and adds a plain-language note for about twenty-five common ids. `powerx events`.
+- **Share this setup** (Settings card). Export the tweaks you have applied to a small `powerx.config` JSON file with no machine detail; import shows exactly what it would change and asks before applying the tweak half. `powerx config export | import`.
+- **Per-process network use** (Network page card). A private ETW session on `Microsoft-Windows-Kernel-Network`, via the Microsoft TraceEvent library, attributes throughput to a process. Needs administrator rights; the card is hidden if the session cannot start.
+- **Delayed startup**. The Startup page menu can convert an eligible Run entry into a scheduled task that starts the program a chosen number of seconds after sign-in, and disable the original. Undo removes the task and re-enables the entry. Pairs with the boot-impact data: the slow program still starts, just after the desktop is usable.
+**Status** Active (0.1.7). 112 tests.
+
 ## D-027. Config-drift snapshots, storage explorer, battery, pending restart, WinSxS
 **Date** 2026-09-04
 **Decision** 0.1.5. Four read-only features, plus an audit pass.

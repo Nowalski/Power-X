@@ -10,6 +10,7 @@ namespace PowerX.App.Views;
 
 public sealed record ConnVm(string Name, string Proto, string Local, string Remote, string State);
 public sealed record ListenVm(string Port, string Proto, string Process, string Bound, string Reach, Brush ReachBrush);
+public sealed record ProcNetVm(string Name, string Down, string Up, string Total);
 
 public sealed partial class NetworkPage : Page
 {
@@ -30,10 +31,34 @@ public sealed partial class NetworkPage : Page
         PageLayout.CenterCap(this, Root, 1500);
     }
 
+    private PowerX.Core.Telemetry.NetworkUsageEtw? _netUsage;
+    private Dictionary<int, (long sent, long recv)> _lastNetTotals = new();
+    private DateTimeOffset _lastNetAt;
+
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         _onPage = true;
         _subscription = TelemetryHub.Instance.Subscribe(OnTick);
+
+        if (!Services.DemoData.Active)
+        {
+            _ = Task.Run(() =>
+            {
+                var etw = new PowerX.Core.Telemetry.NetworkUsageEtw();
+                bool ok = etw.Start();
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (!_onPage) { etw.Dispose(); return; }
+                    _netUsage = ok ? etw : null;
+                    if (!ok) { etw.Dispose(); ProcNetCard.Visibility = Visibility.Collapsed; }
+                    else { _lastNetTotals = new(); _lastNetAt = DateTimeOffset.UtcNow; ProcNetCard.Visibility = Visibility.Visible; }
+                });
+            });
+        }
+        else
+        {
+            ProcNetCard.Visibility = Visibility.Visible;
+        }
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -42,6 +67,9 @@ public sealed partial class NetworkPage : Page
         _subscription?.Dispose();
         _diagCts?.Cancel();
         _resolveCts?.Cancel();
+        var etw = _netUsage;
+        _netUsage = null;
+        if (etw is not null) _ = Task.Run(etw.Dispose);
     }
 
     // ---------------------------------------------------------------- diagnostics
@@ -105,9 +133,49 @@ public sealed partial class NetworkPage : Page
         DownSpark.SetData(down.ToArray(), scale);
         UpSpark.SetData(up.ToArray(), scale);
 
+        RefreshProcNet();
+
         if (_tick++ % 3 != 0) return;
         RebuildInterfaces(net);
         _ = RefreshConnectionsAsync();
+    }
+
+    private void RefreshProcNet()
+    {
+        if (Services.DemoData.Active)
+        {
+            ProcNetList.ItemsSource = DemoData.ProcNet();
+            ProcNetSummary.Text = "Live per-process throughput from an ETW session (needs administrator rights).";
+            return;
+        }
+        if (_netUsage is not { Running: true } etw) return;
+
+        var now = DateTimeOffset.UtcNow;
+        double secs = Math.Max(0.5, (now - _lastNetAt).TotalSeconds);
+        var totals = etw.Totals();
+        var names = TelemetryHub.Instance.LastProcesses?.Processes
+            .GroupBy(p => p.Pid).ToDictionary(g => g.Key, g => g.First().Name) ?? new();
+
+        var rows = new List<(string name, double down, double up, long total)>();
+        var next = new Dictionary<int, (long, long)>();
+        foreach (var t in totals)
+        {
+            next[t.Pid] = (t.BytesSent, t.BytesReceived);
+            _lastNetTotals.TryGetValue(t.Pid, out var prev);
+            double up = Math.Max(0, t.BytesSent - prev.sent) / secs;
+            double down = Math.Max(0, t.BytesReceived - prev.recv) / secs;
+            if (t.BytesSent + t.BytesReceived == 0) continue;
+            rows.Add((names.GetValueOrDefault(t.Pid, $"PID {t.Pid}"), down, up, t.BytesSent + t.BytesReceived));
+        }
+        _lastNetTotals = next;
+        _lastNetAt = now;
+
+        var top = rows.OrderByDescending(r => r.down + r.up).ThenByDescending(r => r.total).Take(15).ToList();
+        ProcNetList.ItemsSource = top.Select(r => new ProcNetVm(
+            r.name, Fmt.Rate(r.down), Fmt.Rate(r.up), Fmt.Bytes((ulong)r.total))).ToList();
+        ProcNetSummary.Text = top.Count == 0
+            ? "No process has sent or received anything yet."
+            : $"Top {top.Count} by current rate. Totals are since you opened this page.";
     }
 
     // ---------------------------------------------------------------- connections

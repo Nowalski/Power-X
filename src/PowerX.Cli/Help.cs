@@ -34,6 +34,11 @@ internal static class Help
         Row("powerx reboot", "Whether a restart is pending, and why");
         Row("powerx battery", "Battery wear, cycle count and runtime");
         Row("powerx storage <path>", "Size the folders under a path, largest first");
+        Row("powerx drivers", "Driver inventory with an age flag  [--old]");
+        Row("powerx tasks", "Scheduled tasks with a curated stance  [--telemetry] [--reviewed]");
+        Row("powerx firewall", "Firewall status and broad inbound rules  [--all]");
+        Row("powerx events", "Recent event-log errors, grouped and explained  [--24h] [--30d] [--warnings]");
+        Row("powerx config export|import", "Save or apply a shareable tweak setup  (import --apply)");
         Row("powerx update", "Check the public repo for a newer version");
         Row("powerx history", "Change history timeline  [--revertable]");
         AnsiConsole.Write(grid);

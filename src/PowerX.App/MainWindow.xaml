@@ -59,6 +59,9 @@
                 <muxc:NavigationViewItem Content="Network" Tag="network">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE968;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Firewall" Tag="firewall">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xEA18;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
 
                 <muxc:NavigationViewItemHeader Content="Software" />
                 <muxc:NavigationViewItem Content="Programs" Tag="programs">
@@ -70,8 +73,14 @@
                 <muxc:NavigationViewItem Content="Startup" Tag="startup">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE7B5;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Scheduled tasks" Tag="tasks">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE823;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Services" Tag="services">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xF0E3;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Drivers" Tag="drivers">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE950;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
 
                 <muxc:NavigationViewItemHeader Content="Optimize &amp; fix" />
@@ -89,6 +98,9 @@
                 </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Crash insights" Tag="crashes">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE7BA;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Event log" Tag="events">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE7C3;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Security" Tag="security">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE72E;" /></muxc:NavigationViewItem.Icon>

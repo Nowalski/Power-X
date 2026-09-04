@@ -27,7 +27,7 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 - **Effort** M, **Risk** low (remote lookups gated), **Prior art** TCPView, System Informer.
 - **Verdict** Shipped in 0.1.1: live rate charts, per-process connections, a listening-ports view with a network-reachable flag, a connection-state summary, opt-in reverse DNS, and copy. Per-connection byte rate needs ETW and is a fast-follow.
 
-### 3. Scheduled Tasks viewer/curator
+### 3. Scheduled Tasks viewer/curator  [SHIPPED 0.1.7]
 - **Value** Medium-high. Lots of OEM + telemetry tasks; users want them visible.
 - Curate a **known-task catalog** (like the debloat catalog) with a stance per task; leave the
  long tail read-only with "disable" (reversible) and never "delete".
@@ -46,7 +46,7 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 
 ## Tier 2, good, later
 
-### 5. Driver inventory + update *check* (no auto-install)  [PARTLY SHIPPED 0.1.5]
+### 5. Driver inventory + update *check* (no auto-install)  [SHIPPED 0.1.7]
 - 0.1.5's config snapshot records each `Win32_PnPSignedDriver` name and version, so the "What
  changed" page flags a driver version bump between snapshots. Still to do: a standalone driver
  list with age flags and a "check with the vendor" link.
@@ -73,7 +73,7 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
  (user-initiated, output streamed like the repair runner). Reuse `InstalledPrograms`.
 - **Effort** M, **Risk** low-medium (winget must be present; handle its absence).
 
-### 10. Config profiles: import / export / share
+### 10. Config profiles: import / export / share  [SHIPPED 0.1.7]
 - Export applied tweaks + selected debloat as a reviewable JSON; import shows a diff and
  confirmation before applying (never silent). Lets people share a setup without a script.
 - **Effort** S-M, **Risk** low (import is just `ApplyMany` behind a preview), builds on D-018.
@@ -96,7 +96,7 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 - **Storage treemap** (WizTree-style), the folder-size table shipped 0.1.5 as the Storage
  explorer page (`FolderSizer`, drill-down, `powerx storage`). A true treemap and an MFT-speed
  scan are the remaining upgrade.
-- **Firewall rule viewer**, read-first; adding/removing rules is a security surface, gate hard.
+- **Firewall rule viewer**, SHIPPED 0.1.7 read-only (`FirewallRules`, `HNetCfg.FwPolicy2`). Add/remove still not built.
 - **Hosts-file manager with known blocklists**, must not ship opinionated blocklists; only
  edit + backup + toggle.
 - **Battery report / power usage**, SHIPPED 0.1.5 (`BatteryHealth`: wear, cycles, runtime from

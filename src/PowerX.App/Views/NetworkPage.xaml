@@ -108,6 +108,44 @@
                 </StackPanel>
             </Border>
 
+            <Border x:Name="ProcNetCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Per-process network use" Style="{StaticResource SectionHeaderStyle}" />
+                    <TextBlock x:Name="ProcNetSummary" Style="{StaticResource MutedStyle}" Text="Measuring…" />
+                    <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" MinWidth="110" />
+                            <ColumnDefinition Width="1*" MinWidth="80" />
+                            <ColumnDefinition Width="1*" MinWidth="80" />
+                            <ColumnDefinition Width="1.2*" MinWidth="90" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Process" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="Down" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="2" Text="Up" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="3" Text="Total this session" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                    <ItemsControl x:Name="ProcNetList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:ProcNetVm">
+                                <Grid Padding="8,3" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" MinWidth="110" />
+                                        <ColumnDefinition Width="1*" MinWidth="80" />
+                                        <ColumnDefinition Width="1*" MinWidth="80" />
+                                        <ColumnDefinition Width="1.2*" MinWidth="90" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Down}" Style="{StaticResource MonoStyle}" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Up}" Style="{StaticResource MonoStyle}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind Total}" Style="{StaticResource MonoStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <Grid ColumnSpacing="8">

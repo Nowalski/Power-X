@@ -35,6 +35,11 @@ try
         "reboot" or "pending-reboot" => RebootCommand.Run(rest),
         "battery" => BatteryCommand.Run(rest),
         "storage" or "du" => StorageCommand.Run(rest),
+        "drivers" => DriversCommand.Run(rest),
+        "tasks" => TasksCommand.Run(rest),
+        "firewall" => FirewallCommand.Run(rest),
+        "events" => EventsCommand.Run(rest),
+        "config" => ConfigCommand.Run(rest),
         "version" or "--version" => Version(),
         _ => Unknown(args[0]),
     };

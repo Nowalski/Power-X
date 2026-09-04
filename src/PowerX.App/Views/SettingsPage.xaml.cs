@@ -292,4 +292,96 @@ public sealed partial class SettingsPage : Page
             CloseButtonText = "OK", XamlRoot = XamlRoot,
         }.ShowAsync();
     }
+
+    // ---------------------------------------------------------------- share this setup
+
+    private nint Hwnd => App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+
+    private async void Export_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var bundle = await Task.Run(ConfigBundleService.Export);
+            if (bundle.AppliedTweaks.Count == 0)
+            {
+                await Info("Nothing to export", "No PowerX tweaks are currently applied, so there is nothing to share yet.");
+                return;
+            }
+
+            string? path = Services.NativeFileDialog.SaveFile(Hwnd,
+                $"powerx-setup-{DateTime.Now:yyyy-MM-dd}.json", "json", "Save the setup file");
+            if (string.IsNullOrEmpty(path)) return;
+
+            await File.WriteAllTextAsync(path, ConfigBundleService.ToJson(bundle));
+            await Info("Exported", $"Saved {bundle.AppliedTweaks.Count} tweak(s) to\n{path}");
+        }
+        catch (Exception ex)
+        {
+            App.Log("Config.Export", ex);
+            await Info("Export failed", ex.Message);
+        }
+    }
+
+    private async void Import_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string? path = Services.NativeFileDialog.PickFile(Hwnd, "Choose a PowerX setup file");
+            if (string.IsNullOrEmpty(path)) return;
+
+            var bundle = ConfigBundleService.FromJson(await File.ReadAllTextAsync(path));
+            if (bundle is null) { await Info("Not a setup file", "That file is not a PowerX setup export."); return; }
+
+            var installed = await Task.Run(() =>
+                new PowerX.Core.Debloat.AppInventory().Enumerate()
+                    .Select(a => new InstalledAppLite(a.DisplayName, a.PackageFamilyName))
+                    .ToList());
+            var plan = ConfigBundleService.Plan(bundle, installed);
+
+            if (!plan.AnyAction)
+            {
+                await Info("Nothing to do",
+                    "Every tweak in this setup is already applied here"
+                    + (plan.Warnings.Count > 0 ? ".\n\n" + string.Join("\n", plan.Warnings) : "."));
+                return;
+            }
+
+            var body = new StackPanel { Spacing = 6 };
+            void Section(string title, IReadOnlyList<BundlePlanItem> items)
+            {
+                if (items.Count == 0) return;
+                body.Children.Add(new TextBlock { Text = title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+                foreach (var it in items.Take(20))
+                    body.Children.Add(new TextBlock { Text = "  " + it.Label, FontSize = 12, TextWrapping = TextWrapping.Wrap });
+                if (items.Count > 20) body.Children.Add(new TextBlock { Text = $"  and {items.Count - 20} more", FontSize = 12 });
+            }
+            Section($"Apply {plan.TweaksToApply.Count} tweak(s)", plan.TweaksToApply);
+            Section($"Already applied ({plan.TweaksAlreadyApplied.Count})", plan.TweaksAlreadyApplied);
+            Section($"Remove {plan.AppsToRemove.Count} app(s) — use the Debloat page", plan.AppsToRemove);
+            foreach (var w in plan.Warnings)
+                body.Children.Add(new TextBlock { Text = w, FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                    Foreground = (Brush)Application.Current.Resources["SystemFillColorCautionBrush"] });
+
+            var dlg = new ContentDialog
+            {
+                Title = "Import setup",
+                Content = new ScrollViewer { Content = body, MaxHeight = 380 },
+                PrimaryButtonText = plan.TweaksToApply.Count > 0 ? $"Apply {plan.TweaksToApply.Count} tweak(s)" : "Close",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
+            };
+            if (await dlg.ShowAsync() != ContentDialogResult.Primary || plan.TweaksToApply.Count == 0) return;
+
+            var result = await Task.Run(() => ConfigBundleService.ApplyTweaks(plan));
+            await Info("Import complete",
+                $"{result.Succeeded} applied, {result.AlreadyConfigured} already set, {result.Failed} failed."
+                + (result.Restart.Any ? "\n\nSome changes need Explorer or a sign-out to take effect." : "")
+                + (plan.AppsToRemove.Count > 0 ? $"\n\n{plan.AppsToRemove.Count} app(s) can be removed on the Debloat page." : ""));
+        }
+        catch (Exception ex)
+        {
+            App.Log("Config.Import", ex);
+            await Info("Import failed", ex.Message);
+        }
+    }
 }

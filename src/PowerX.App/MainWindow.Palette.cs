@@ -24,9 +24,12 @@ public sealed partial class MainWindow
 
         void Nav(string title, string tag) => list.Add(new($"Go to {title}", "Page", () => { Navigate(tag); return Task.CompletedTask; }));
         Nav("Home", "home"); Nav("Processes", "processes"); Nav("CPU", "cpu"); Nav("Memory", "memory");
-        Nav("GPU", "gpu"); Nav("Network", "network"); Nav("Programs", "programs"); Nav("Startup", "startup"); Nav("Services", "services");
+        Nav("GPU", "gpu"); Nav("Network", "network"); Nav("Firewall", "firewall");
+        Nav("Programs", "programs"); Nav("Startup", "startup"); Nav("Scheduled tasks", "tasks");
+        Nav("Services", "services"); Nav("Drivers", "drivers");
         Nav("Tweaks", "tweaks"); Nav("Debloat", "debloat"); Nav("Repair", "repair"); Nav("Tools", "tools");
-        Nav("Storage explorer", "storage"); Nav("What changed", "changes"); Nav("Change history", "history");
+        Nav("Storage explorer", "storage"); Nav("What changed", "changes"); Nav("Event log", "events");
+        Nav("Crash insights", "crashes"); Nav("Change history", "history");
 
         void Act(string title, Func<PowerX.Core.Processes.ActionResult> run) =>
             list.Add(new(title, "Action", async () =>

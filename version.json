@@ -1,10 +1,10 @@
 {
-  "version": "0.1.6",
+  "version": "0.1.7",
   "published": "2026-09-04",
-  "notes": "Hardening pass over the 0.1.5 features. The 'What changed' page no longer fails to draw a diff on machines where two installed programs share a display name (common on a gaming PC with several bundled VC++ redistributables). Storage explorer sizes a full drive much faster. The component-store analysis has a time limit and reports DISM's own error text. Battery health reads the runtime estimate correctly. Plus smaller fixes to the pending-restart check.",
+  "notes": "Seven features. Scheduled tasks: a curated view of every task with a stance on the well-known ones (telemetry, third-party updaters) and a reversible on/off. Drivers: an inventory that flags drivers three or more years old, and unsigned ones. Firewall: a read-only view of the rules with a flag on broad inbound-allow holes. Event log: recent errors grouped by source with a plain-language note for the common ones. Share this setup: export your applied tweaks to a small file and apply them on another PC behind a preview. Per-process network use on the Network page (needs administrator rights). And you can now delay a slow startup entry until after sign-in from the Startup page.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.6/PowerX-Setup-0.1.6-win-x64.msi",
-  "installerSha256": "40c03520afcf108b87d5b575ec7498cc11fa36f390a8780af2604232fa542337",
-  "installerBytes": 56245301
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.7/PowerX-Setup-0.1.7-win-x64.msi",
+  "installerSha256": "fea32f87210238f7d614a49b782ca5592df0f610f9b363a1201a3fd93c7ee488",
+  "installerBytes": 56405826
 }

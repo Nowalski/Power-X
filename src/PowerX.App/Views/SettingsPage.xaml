@@ -114,6 +114,18 @@
             </Border>
 
             <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Share this setup" Style="{StaticResource SectionHeaderStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="ExportButton" Content="Export setup..." Click="Export_Click" />
+                        <Button x:Name="ImportButton" Content="Import setup..." Click="Import_Click" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="Export writes the tweaks you have applied (and, optionally, the curated apps you removed) to a small JSON file you can move to another PC or share. Import shows exactly what it would change and asks before applying anything. No machine or user detail is included." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="6">
                     <TextBlock Text="About" Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock x:Name="AboutText" Style="{StaticResource MonoStyle}" />

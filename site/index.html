@@ -532,6 +532,50 @@
              alt="The PowerX Security page: Microsoft Defender's protection state, the threats it has caught with dates and severity, quick and full scan buttons, and a box to check a file's hash against an open database." />
       </figure>
     </div>
+
+    <div class="feature">
+      <div class="copy">
+        <p class="eyebrow reveal">Scheduled tasks</p>
+        <h2 class="reveal">Turn off the tasks you never asked for</h2>
+        <p class="reveal">
+          Every scheduled task in one place, with PowerX's position on the well-known ones: the
+          telemetry and reporting tasks you can safely turn off, the third-party updaters that mean
+          updating that app yourself, and the Windows components it leaves alone. Turning a task
+          off is fully reversible and never deletes it.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Curated stance</span>
+          <span class="tag">Reversible on / off</span>
+          <span class="tag">Windows tasks protected</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-tasks.png" width="1600" height="1050"
+             alt="The PowerX Scheduled tasks page: tasks grouped as telemetry and reporting, third-party updaters, and Windows components, each with a short note and an on/off switch." />
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="copy">
+        <p class="eyebrow reveal">Firewall &amp; drivers &amp; the event log</p>
+        <h2 class="reveal">More windows onto what Windows knows</h2>
+        <p class="reveal">
+          A read-only view of the firewall rules that flags a broad inbound hole somebody punched.
+          A driver inventory that calls out the ones three or more years old, or unsigned. And a
+          friendlier event log that groups recent errors by source and adds a plain-language note
+          for the ones people actually worry about. PowerX changes none of it.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Firewall rule viewer</span>
+          <span class="tag">Driver age flags</span>
+          <span class="tag">Explained event log</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-events.png" width="1600" height="1050"
+             alt="The PowerX Event log page: recent errors and warnings grouped by source and id, each with a count, a date range and a plain-language explanation." />
+      </figure>
+    </div>
   </section>
 
   <section id="cli" class="shell cli">
@@ -553,7 +597,12 @@ dotnet run --project src/PowerX.Cli -- <span class="k">profile apply</span> lows
 dotnet run --project src/PowerX.Cli -- <span class="k">crashes</span> --since 7d
 dotnet run --project src/PowerX.Cli -- <span class="k">report</span> --print
 dotnet run --project src/PowerX.Cli -- <span class="k">security</span>
-dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\System32\curl.exe</pre>
+dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\System32\curl.exe
+dotnet run --project src/PowerX.Cli -- <span class="k">tasks</span> --telemetry
+dotnet run --project src/PowerX.Cli -- <span class="k">drivers</span> --old
+dotnet run --project src/PowerX.Cli -- <span class="k">firewall</span>
+dotnet run --project src/PowerX.Cli -- <span class="k">events</span> --24h
+dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-setup.json</pre>
   </section>
 
   <section id="safety" class="safety">

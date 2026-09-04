@@ -16,7 +16,7 @@
     <Company>PowerX</Company>
     <Copyright>Copyright (c) PowerX contributors</Copyright>
     <RepositoryUrl>https://github.com/Nowalski/Power-X</RepositoryUrl>
-    <VersionPrefix>0.1.6</VersionPrefix>
+    <VersionPrefix>0.1.7</VersionPrefix>
     <!-- CA1001: several WinUI Page subclasses and the app-lifetime TelemetryHub hold a
          CancellationTokenSource field. Frame gives no Dispose hook for a Page; every one of
          these tokens is cancelled on navigate-away and disposed in the owning async op's finally. -->

@@ -23,7 +23,7 @@
 
 **PowerX** is a native Windows control center: Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one WinUI 3 app. It treats deep system monitoring, *safe* configuration, and premium Windows-native design as equally important, and stays useful even if you never remove a single app.
 
-> **Status: 0.1.6, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
+> **Status: 0.1.7, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
 
 <p align="center">
   <img src="site/assets/shot-home.png" width="49%" alt="Overview: live CPU, memory and GPU with a top-processes list and recommendations" />
@@ -52,7 +52,10 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 | **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree), disks (SMART, temperature, endurance). |
 | **Configure** | A **declarative, evidence-backed tweak engine** (35 tweaks). Every tweak states what it does, why you might want it, the downside, restart needs, whether it is reversible, and whether it is recommended. Curated **profiles** (Recommended, Privacy, Potato mode, Gaming, Restore defaults) apply a visible set in one click with a preview diff. No folklore gamer tweaks ([why](docs/research/TWEAK_RESEARCH.md)). |
 | **Debloat** | About ninety curated entries, Store and consumer apps only, no shell components, nothing pre-selected. Each entry states its removal class and how hard it is to reinstall. |
-| **Startup** | Every autostart entry in one list, toggled the reversible way Task Manager does it, plus the boot-performance data Windows already records: how long the last boot took, how it compares to your recent average, and a High / Medium / Low impact tag on the entries Windows measured as slow. |
+| **Startup & tasks** | Every autostart entry with reversible toggles and the boot-performance data (last-boot time, vs your average, per-entry impact); a "delay after sign-in" option for a slow entry; and a **Scheduled tasks** page with a curated stance on the well-known telemetry and updater tasks. |
+| **Drivers & firewall** | A driver inventory that flags drivers three or more years old, and unsigned ones (PowerX never installs a driver). A **read-only** firewall-rules view that flags a broad inbound-allow hole. |
+| **Event log** | Recent Application and System errors grouped by source and id, with a plain-language note for the common ones. |
+| **Share this setup** | Export the tweaks you have applied to a small file and apply them on another PC behind a preview. |
 | **Clean and repair** | Size-first disk cleanup with a per-category breakdown, a component-store (WinSxS) analysis with the safe Microsoft cleanup, and a runner for SFC, DISM, chkdsk, network reset and Windows Update repair with streamed output. |
 | **Storage explorer** | Point it at a drive or folder and it sizes every child recursively, largest first; click to drill down. Junctions and symlinks are skipped. |
 | **What changed** | A daily background snapshot of your configuration (startup entries, scheduled tasks, services, programs, drivers, tweaks) with an added / removed / changed diff between any two. Local-only JSON. |
@@ -80,6 +83,11 @@ dotnet run --project src/PowerX.Cli -- changes
 dotnet run --project src/PowerX.Cli -- storage C:\Users
 dotnet run --project src/PowerX.Cli -- reboot
 dotnet run --project src/PowerX.Cli -- battery
+dotnet run --project src/PowerX.Cli -- tasks --telemetry
+dotnet run --project src/PowerX.Cli -- drivers --old
+dotnet run --project src/PowerX.Cli -- firewall
+dotnet run --project src/PowerX.Cli -- events --24h
+dotnet run --project src/PowerX.Cli -- config export my-setup.json
 dotnet run --project src/PowerX.Cli -- history
 ```
 

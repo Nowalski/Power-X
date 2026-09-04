@@ -526,6 +526,104 @@ internal static class DemoData
         ]);
     }
 
+    // ---- per-process network -----------------------------------
+
+    public static IReadOnlyList<PowerX.App.Views.ProcNetVm> ProcNet() =>
+    [
+        new("chrome.exe", "4.8 MB/s", "312 KB/s", "1.9 GB"),
+        new("steam.exe", "22.1 MB/s", "180 KB/s", "6.2 GB"),
+        new("Spotify.exe", "196 KB/s", "12 KB/s", "84 MB"),
+        new("Discord.exe", "44 KB/s", "38 KB/s", "121 MB"),
+        new("svchost.exe", "8 KB/s", "2 KB/s", "9 MB"),
+        new("OneDrive.exe", "0/s", "410 KB/s", "77 MB"),
+    ];
+
+    // ---- drivers --------------------------------------------------
+
+    public static IReadOnlyList<DriverEntry> Drivers()
+    {
+        DateTimeOffset Ago(int months) => DateTimeOffset.Now.AddMonths(-months);
+        return
+        [
+            new() { Device = "NVIDIA GeForce RTX 4070", Version = "32.0.15.6094", Date = Ago(2), Provider = "NVIDIA", DeviceClass = "Display", Signed = true },
+            new() { Device = "Realtek PCIe GbE Family Controller", Version = "10.68.0620.2024", Date = Ago(8), Provider = "Realtek", DeviceClass = "Net", Signed = true },
+            new() { Device = "Intel Wi-Fi 6E AX211 160MHz", Version = "23.60.1.2", Date = Ago(5), Provider = "Intel", DeviceClass = "Net", Signed = true },
+            new() { Device = "Samsung NVMe SSD Controller", Version = "3.3.0.2003", Date = Ago(41), Provider = "Samsung", DeviceClass = "SCSIAdapter", Signed = true },
+            new() { Device = "Realtek High Definition Audio", Version = "6.0.9502.1", Date = Ago(19), Provider = "Realtek Semiconductor Corp.", DeviceClass = "MEDIA", Signed = true },
+            new() { Device = "Logitech G HUB Mouse Filter", Version = "1.2.4.0", Date = Ago(63), Provider = "Logitech", DeviceClass = "HIDClass", Signed = false },
+            new() { Device = "AMD SMBus", Version = "5.12.0.38", Date = Ago(37), Provider = "Advanced Micro Devices, Inc", DeviceClass = "System", Signed = true },
+            new() { Device = "Standard NVM Express Controller", Version = "10.0.26100.1", Date = Ago(6), Provider = "Microsoft", DeviceClass = "SCSIAdapter", Signed = true },
+            new() { Device = "USB Composite Device", Version = "10.0.26100.1", Date = Ago(6), Provider = "Microsoft", DeviceClass = "USB", Signed = true },
+        ];
+    }
+
+    // ---- scheduled tasks ----------------------------------------
+
+    public static IReadOnlyList<ScheduledTaskInfo> ScheduledTasks()
+    {
+        ScheduledTaskInfo T(string folder, string name, bool on, string action, string triggers, TaskStance stance)
+        {
+            var s = ScheduledTaskCatalog.StanceFor(folder + "\\" + name, out var note);
+            return new ScheduledTaskInfo
+            {
+                Path = folder + "\\" + name, Name = name, Folder = folder, Enabled = on,
+                Action = action, Triggers = triggers,
+                LastRun = DateTimeOffset.Now.AddHours(-9),
+                Stance = stance, StanceNote = note ?? StanceNote(stance),
+            };
+        }
+        return
+        [
+            T(@"\Microsoft\Windows\Customer Experience Improvement Program", "Consolidator", true, "%windir%\\system32\\wsqmcons.exe", "daily", TaskStance.Telemetry),
+            T(@"\Microsoft\Windows\Application Experience", "Microsoft Compatibility Appraiser", true, "compattelrunner.exe", "daily, at logon", TaskStance.Telemetry),
+            T(@"\Microsoft\Windows\Windows Error Reporting", "QueueReporting", true, "wermgr.exe -upload", "on an event", TaskStance.Telemetry),
+            T(@"\", "GoogleUpdateTaskMachineUA", true, "C:\\Program Files (x86)\\Google\\Update\\GoogleUpdate.exe /ua /installsource scheduler", "daily", TaskStance.Optional),
+            T(@"\", "MicrosoftEdgeUpdateTaskMachineCore", true, "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe /c", "at logon, daily", TaskStance.Optional),
+            T(@"\", "NvTmRep_CrashReport3_...", true, "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvtmrep.exe", "daily", TaskStance.Telemetry),
+            T(@"\Microsoft\Windows\UpdateOrchestrator", "Schedule Scan", true, "usoclient.exe StartScan", "daily", TaskStance.KeepSystem),
+            T(@"\Microsoft\Windows\Windows Defender", "Windows Defender Scheduled Scan", true, "MpCmdRun.exe Scan", "weekly", TaskStance.KeepSystem),
+            T(@"\Microsoft\Windows\SystemRestore", "SR", true, "srtasks.exe ExecuteScheduledSPPCreation", "daily, at boot", TaskStance.KeepSystem),
+            T(@"\Microsoft\Windows\Defrag", "ScheduledDefrag", true, "defrag.exe -c -h", "weekly", TaskStance.KeepSystem),
+            T(@"\", "Adobe Acrobat Update Task", true, "AdobeARM.exe", "at logon, daily", TaskStance.Optional),
+            T(@"\", "OneDrive Standalone Update Task-S-1-5-21", true, "OneDriveSetup.exe /update", "daily", TaskStance.Optional),
+            T(@"\Custom", "BackupScript", true, "C:\\Scripts\\backup.cmd", "daily", TaskStance.Unreviewed),
+        ];
+    }
+
+    private static string? StanceNote(TaskStance s) => s switch
+    {
+        TaskStance.KeepSystem => "Windows needs this. PowerX will not offer to disable it.",
+        _ => null,
+    };
+
+    // ---- firewall ----------------------------------------------
+
+    public static IReadOnlyList<FirewallRule> FirewallRules() =>
+    [
+        new() { Name = "Core Networking - DNS (UDP-Out)", Direction = FwDirection.Out, Action = FwAction.Allow, Enabled = true, Protocol = "UDP", RemotePorts = "53", Domain = true, Private = true, Public = true, Grouping = "Core Networking" },
+        new() { Name = "Remote Desktop - User Mode (TCP-In)", Direction = FwDirection.In, Action = FwAction.Allow, Enabled = false, Protocol = "TCP", LocalPorts = "3389", Domain = true, Private = true, Public = true, Grouping = "Remote Desktop" },
+        new() { Name = "Allow inbound 7777 (game server)", Direction = FwDirection.In, Action = FwAction.Allow, Enabled = true, Protocol = "TCP", LocalPorts = "7777", Domain = true, Private = true, Public = true },
+        new() { Name = "Steam", Program = @"C:\Program Files (x86)\Steam\steam.exe", Direction = FwDirection.In, Action = FwAction.Allow, Enabled = true, Protocol = "any", Domain = true, Private = true, Public = true, Grouping = "Steam" },
+        new() { Name = "Spotify", Program = @"C:\Users\user\AppData\Roaming\Spotify\Spotify.exe", Direction = FwDirection.Out, Action = FwAction.Allow, Enabled = true, Protocol = "any", Private = true },
+        new() { Name = "Block old-app.exe outbound", Program = @"C:\Legacy\old-app.exe", Direction = FwDirection.Out, Action = FwAction.Block, Enabled = true, Protocol = "any", Domain = true, Private = true, Public = true },
+        new() { Name = "File and Printer Sharing (SMB-In)", Direction = FwDirection.In, Action = FwAction.Allow, Enabled = true, Protocol = "TCP", LocalPorts = "445", Private = true, Grouping = "File and Printer Sharing" },
+    ];
+
+    // ---- event log --------------------------------------------
+
+    public static IReadOnlyList<EventGroup> EventGroups()
+    {
+        var now = DateTimeOffset.Now;
+        return
+        [
+            new() { Log = "System", Provider = "Microsoft-Windows-Kernel-Power", EventId = 41, Level = EventLevel2.Critical, Count = 1, FirstSeen = now.AddDays(-2), LastSeen = now.AddDays(-2), SampleMessage = "The system has rebooted without cleanly shutting down first.", Explanation = "The PC restarted without shutting down cleanly (power loss, a hard lock, or a hold of the power button). If it repeats, suspect the PSU, overheating, RAM, or a driver." },
+            new() { Log = "System", Provider = "DCOM", EventId = 10016, Level = EventLevel2.Warning, Count = 34, FirstSeen = now.AddDays(-6), LastSeen = now.AddHours(-3), SampleMessage = "The application-specific permission settings do not grant Local Activation permission...", Explanation = "A DCOM permission warning. Almost always harmless and safe to ignore; Microsoft has said as much." },
+            new() { Log = "Application", Provider = "Application Error", EventId = 1000, Level = EventLevel2.Error, Count = 3, FirstSeen = now.AddDays(-4), LastSeen = now.AddHours(-20), SampleMessage = "Faulting application name: game.exe, version 1.4.2.0", Explanation = "A desktop program crashed. The Crash insights page has the details." },
+            new() { Log = "System", Provider = "Service Control Manager", EventId = 7009, Level = EventLevel2.Error, Count = 2, FirstSeen = now.AddDays(-3), LastSeen = now.AddDays(-1), SampleMessage = "A timeout was reached (30000 milliseconds) while waiting for the OVRService service to connect.", Explanation = "A service failed to start or timed out. If it names a driver or a feature you use, worth investigating; many are optional services that fail quietly." },
+            new() { Log = "System", Provider = "Microsoft-Windows-DNS-Client", EventId = 1014, Level = EventLevel2.Warning, Count = 11, FirstSeen = now.AddDays(-5), LastSeen = now.AddHours(-8), SampleMessage = "Name resolution for the name cdn.example.net timed out.", Explanation = "A DNS name resolution timed out. Network or DNS server hiccup." },
+        ];
+    }
+
     // ---- storage explorer -----------------------------------------
 
     public static IReadOnlyList<FolderEntry> FolderEntries(string path)

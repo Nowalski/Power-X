@@ -197,6 +197,43 @@ public sealed partial class StartupPage : Page
             remove.Click += async (_, _) => await RemoveEntry(entry);
             flyout.Items.Add(remove);
         }
+
+        if (!Services.DemoData.Active && StartupDelay.CanDelay(entry))
+        {
+            flyout.Items.Add(new MenuFlyoutSeparator());
+            if (StartupDelay.IsDelayed(entry))
+            {
+                var undo = new MenuFlyoutItem { Text = "Remove start-up delay" };
+                undo.Click += async (_, _) =>
+                {
+                    var r = StartupDelay.Undelay(entry);
+                    if (!r.Success) await Info("Could not remove the delay", r.Message);
+                    await LoadAsync();
+                };
+                flyout.Items.Add(undo);
+            }
+            else
+            {
+                var delaySub = new MenuFlyoutSubItem { Text = "Delay after sign-in" };
+                foreach (var (label, secs) in new[] { ("30 seconds", 30), ("1 minute", 60), ("2 minutes", 120), ("3 minutes", 180) })
+                {
+                    var it = new MenuFlyoutItem { Text = label, Tag = secs };
+                    it.Click += async (s, _) =>
+                    {
+                        int sec = (int)((MenuFlyoutItem)s).Tag;
+                        var r = StartupDelay.Delay(entry, sec);
+                        await Info(r.Success ? "Delay added" : "Could not add the delay",
+                            r.Success
+                                ? $"\"{entry.Name}\" will now start {sec}s after you sign in. The original entry is disabled; undo from this menu."
+                                : r.Message);
+                        await LoadAsync();
+                    };
+                    delaySub.Items.Add(it);
+                }
+                flyout.Items.Add(delaySub);
+            }
+        }
+
         menuBtn.Flyout = flyout;
 
         var grid = new Grid { ColumnSpacing = 10 };

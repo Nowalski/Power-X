@@ -1,0 +1,63 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.DriversPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PowerX.App.Views">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Drivers" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Loading..." />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search devices, vendors..." TextChanged="Filter_Changed" />
+            <ToggleButton x:Name="OldOnly" Grid.Column="1" Content="Old only" Click="OldOnly_Click" />
+            <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
+        </Grid>
+
+        <ListView Grid.Row="2" x:Name="List" SelectionMode="None" ShowsScrollingPlaceholders="True">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0,3" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:DriverVm">
+                    <Border Style="{StaticResource CardStyle}" Padding="14,10">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{x:Bind Device}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="{x:Bind Meta}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="7,1,7,2"
+                                    Background="{ThemeResource LayerFillColorDefaultBrush}" Visibility="{x:Bind FlagVisible}">
+                                <TextBlock Text="{x:Bind Flag}" FontSize="11" Foreground="{x:Bind FlagBrush}" />
+                            </Border>
+                            <TextBlock Grid.Column="2" Text="{x:Bind Version}" VerticalAlignment="Center"
+                                       Style="{StaticResource MonoStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

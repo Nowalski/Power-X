@@ -65,4 +65,20 @@
              Condition="'@(_VcCrt)' == ''" />
   </Target>
 
+  <!--
+    TraceEvent is pulled in for the per-process network view, but it also drags in DIA / symbol
+    resolution and ETL-merge native libraries (~16 MB) that PowerX never touches — it only opens a
+    real-time session. Drop them from the publish output.
+  -->
+  <Target Name="TrimTraceEventExtras" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="
+          $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.DiaSymReader')) or
+          $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.Diagnostics.NETCore.Client')) or
+          '%(Filename)%(Extension)' == 'msdia140.dll' or
+          '%(Filename)%(Extension)' == 'KernelTraceControl.dll'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

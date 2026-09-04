@@ -1,0 +1,73 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.FirewallPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PowerX.App.Views">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Firewall" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Loading..." />
+        </StackPanel>
+
+        <InfoBar x:Name="OffBar" Grid.Row="1" IsOpen="False" IsClosable="False" Severity="Warning" />
+
+        <Grid Grid.Row="2" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search rules, programs..." TextChanged="Filter_Changed" />
+            <ComboBox x:Name="DirBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="Filter_Toggled">
+                <ComboBoxItem Content="All" />
+                <ComboBoxItem Content="Inbound" />
+                <ComboBoxItem Content="Outbound" />
+            </ComboBox>
+            <ToggleButton x:Name="ReviewOnly" Grid.Column="2" Content="Worth a look" Click="Toggle_Click" />
+            <Button x:Name="OpenFw" Grid.Column="3" Content="Windows Firewall" Click="OpenFw_Click" />
+        </Grid>
+
+        <ListView Grid.Row="3" x:Name="List" SelectionMode="None" ShowsScrollingPlaceholders="True">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0,3" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:FirewallVm">
+                    <Border Style="{StaticResource CardStyle}" Padding="14,10">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                    <Border CornerRadius="4" Padding="7,1,7,2" VerticalAlignment="Center"
+                                            Background="{ThemeResource LayerFillColorDefaultBrush}" Visibility="{x:Bind FlagVisible}">
+                                        <TextBlock Text="worth a look" FontSize="11" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind Detail}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{x:Bind Tag}" VerticalAlignment="Center"
+                                       Style="{StaticResource MonoStyle}" Foreground="{x:Bind TagBrush}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>
