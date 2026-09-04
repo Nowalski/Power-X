@@ -42,8 +42,10 @@ public sealed partial class ProcessInspector : UserControl, IDisposable
         if (d.Company is not null) Chips.Children.Add(Chip(d.Company, (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
         if (d.ImagePath is null) Chips.Children.Add(Chip("path unavailable", (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
 
+        var about = PowerX.Core.Processes.ProcessKnowledge.Explain(HeaderName.Text, d.ImagePath, d.Company);
         var rows = new List<KV>
         {
+            new("About", about.Summary),
             new("Description", d.Description ?? "—"),
             new("Company", d.Company ?? "—"),
             new("Version", d.Version ?? "—"),

@@ -526,6 +526,27 @@ internal static class DemoData
         ]);
     }
 
+    // ---- health check --------------------------------------------
+
+    public static HealthReport HealthReport()
+    {
+        Recommendation R(string cat, string title, string detail, RecommendationImpact impact, string tag, string label) =>
+            new() { Category = cat, Title = title, Detail = detail, Impact = impact, NavigateTag = tag, NavigateLabel = label };
+
+        var items = new List<Recommendation>
+        {
+            R("Restart", "A restart is pending", "Windows Update installed something that needs a restart.", RecommendationImpact.High, "tools", "Open Tools"),
+            R("Firewall", "1 broad inbound rule worth a look", "An enabled rule allows any program in over the public network on a specific port.", RecommendationImpact.Medium, "firewall", "Open Firewall"),
+            R("Event log", "1 critical event in the last 7 days", "Often an unexpected shutdown or a serious driver fault.", RecommendationImpact.Medium, "events", "Open Event log"),
+            R("Drivers", "2 drivers are five years old or more", "Worth checking the vendor for a newer version.", RecommendationImpact.Medium, "drivers", "Open Drivers"),
+            R("Startup", "1 startup app measured as high boot impact", "Consider disabling or delaying the slowest ones.", RecommendationImpact.Low, "startup", "Open Startup"),
+            R("Startup", "1 startup entry points at a missing program", "Left behind by an app that was removed without cleaning up after itself. Safe to remove.", RecommendationImpact.Low, "startup", "Open Startup"),
+            R("Scheduled tasks", "3 telemetry tasks enabled", "Reporting tasks you can safely turn off if you would rather they didn't run.", RecommendationImpact.Low, "tasks", "Open Scheduled tasks"),
+            R("Tweaks", "2 recommended tweaks are not applied", "Conservative, broadly safe changes you have not turned on yet.", RecommendationImpact.Low, "tweaks", "Open Tweaks"),
+        };
+        return new PowerX.Core.Diagnostics.HealthReport { When = DateTimeOffset.Now, Items = items, Deep = false };
+    }
+
     // ---- per-process network -----------------------------------
 
     public static IReadOnlyList<PowerX.App.Views.ProcNetVm> ProcNet() =>

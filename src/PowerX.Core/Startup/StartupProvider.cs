@@ -25,6 +25,11 @@ public sealed record StartupEntry
     public string? ExecutablePath { get; init; }
     public string? Publisher { get; init; }
 
+    /// <summary>The entry names a specific program file (an absolute path was found in the
+    /// command), and that file does not exist — almost always a leftover from an app that was
+    /// uninstalled without cleaning up after itself. Safe to remove.</summary>
+    public bool Broken { get; init; }
+
     public string SourceLabel => Source switch
     {
         StartupSource.RunUser => "Registry · this user",
@@ -87,28 +92,33 @@ public static class StartupProvider
         entry.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine);
 
     /// <summary>
-    /// True when <see cref="Remove"/> can delete this entry. Only RunOnce values, which can't be
-    /// disabled any other way. Regular Run entries use the reversible toggle; folder / task
-    /// entries are left for the user to handle at their source.
+    /// True when <see cref="Remove"/> can delete this entry: a RunOnce value (which can't be
+    /// disabled any other way), or a regular Run entry that is <see cref="StartupEntry.Broken"/> —
+    /// it points at a program that no longer exists, so disabling it would leave dead weight
+    /// behind instead of cleaning it up. Folder / task entries are left for the user to handle
+    /// at their source.
     /// </summary>
     public static bool CanRemove(StartupEntry entry) =>
-        entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine;
+        entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine
+        || (entry.Broken && entry.Source is StartupSource.RunUser or StartupSource.RunMachine);
 
     private const string RemovedBackup = @"SOFTWARE\PowerX\RemovedRunOnce";
 
     /// <summary>
-    /// Delete a RunOnce value so it won't run at the next sign-in. The name + value + hive are
-    /// stashed under HKCU\SOFTWARE\PowerX\RemovedRunOnce first so it can be put back by hand.
+    /// Delete a Run or RunOnce value so it won't run again. The name + value + hive are stashed
+    /// under HKCU\SOFTWARE\PowerX\RemovedRunOnce first so it can be put back by hand.
     /// </summary>
     public static ActionResult Remove(StartupEntry entry)
     {
         if (!CanRemove(entry))
-            return ActionResult.Fail("Only RunOnce entries can be removed here. Use the On/Off switch for the others.");
+            return ActionResult.Fail("This entry can't be removed here. Use the On/Off switch instead.");
         try
         {
-            var root = entry.Source == StartupSource.RunOnceMachine ? Registry.LocalMachine : Registry.CurrentUser;
-            using var key = root.OpenSubKey(RunOnceKey, writable: true);
-            if (key is null) return ActionResult.Fail("The RunOnce key is not present.");
+            bool machine = entry.Source is StartupSource.RunOnceMachine or StartupSource.RunMachine;
+            string subKey = entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine ? RunOnceKey : RunKey;
+            var root = machine ? Registry.LocalMachine : Registry.CurrentUser;
+            using var key = root.OpenSubKey(subKey, writable: true);
+            if (key is null) return ActionResult.Ok;   // key not present, nothing to remove
 
             object? current = key.GetValue(entry.Name);
             if (current is null) return ActionResult.Ok;   // already gone
@@ -117,8 +127,8 @@ public static class StartupProvider
             try
             {
                 using var bak = Registry.CurrentUser.CreateSubKey(RemovedBackup, writable: true);
-                string hive = entry.Source == StartupSource.RunOnceMachine ? "HKLM" : "HKCU";
-                bak.SetValue($"{hive}\\{entry.Name}", current.ToString() ?? "", RegistryValueKind.String);
+                string hive = machine ? "HKLM" : "HKCU";
+                bak.SetValue($"{hive}\\{subKey}\\{entry.Name}", current.ToString() ?? "", RegistryValueKind.String);
             }
             catch (Exception) { /* backup is a courtesy, not a requirement */ }
 
@@ -193,7 +203,7 @@ public static class StartupProvider
         {
             if (string.IsNullOrEmpty(name)) continue;
             string command = key.GetValue(name)?.ToString() ?? "";
-            string? exe = ResolveExe(command);
+            var (exe, broken) = ResolveExe(command);
             list.Add(new StartupEntry
             {
                 Name = name,
@@ -201,6 +211,7 @@ public static class StartupProvider
                 Source = source,
                 Enabled = IsApproved(approved, name),
                 ExecutablePath = exe,
+                Broken = broken,
                 Publisher = exe is not null ? SafeCompany(exe) : null,
             });
         }
@@ -214,10 +225,18 @@ public static class StartupProvider
         {
             if (file.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)) continue;
             string name = Path.GetFileName(file);
-            string? exe = file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? file
-                : file.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? Interop.ShellLink.ResolveTarget(file)
-                : null;
-            if (exe is not null && !File.Exists(exe)) exe = null;
+            string? exe = null;
+            bool broken = false;
+            if (file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                exe = file;
+            }
+            else if (file.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                string? target = Interop.ShellLink.ResolveTarget(file);
+                if (target is not null && File.Exists(target)) exe = target;
+                else if (target is not null) broken = true;   // shortcut resolves, but the target is gone
+            }
             list.Add(new StartupEntry
             {
                 Name = name,
@@ -225,6 +244,7 @@ public static class StartupProvider
                 Source = source,
                 Enabled = IsApproved(approved, name),
                 ExecutablePath = exe,
+                Broken = broken,
                 Publisher = exe is not null ? SafeCompany(exe) : null,
             });
         }
@@ -236,10 +256,14 @@ public static class StartupProvider
         return (b[0] & 0x01) == 0; // bit 0 set => disabled
     }
 
-    private static string? ResolveExe(string command)
+    /// <summary>Resolves a Run-key command to the program file it points at. When the file cannot
+    /// be found, <c>Broken</c> says whether the command actually named a specific path (so it is a
+    /// leftover worth flagging) as opposed to a bare command name PowerX did not try to search
+    /// PATH for.</summary>
+    private static (string? Exe, bool Broken) ResolveExe(string command)
     {
         command = command.Trim();
-        if (command.Length == 0) return null;
+        if (command.Length == 0) return (null, false);
 
         // Handles a quoted path, and an unquoted path that itself contains spaces
         // (e.g. C:\Program Files\App\app.exe --flag), by splitting at the .exe boundary.
@@ -248,9 +272,11 @@ public static class StartupProvider
         try
         {
             path = Environment.ExpandEnvironmentVariables(path);
-            return File.Exists(path) ? Path.GetFullPath(path) : null;
+            if (File.Exists(path)) return (Path.GetFullPath(path), false);
+            bool looksLikeASpecificPath = path.Length > 2 && (path[1] == ':' || path.StartsWith(@"\\", StringComparison.Ordinal));
+            return (null, looksLikeASpecificPath);
         }
-        catch { return null; }
+        catch { return (null, false); }
     }
 
     private static string? SafeCompany(string exe)

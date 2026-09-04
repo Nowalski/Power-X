@@ -1,178 +1,189 @@
 # Decision log
 
-Running record of significant choices. Newest first. Each entry: context, decision, why, status.
+Running record of significant choices. Newest first. Each entry: context → decision → why → status.
 
 ---
 
-## D-028. Scheduled-tasks curator, drivers, firewall viewer, event log, config sharing, per-process network, delayed startup
+## D-029 — Health check, broken-startup cleanup, "explain this process", CSV export
 **Date** 2026-09-04
-**Decision** 0.1.7. Seven features. Six are read-only; config import applies tweaks behind a preview.
-- **Scheduled tasks** (new page). `TaskInventory` enumerates every task with its schedule and last result; `ScheduledTaskCatalog` carries about forty curated stances, matched by a substring of the task path: telemetry and reporting, third-party updaters, Windows components (left alone), and everything else (shown, unlabelled). Turning a task off reuses the reversible enable/disable and never deletes it. `powerx tasks`.
-- **Drivers** (new page). `DriverInventory` reads `Win32_PnPSignedDriver` and flags drivers three or more years old, and unsigned ones. Microsoft's inbox drivers are dated old on purpose and are never flagged. PowerX never downloads or installs a driver. `powerx drivers`.
-- **Firewall** (new page, read-only). `FirewallRules` reads `HNetCfg.FwPolicy2`: whether the firewall is on per profile, and every rule, with a flag on an enabled inbound-allow rule that opens a port for any program on the public profile and was not created by an app for its own sandbox. PowerX does not add, change or delete rules. `powerx firewall`.
-- **Event log** (new page). `EventLogBrowser` groups recent Application, System and Setup errors by source and id, and adds a plain-language note for about twenty-five common ids. `powerx events`.
-- **Share this setup** (Settings card). Export the tweaks you have applied to a small `powerx.config` JSON file with no machine detail; import shows exactly what it would change and asks before applying the tweak half. `powerx config export | import`.
-- **Per-process network use** (Network page card). A private ETW session on `Microsoft-Windows-Kernel-Network`, via the Microsoft TraceEvent library, attributes throughput to a process. Needs administrator rights; the card is hidden if the session cannot start.
-- **Delayed startup**. The Startup page menu can convert an eligible Run entry into a scheduled task that starts the program a chosen number of seconds after sign-in, and disable the original. Undo removes the task and re-enables the entry. Pairs with the boot-impact data: the slow program still starts, just after the desktop is usable.
-**0.1.8** The Storage explorer now shows each folder the moment it is measured (loose files instantly, the rest one by one with a running total) instead of a frozen screen while the whole tree is walked; the default starting point is the user profile.
-**0.1.9** Fixed the per-process network card, which had never actually worked. It read the owning process and byte count from two lookups that do not resolve for this event source, so it was silently empty from the day it shipped. It now reads both directly from the event's own data and was checked against live traffic. Also: a couple of Task Scheduler and firewall handles are released properly, and a delayed-startup entry now only fires at its own user's sign-in rather than any user's on a shared PC.
-**Status** Active (0.1.7; 0.1.8 and 0.1.9 fixes). 112 tests.
+**Decision** 0.1.10, four features that round off the recent inventory work.
+- **Health check** (new page, nav right under Home). `HealthCheck.ScanAsync(deep)` runs fourteen checks against providers PowerX already had — pending restart, antivirus status, firewall profile/rules, disk space and health, broken startup entries, boot degradation, enabled telemetry tasks, driver age, battery wear, event-log criticals, recent crashes, unapplied recommended tweaks — and turns them into one prioritised list (High/Medium/Low), each item pointing at the page that handles it. It changes nothing itself. `deep` additionally runs the WinSxS analysis (slow, off by default). A 0-100 score is cosmetic, not a target to chase. `powerx doctor [--deep]`.
+- **Broken startup entries**. `StartupProvider` now flags a Run/RunMachine entry as `Broken` when its command names a specific path (drive letter or UNC) that does not exist — almost always left behind by an uninstalled app. `CanRemove`/`Remove` now cover this case too (previously RunOnce only); `Remove` was generalised to operate on either the Run or RunOnce key and stash the backup under a key-qualified name. A bare command name PowerX did not resolve (e.g. `rundll32.exe`) is deliberately *not* flagged — no evidence it is actually broken.
+- **"Explain this process"**. `ProcessKnowledge.Explain(name, path, company)` — ~45 curated notes for common Windows/third-party processes, a Microsoft-signed-and-in-System32 heuristic for the rest, and an honest "not in the list, check its hash" for anything else. Shown as the first row of the Process inspector's Overview tab. Never a verdict on a specific running instance — only what the name normally means.
+- **CSV export**. A shared `Services.CsvExport` helper and an "Export CSV" button on Drivers, Firewall, Scheduled tasks and Event log.
+**Status** Active (0.1.10). 119 tests.
 
-## D-027. Config-drift snapshots, storage explorer, battery, pending restart, WinSxS
+## D-028 — Scheduled-tasks curator, drivers, firewall viewer, event log, config export, per-process net, delayed startup
 **Date** 2026-09-04
-**Decision** 0.1.5. Four read-only features, plus an audit pass.
-- **What changed** (new page). `SystemSnapshot` takes a daily background snapshot of the machine's configuration: startup entries, scheduled tasks, auto-start services, installed programs, signed drivers and the tweaks PowerX has applied. It compares any two and shows what was added, removed or changed. Snapshots are plain JSON under `%LOCALAPPDATA%\PowerX\snapshots` (the last 40 are kept); nothing leaves the machine. This sits above the existing Change history, which stays PowerX's own action log. `powerx changes [--snapshot]`.
-- **Storage explorer** (new page). `FolderSizer` sizes the immediate children of a drive or folder, each sub-folder measured recursively and in parallel. Junctions and symlinks are skipped so nothing is counted twice or followed forever. Click a folder to go deeper. `powerx storage <path>`.
-- **Pending restart** (Tools). `PendingReboot` reads the documented places Windows records that a restart is owed (component servicing, Windows Update, queued file replacements, a computer rename) and says which one. `powerx reboot`.
-- **Component store** (Tools). `ComponentStore` runs `DISM /Online /Cleanup-Image /AnalyzeComponentStore` for the WinSxS size breakdown, and the Microsoft-recommended `/StartComponentCleanup`. It never runs `/ResetBase`, which would permanently block uninstalling installed updates.
-- **Battery health** (Tools, laptops only). `BatteryHealth` reads wear, cycle count and runtime from `powercfg`'s battery report plus the live charge state. `powerx battery`.
-- The Startup boot card gained a small trend of the last dozen boots.
-**Audit pass, same release** The updater now re-checks the installer's SHA-256 on disk immediately before running it, closing the gap between "verified" and "executed" for a file that sits in a user-writable folder in between. Unquoted startup paths that contain spaces now resolve to a real file. The hash lookup can never raise a "known malicious" verdict on an empty value. The system report scrubs the user and machine name on whole-word boundaries. Startup-folder shortcuts resolve to their target for a publisher and impact match. Smaller fixes across reverse DNS, the network page and the process list.
-**0.1.6** hardening: the "What changed" diff no longer throws when two installed programs share a display name; Storage explorer sizes a full drive without a syscall per file; the component-store analysis has a time cap and surfaces DISM's own error; battery health parses the runtime estimate correctly; smaller pending-restart fixes.
+**Decision** 0.1.7, seven features. Six read-only, one (config import) applies tweaks behind a preview.
+- **Scheduled tasks** page (`TaskInventory` + `ScheduledTaskCatalog`, ~40 curated stances matched by path substring: Telemetry / Optional / KeepSystem / Unreviewed). Toggling reuses `ScheduledTasks.SetEnabled` (reversible, never deletes). KeepSystem tasks can't be toggled. `powerx tasks`.
+- **Drivers** page (`DriverInventory`, `Win32_PnPSignedDriver`). Flags drivers ≥3y (`Old`) / ≥5y (`VeryOld`) and unsigned; Microsoft inbox drivers are never flagged (deliberately old). Never installs anything. `powerx drivers`.
+- **Firewall** page (`FirewallRules`, `HNetCfg.FwPolicy2` COM, **read-only**). Profile on/off per profile + all rules, with a `WorthReviewing` flag for an enabled inbound-allow rule that opens a port for any program on the public profile and has no owner SID (i.e. an admin-punched hole, not a Store-app rule). `powerx firewall`.
+- **Event log** page (`EventLogBrowser`, `EventLogReader` over Application/System/Setup, grouped by source+id, ~25 hand-written plain-language notes for common ids). `powerx events`.
+- **Config export/import** (`ConfigBundleService`, Settings card). Exports applied tweak ids as `powerx.config/1` JSON (no machine detail); import shows a per-item plan and applies the tweak half via `ApplyMany` behind a confirm. `powerx config export|import [--apply]`.
+- **Per-process network** card on the Network page (`NetworkUsageEtw`). Private ETW real-time session on `Microsoft-Windows-Kernel-Network` via the `Microsoft.Diagnostics.Tracing.TraceEvent` package (new dep — the hand-rolled `EVENT_TRACE_LOGFILEW` marshalling was too crash-prone to ship untested; DIA/symbol/ETL-merge native extras are trimmed from publish). Needs elevation; card hidden if the session can't start. Page-local lifecycle.
+- **Delayed startup**: the Startup page `…` menu on an eligible Run entry offers "Delay after sign-in" (30s–3min). `StartupDelay` creates a `\PowerX\Delayed - <name>` scheduled task with a delayed logon trigger and disables the original entry; undo removes the task and re-enables.
+**Nav** now 22 items: Firewall under Monitor; Scheduled tasks + Drivers under Software; Event log under Optimize & fix.
+**Status** Active (0.1.7). 112 tests.
+**0.1.8** Storage explorer streams results per folder instead of measuring the whole tree before drawing anything; default root is the user profile.
+**0.1.9** Fixed the per-process network card, which had never actually worked: `NetworkUsageEtw` was reading the PID and byte count via `TraceEvent.ProcessID`/`PayloadByName`, neither of which resolves for `Microsoft-Windows-Kernel-Network`'s send/recv events (ProcessID is the kernel logging context, almost always 4; the provider's manifest fields do not surface through the generic parser). Fixed to read both as the first two UInt32 fields of the raw event payload; verified against live traffic. Also: TaskInventory/StartupDelay/FirewallRules release the COM collection objects they enumerate, and a delayed-startup logon trigger is scoped to its own user.
+
+## D-027 — Config-drift snapshots, storage explorer, battery, pending-reboot, WinSxS
+**Date** 2026-09-04
+**Decision** 0.1.5, four read-only features plus an audit pass.
+- **`SystemSnapshot`** (Core): a daily background JSON snapshot of startup entries, scheduled tasks, auto-start services, installed programs, `Win32_PnPSignedDriver` drivers and applied tweaks under `%LOCALAPPDATA%\PowerX\snapshots` (keep 40, prune oldest). `Diff(from, to)` → added/removed/changed. New **"What changed"** page (nav, above Change history — which stays PowerX's own action log) with two snapshot pickers; `powerx changes [--snapshot]`. Nothing leaves the machine.
+- **`FolderSizer`** (Core): sizes the immediate children of a folder, sub-folders measured recursively in parallel, `AttributesToSkip = ReparsePoint` so junctions/symlinks aren't followed or double-counted. New **"Storage explorer"** page (nav) with drill-down; `powerx storage <path>`.
+- **`PendingReboot`** (Core): reads the documented CBS / Windows Update / `PendingFileRenameOperations` / computer-rename keys and says *why* a restart is owed. Tools page InfoBar; `powerx reboot`.
+- **`ComponentStore`** (Core): `DISM /Online /Cleanup-Image /AnalyzeComponentStore` parse + `/StartComponentCleanup` (never `/ResetBase` — that permanently blocks uninstalling updates). Tools card.
+- **`BatteryHealth`** (Core): wear %, cycle count and runtime from `powercfg /batteryreport /xml` + live state from `GetSystemPowerStatus`. Tools card, hidden on desktops; `powerx battery`.
+- Startup boot card gained a 12-boot trend sparkline (`BootTimeline.Recent`).
+- New `Interop/ShellLink` (`IShellLinkW`) so Startup-folder `.lnk` entries resolve to a target, publisher and boot-impact match.
+**Audit pass (same release):** `UpdateInstaller.Launch` re-hashes the MSI against the manifest SHA-256 immediately before running it (closes the verified→executed gap for a file in a user-writable folder). `StartupProvider.ResolveExe` uses the `.exe`-boundary splitter for unquoted spaced paths. `HashLookup` never flags a falsy `KnownMalicious`. `SystemReport` scrubs the user/machine name on whole-word boundaries. `HashLookup` reuses one static `HttpClient`. `Defender` sorts Platform folders by parsed `Version`. `ReverseDns` skips IPv6 ULA + multicast. `NetworkPage` refreshes the interface throughput line in place. `ProcessesPage.Report` can't crash on a double dialog. CA1001 suppressed with a note. `Fmt.Rate` prints `0/s` not an em dash.
 **Status** Active (0.1.5; hardened 0.1.6). 97 tests.
 
-## D-026. Startup impact from the Diagnostics-Performance log; an audit pass
+## D-026 — Startup impact from the Diagnostics-Performance log; audit fixes
 **Date** 2026-09-04
-**Decision** 0.1.4. `BootPerformance` (Core) reads the `Microsoft-Windows-Diagnostics-Performance/Operational` event log: event 100 (boot total, time to the desktop, and Windows' own slow-boot flag) and events 101/102/103 (a slow app, driver or service, with the milliseconds it added). That log needs administrator rights to read; without them the result is empty, never an error. The Startup page shows a boot-time card and a High, Medium or Low impact tag on the entries it can match. This is the same data source as Task Manager's "Startup impact": PowerX shows the real numbers where Windows recorded them and says nothing where it did not, rather than inventing a per-app score.
-**Audit pass, same release** Reverse DNS now records that an address was tried, so a name with no record is not looked up again on every refresh. The system report dropped a lookahead-heavy regular expression (a denial-of-service risk that scrubbed nothing the report actually emits) and put a timeout on the rest. Clipboard copies go through one shared helper that retries and never lets a transient failure surface. The Security page guards every screen update that runs after an await against the user having already left the page. Small dead-code and cleanup fixes in the hash lookup, Defender and network code.
-**Status** Active (0.1.4).
+**Decision** 0.1.4. `BootPerformance` (Core) reads `Microsoft-Windows-Diagnostics-Performance/Operational` events 100 (boot total, main-path time, degradation flag) and 101/102/103 (slow app/driver/service, with the added milliseconds). That log needs elevation to read; without it the result is empty, never an exception. The Startup page shows a boot-time card and a High/Medium/Low impact chip on matched entries. This is exactly Task Manager's "Startup impact" data source; PowerX shows the real numbers where Windows recorded them and says nothing where it did not (no fabricated per-app score).
+**Audit pass fixes (same release):** `ReverseDns` now records that an address was *attempted* so a name with no PTR record is not re-queried on every 3-second refresh. `SystemReport` dropped a lookahead-heavy "serial" regex (ReDoS risk, and it scrubbed nothing the report actually emits) and put a 250 ms timeout on the remaining scrubs. A shared `Clip.SetText` retries the clipboard and never lets a transient `COMException` surface. `SecurityPage` guards every post-await UI write with `_onPage`. Small dead-code and disposal cleanups in `HashLookup`, `Defender`, `NetworkPage`.
+**Status** Active (0.1.4). 83 tests.
 
-## D-025. Security page: surface Defender, never be the antivirus
+## D-025 — Security page: surface Defender, never be the antivirus
 **Date** 2026-09-03
-**Decision** A "Security" page (under Optimize and fix) plus `powerx security` and `powerx hash`. It does four things and refuses to do more:
-1. **Defender status** from its WMI provider (`root\Microsoft\Windows\Defender`): running mode (Normal, Passive, EDR), real-time, cloud, behavior, tamper and network protection, PUA setting, definition version and age, last scan times. A red bar when there is no active real-time antivirus at all.
-2. **Threat history** from `MSFT_MpThreat` joined with `MSFT_MpThreatDetection`: what Defender has already caught, with name, severity, date, state and the file. Read what Windows recorded, the same pattern as crash insights.
-3. **Scan**: launches `MpCmdRun.exe -Scan`, streams the output, and cancel kills it.
-4. **Hash check**: a file's SHA-256 looked up against CIRCL hashlookup (`hashlookup.circl.lu`), a free, open, no-key database of known files. It reports "known good", "low trust", "known malicious", or "not catalogued, which proves nothing". Only the hash is sent, over HTTPS, on an explicit click, and results are cached.
-**Why** People asked for malware scanning. A half-working antivirus that people trust instead of Defender is actively harmful, so PowerX will not build one: no signatures, no quarantine, no "you are clean" all-clear, no auto-removal. What is safe and useful is showing the protection that is already there, what it caught, and an open second-opinion hash lookup. VirusTotal and MalwareBazaar were considered but both now need an API key; CIRCL needs none.
-**Status** Active (0.1.2). **0.1.3:** the "Check a file" Browse button used WinUI `FileOpenPicker`, which silently does nothing in an unpackaged elevated app. Replaced with the classic `GetOpenFileNameW` (comdlg32) in `App/Services/NativeFileDialog.cs`.
+**Decision** A "Security" page (nav, under Optimize & fix) + `powerx security` / `powerx hash`. It does three things and refuses to do more:
+1. **Defender status** via its WMI provider (`root\Microsoft\Windows\Defender`, `MSFT_MpComputerStatus` + `MSFT_MpPreference`): running mode (Normal / Passive / EDR), real-time / cloud / behavior / tamper / network protection, PUA setting, definition version + age, last scan times, exclusion count. A red bar when there is no active real-time AV at all (`DefenderStatus.Unprotected`).
+2. **Threat history** via `MSFT_MpThreat` + `MSFT_MpThreatDetection` joined on `ThreatID`: what Defender has already caught (name, severity, date, state, the file). Read what Windows recorded, same pattern as crash insights.
+3. **Scan**: launches `MpCmdRun.exe -Scan -ScanType 1|2` (resolved from Program Files or the versioned Platform folder), streams output, cancel kills it + `-CancelScan`.
+4. **Hash check** (`HashLookup`): SHA-256 of a file looked up against **CIRCL hashlookup** (`hashlookup.circl.lu`, free, open, no key, ~40B known files from NSRL and clean-software sources). Reports "known good (trust N/100)", "low trust", "known malicious" (`KnownMalicious` field), or "not catalogued, which proves nothing". Only the hash leaves the machine, over HTTPS, on an explicit click; results cached.
+**Why** People asked for "malware scanning". A half-working AV that users trust *instead of* Defender is actively harmful, so PowerX will not build one: no signatures, no quarantine, no "you are clean" all-clear, no auto-removal. What is safe and useful is showing the protection that is already there, what it caught, and an open second-opinion hash lookup. VirusTotal / MalwareBazaar were considered but both now need an API key; CIRCL needs none. The "suspicious indicator" heuristic scan (Autoruns-style) was scoped out for now to avoid the app making accusations.
+**Status** Active (0.1.2). `powerx help` markup-escape bug fixed along the way (a `[--flag]` in a description crashed Spectre). +6 tests.
+**0.1.3** the "Check a file" Browse button used WinUI `FileOpenPicker`, which silently does nothing in an unpackaged elevated app. Replaced with the classic `GetOpenFileNameW` (comdlg32) in `App/Services/NativeFileDialog.cs`. The COMDLG filter is a double-null-terminated multi-string, so it is built by hand rather than left to the `LPWStr` marshaller.
 
-## D-024. `powerx report` and the network deep-dive: read-only, redacted by default, no automatic lookups
+## D-024 — `powerx report` and network deep-dive: read-only, redacted by default, no automatic lookups
 **Date** 2026-09-03
 **Decision** Two "Understand" features shipped in 0.1.1.
-`SystemReport.BuildMarkdown` collects OS, hardware, storage and SMART, applied tweaks (with dates from the change log), recent change history, an event-log error summary (Application and System, Level 1-2, grouped by source and id) and a crash summary. Redaction is on by default: the user name, machine name, MAC addresses and serial-looking strings are scrubbed from the final text. Every section is best-effort, so a section that fails says so rather than failing the report. Surfaces: `powerx report [--out PATH] [--no-redact] [--print]` and a Settings button that shows the full text in a dialog before it is saved.
-Network page: a listening-ports view (port, process, bound address, and whether it is reachable from the network rather than only loopback), a connection-state summary, opt-in reverse DNS (only after the user turns "Resolve names" on, cached, public routable addresses only, never automatic) and copy-to-clipboard for the connection list. `NetworkConnection` gained structured local and remote address and port fields, `IsListening` and `Exposed`.
-**Why** The support report is the highest-value item for the "Understand" pillar and for the project's own bug reports, but a report that leaks identifiers is worse than none. Reverse DNS answers "what is this program talking to", but doing it automatically would be a passive data-exfil pattern and generate constant DNS traffic. Same stance as D-017 and D-022: read what is already there, never phone out without consent.
-**Status** Active (0.1.1).
+`SystemReport.BuildMarkdown(ReportOptions)` collects OS, hardware, storage/SMART, applied tweaks (with dates from the change log), recent change history, an event-log error summary (Application + System, Level 1-2, grouped by source+id) and a crash summary (via `CrashScanner`). **Redaction is on by default**: user name, machine name, MAC addresses and serial-looking strings are scrubbed from the final text. Every section is best-effort — a section that fails says so instead of failing the report. Surfaces: `powerx report [--out PATH] [--no-redact] [--print]` and a Settings button that shows the full text in a dialog before it is saved.
+Network page: a **Listening ports** view (port, process, bound address, and whether it is reachable from the network — bound to something other than loopback), a connection-state summary, **opt-in reverse DNS** (`ReverseDns`, only after the user turns "Resolve names" on, cached, public routable addresses only — never private/loopback/link-local, never automatic), and a copy-to-clipboard for the connection list. `NetworkConnection` gained structured `LocalAddress`/`LocalPort`/`RemoteAddress`/`RemotePort`/`IsListening`/`Exposed`.
+**Why** The support bundle is the highest-value item for the "Understand" pillar and for the project's own bug reports, but a report that leaks identifiers is worse than none. Reverse DNS answers "what is this program talking to", but doing it automatically would be a passive data-exfil pattern and generate constant DNS traffic. Same stance as D-017 (updater) and D-022 (crash insights): read what is there, never phone out without consent.
+**Status** Active (0.1.1). 68 tests.
 
-## D-023. Distribution: a WiX MSI installer is the primary channel; portable exe secondary
+## D-023 — Distribution: a WiX MSI installer is the primary channel; portable exe secondary
 **Date** 2026-09-03
-**Decision** The main way to get PowerX is **`PowerX-Setup-<ver>-win-x64.msi`** (WiX 5, `installer/PowerX.wxs`, built by `installer/build.ps1`). One 53 MB file: per-machine install to `Program Files\PowerX`, a Start-menu shortcut and a desktop shortcut, Add/Remove Programs entry, in-place major upgrade (shared `UpgradeCode`), clean uninstall. The WinUI app stays **unpackaged and unchanged**, the MSI only lays down the self-contained publish folder (with the bundled VC++ runtime). WiX 5 (not 7, v7 needs the paid OSMF EULA) as a `dotnet tool`, build-time only. A single-file self-contained `PowerX.exe` remains available as a no-install portable option but is not the recommended one (slow first launch, AV false positives).
+**Decision** The main way to get PowerX is **`PowerX-Setup-<ver>-win-x64.msi`** (WiX 5, `installer/PowerX.wxs`, built by `installer/build.ps1`). One 53 MB file → per-machine install to `Program Files\PowerX`, a Start-menu shortcut and a desktop shortcut, Add/Remove Programs entry, in-place major upgrade (shared `UpgradeCode`), clean uninstall. The WinUI app stays **unpackaged and unchanged** — the MSI only lays down the self-contained publish folder (with the bundled VC++ runtime). WiX 5 (not 7 — v7 needs the paid OSMF EULA) as a `dotnet tool`, build-time only. A single-file self-contained `PowerX.exe` remains available as a no-install portable option but is not the recommended one (slow first launch, AV false positives).
 **Why** The 500-file self-contained folder is the correct WinUI 3 unpackaged layout but reads as junk to users. MSIX would mean re-architecting storage/`ms-appx`/elevation. An MSI is one file, standard, reproducible in CI, and needs no app changes.
-**Status** Active. Not code-signed yet, so SmartScreen "unknown publisher". Elevated end-to-end install verified only by payload inspection + running the app from the extracted layout (the CI/dev shell can't elevate).
+**Status** Active. Not code-signed yet → SmartScreen "unknown publisher". Elevated end-to-end install verified only by payload inspection + running the app from the extracted layout (the CI/dev shell can't elevate).
 
-## D-022. Crash insights: read what Windows recorded, never analyse dumps with a debugger
+## D-022 — Crash insights: read what Windows recorded, never analyse dumps with a debugger
 **Date** 2026-09-03
-**Decision** `PowerX.Core/Diagnostics/Crash` reads the WER `Report.wer` store, the Application + System event logs (1000/1001/1002/1026, WER-SystemErrorReporting 1001, EventLog 6008), `Win32_ReliabilityRecords` (deferred), and, only when the user ticks the box, only elevated, the *metadata* streams of a user-mode minidump (`MinidumpReader`: header + directory + SystemInfo/ModuleList/Exception, every RVA bounds-checked, no memory streams, no pointer-following). It does **not** download debugging symbols, load a dump into `dbgeng`/`dbghelp`, or upload anything. `CrashScanner` produces `CrashInsight` records that keep *observed facts* separate from *likely causes*, tag a `CrashConfidence` (Insufficient/Low/Moderate/High), and list *what is still missing*. It says "insufficient evidence" rather than guessing. `BugcheckCatalog` is ~24 hand-curated stop codes. Kernel dumps are never parsed (needs a debugger engine + symbols). New first-party dependency `System.Diagnostics.EventLog`. Surfaces: `powerx crashes` and a "Crash insights" page under Optimize & fix.
-**Why** The evidence Windows already keeps answers most "why did it crash" questions without symbols or a debugger. Doing more would mean a large dependency, a security surface (`dbgeng` loads plugins), and a symbol-server EULA, all for diminishing returns. Design investigation: `docs/research/CRASH_DIAGNOSTICS.md`.
+**Decision** `PowerX.Core/Diagnostics/Crash` reads the WER `Report.wer` store, the Application + System event logs (1000/1001/1002/1026, WER-SystemErrorReporting 1001, EventLog 6008), `Win32_ReliabilityRecords` (deferred), and — only when the user ticks the box, only elevated — the *metadata* streams of a user-mode minidump (`MinidumpReader`: header + directory + SystemInfo/ModuleList/Exception, every RVA bounds-checked, no memory streams, no pointer-following). It does **not** download debugging symbols, load a dump into `dbgeng`/`dbghelp`, or upload anything. `CrashScanner` produces `CrashInsight` records that keep *observed facts* separate from *likely causes*, tag a `CrashConfidence` (Insufficient/Low/Moderate/High), and list *what's missing* — it says "insufficient evidence", it does not guess. `BugcheckCatalog` is ~24 hand-curated stop codes. Kernel dumps are never parsed (needs a debugger engine + symbols). New first-party dependency `System.Diagnostics.EventLog`. Surfaces: `powerx crashes` and a "Crash insights" page under Optimize & fix.
+**Why** The evidence Windows already keeps answers most "why did it crash" questions without symbols or a debugger. Doing more would mean a large dependency, a security surface (`dbgeng` loads plugins), and a symbol-server EULA — for diminishing returns. Design investigation: `docs/research/CRASH_DIAGNOSTICS.md`.
 **Status** Active (v1). Fast-follow: minidump `ModuleList` fault attribution in the default (non-elevated) path where the dump is user-readable; `Win32_ReliabilityRecords` timeline.
 
-## D-021. Portable distribution: self-contained folder build, VC++ runtime bundled
+## D-021 — Portable distribution: self-contained folder build, VC++ runtime bundled
 **Date** 2026-09-03
-**Decision** The "send a friend" build is `dotnet publish -c Release -r win-x64 --self-contained -p:WindowsAppSDKSelfContained=true -p:WindowsPackageType=None`, a **folder** (not single-file). An `IncludeVcRuntime` MSBuild target copies `vcruntime140*`/`msvcp140*`/`concrt140` next to the exe from the VS redist dir (System32 fallback). Zipped inside one `PowerX/` folder with a `READ ME FIRST.txt`. Not code-signed yet (SmartScreen "Run anyway").
-**Why** A self-contained WinUI 3 publish does **not** include the VC++ 2015-2022 runtime that native `Microsoft.UI.Xaml.dll` links against; on a clean PC the app dies silently during MainWindow XAML load. Single-file publish *works* but is fragile across machines (extraction to `%TEMP%\.net`, AV interference), a friend's first report was exactly this failure mode. The 500-file folder is uglier but reliable, and the user only ever double-clicks one exe.
+**Decision** The "send a friend" build is `dotnet publish -c Release -r win-x64 --self-contained -p:WindowsAppSDKSelfContained=true -p:WindowsPackageType=None` — a **folder** (not single-file). An `IncludeVcRuntime` MSBuild target copies `vcruntime140*`/`msvcp140*`/`concrt140` next to the exe from the VS redist dir (System32 fallback). Zipped inside one `PowerX/` folder with a `READ ME FIRST.txt`. Not code-signed yet (SmartScreen "Run anyway").
+**Why** A self-contained WinUI 3 publish does **not** include the VC++ 2015-2022 runtime that native `Microsoft.UI.Xaml.dll` links against; on a clean PC the app dies silently during MainWindow XAML load. Single-file publish *works* but is fragile across machines (extraction to `%TEMP%\.net`, AV interference) — a friend's first report was exactly this failure mode. The 500-file folder is uglier but reliable, and the user only ever double-clicks one exe.
 **Status** Active. `src/PowerX.App/PowerX.App.csproj` `IncludeVcRuntime` target. Revisit when the app is code-signed and an installer exists.
 
-## D-020. RunOnce startup entries: never a fake toggle
+## D-020 — RunOnce startup entries: never a fake toggle
 **Date** 2026-09-03
-**Decision** `StartupProvider.SetEnabled` refuses RunOnce entries (returns a failure explaining they run once at next sign-in and aren't governed by `StartupApproved`); `CanToggle()` lets the UI disable the switch. `Remove(entry)` / `CanRemove(entry)` deletes a RunOnce value (stashing name+value+hive to `HKCU\SOFTWARE\PowerX\RemovedRunOnce` for manual recovery), surfaced as a confirm-gated "Remove entry" in the Startup page's... menu.
-**Why** Windows ignores `StartupApproved\Run` for `RunOnce`, so the previous code wrote a "disabled" marker that did nothing while the UI claimed success, a fake-success violation of the honesty rules. Deleting the value is the only real way to stop it; the backup keeps it recoverable.
+**Decision** `StartupProvider.SetEnabled` refuses RunOnce entries (returns a failure explaining they run once at next sign-in and aren't governed by `StartupApproved`); `CanToggle()` lets the UI disable the switch. `Remove(entry)` / `CanRemove(entry)` deletes a RunOnce value (stashing name+value+hive to `HKCU\SOFTWARE\PowerX\RemovedRunOnce` for manual recovery) — surfaced as a confirm-gated "Remove entry" in the Startup page's … menu.
+**Why** Windows ignores `StartupApproved\Run` for `RunOnce`, so the previous code wrote a "disabled" marker that did nothing while the UI claimed success — a fake-success violation of the honesty rules. Deleting the value is the only real way to stop it; the backup keeps it recoverable.
 **Status** Active.
 
-## D-019. Theme options: window material + accent, no UI-density toggle (yet)
+## D-019 — Theme options: window material + accent, no UI-density toggle (yet)
 **Date** 2026-09-02
-**Decision** Settings > Appearance offers theme (System/Light/Dark), **window material** (Mica / Acrylic / None-solid) and an **accent colour** from 8 presets. Material applies live via `Window.SystemBackdrop`; when "None", `ApplyBackdrop` paints the root panel with an opaque theme brush so the content area isn't left unpainted. Accent overrides all six `SystemAccentColor{Light,Dark}{1..3}` tint resources at launch (before first brush resolution) by lerping the base toward white/black; it takes effect on restart. No compact/comfortable density toggle. WinUI 3 has no supported compact metrics and hand-scaling every control is fragile.
+**Decision** Settings ▸ Appearance offers theme (System/Light/Dark), **window material** (Mica / Acrylic / None-solid) and an **accent colour** from 8 presets. Material applies live via `Window.SystemBackdrop`; when "None", `ApplyBackdrop` paints the root panel with an opaque theme brush so the content area isn't left unpainted. Accent overrides all six `SystemAccentColor{Light,Dark}{1..3}` tint resources at launch (before first brush resolution) by lerping the base toward white/black; it takes effect on restart. No compact/comfortable density toggle — WinUI 3 has no supported compact metrics and hand-scaling every control is fragile.
 **Why** Material + accent are the high-impact, low-risk parts of "theming". Density is deferred until there's a supported mechanism.
 **Status** Active. `AppSettings.Backdrop` / `.Accent`.
 
-## D-018. Optimization profiles are visible tweak sets, never hidden scripts
+## D-018 — Optimization profiles are visible tweak sets, never hidden scripts
 **Date** 2026-09-02
-**Decision** `OptimizationProfile` is `(Id, Name, Description, Tone, TweakIds[])`. Built-ins: `recommended`, `privacy`, `lowspec` ("Potato mode"), `gaming`, `restore` (empty list, special-cased to revert everything currently applied). Applying one always shows a preview diff (what will change vs. the live machine state), offers an optional restore point, then runs `TweakEngine.ApplyMany` as one transaction. A test asserts every referenced tweak resolves and is not `SecurityTradeoff`/`Destructive`, so no profile can ever weaken a security boundary. Same model drives `powerx profile list|show|apply`.
-**Why** The safety loop is detect, show, apply, verify, log, undo. A profile is a convenience, not a black box; the user sees and confirms every change.
+**Decision** `OptimizationProfile` is `(Id, Name, Description, Tone, TweakIds[])`. Built-ins: `recommended`, `privacy`, `lowspec` ("Potato mode"), `gaming`, `restore` (empty list — special-cased to revert everything currently applied). Applying one always shows a preview diff (what will change vs. the live machine state), offers an optional restore point, then runs `TweakEngine.ApplyMany` as one transaction. A test asserts every referenced tweak resolves and is not `SecurityTradeoff`/`Destructive`, so no profile can ever weaken a security boundary. Same model drives `powerx profile list|show|apply`.
+**Why** Prompt §§ safety: detect→show→apply→verify→log→undo. A profile is a convenience, not a black box; the user sees and confirms every change.
 **Status** Active. `src/PowerX.Core/Tweaks/OptimizationProfile.cs`.
 
-## D-017. Update check: a version.json in the repo, no auto-download
+## D-017 — Update check: a version.json in the repo, no auto-download
 **Date** 2026-09-02
-**Decision** `version.json` at the repo root holds `{version, published, notes, url, minimumWindowsBuild, installerUrl, installerSha256, installerBytes}`. `UpdateChecker` fetches it from `raw.githubusercontent.com/Nowalski/Power-X/main/version.json`, compares it to the running assembly version and surfaces the result as a dismissible `InfoBar` in the app, `powerx update` in the CLI. Auto-check is once/day, opt-out in Settings, dismissed version not re-nagged.
-**Updated (D-023):** when the manifest carries a hash-pinned installer (`installerUrl` on `github.com`/`objects.githubusercontent.com` over HTTPS, a 64-hex `installerSha256`, a positive `installerBytes`), the app offers **Download & install**, `UpdateInstaller` downloads to `%LOCALAPPDATA%\PowerX\update`, verifies size + SHA-256, refuses to run on any mismatch, then launches `msiexec /i` (self-elevating in-place upgrade) and exits. CLI: `powerx update --download`. Without those fields it still just opens the releases page. This is not "download a mystery binary", the URL host is allow-listed, the hash is pinned in a manifest served over HTTPS from the project's own repo.
+**Decision** `version.json` at the repo root holds `{version, published, notes, url, minimumWindowsBuild, installerUrl, installerSha256, installerBytes}`. `UpdateChecker` fetches it from `raw.githubusercontent.com/Nowalski/Power-X/main/version.json`, compares to the running assembly version, and surfaces the result — a dismissible `InfoBar` in the app, `powerx update` in the CLI. Auto-check is once/day, opt-out in Settings, dismissed version not re-nagged.
+**Updated (D-023):** when the manifest carries a hash-pinned installer (`installerUrl` on `github.com`/`objects.githubusercontent.com` over HTTPS, a 64-hex `installerSha256`, a positive `installerBytes`), the app offers **Download & install** — `UpdateInstaller` downloads to `%LOCALAPPDATA%\PowerX\update`, verifies size + SHA-256, refuses to run on any mismatch, then launches `msiexec /i` (self-elevating in-place upgrade) and exits. CLI: `powerx update --download`. Without those fields it still just opens the releases page. This is not "download a mystery binary" — the URL host is allow-listed, the hash is pinned in a manifest served over HTTPS from the project's own repo.
 **Why** A passive link is safe but the folder-vs-MSI switch (D-023) made a proper in-app updater worth the small, well-bounded surface: allow-listed host + pinned hash + explicit user consent + verify-before-run.
 **Status** Active. The check 404s until `version.json` lands on `main`; installer fields are empty until the first tagged release.
 
-## D-015. Registry-tweak "absent value" means default, not "Custom"
+## D-015 — Registry-tweak "absent value" means default, not "Custom"
 **Date** 2026-09-02
 **Decision** `RegistryTweakOperation.Detect` treats a missing registry value as matching the Windows default (unless the tweak's *applied* state is itself "value absent"). Previously an absent value matched neither the concrete `AppliedValue` nor the concrete `DefaultValue` and reported `Custom`, which the UI left un-togglable.
 **Why** Most Windows toggles ship with the value absent; the old behaviour made ~half the catalog appear stuck.
 **Status** Active. Multi-value tweaks can still legitimately be `Custom` when partially set.
 
-## D-016. Debloat removes for all users + deprovisions (we run elevated)
+## D-016 — Debloat removes for all users + deprovisions (we run elevated)
 **Decision** Curated non-`KeepSystem` entries use `RemovePackageAsync(RemoveForAllUsers)` + `DeprovisionPackageForAllUsersAsync`. Un-catalogued packages fall back to the system-signature gate. A small `KeepSystem` list (Store, Security, shell frameworks, Terminal/Notepad/Paint/Snipping) is never removable.
 **Why** Inbox consumer apps are system-signed; per-user removal alone left them greyed out and they'd return. This is the DISM-equivalent path, done safely per-package with confirmation.
 **Status** Active.
 
-## D-014. App runs elevated (manifest `requireAdministrator`)
+## D-014 — App runs elevated (manifest `requireAdministrator`)
 **Date** 2026-09-02
-**Decision** `app.manifest` requests `requireAdministrator`. PowerX manages system state (process control, services, HKLM tweaks), a split broker is still the long-term goal (D-ARCH) but until it exists the app runs elevated so every feature works. Every launch shows one UAC prompt.
+**Decision** `app.manifest` requests `requireAdministrator`. PowerX manages system state (process control, services, HKLM tweaks) — a split broker is still the long-term goal (D-ARCH) but until it exists the app runs elevated so every feature works. Every launch shows one UAC prompt.
 **Status** Active. `ProcessActions` / `QuickActions` still surface access-denied gracefully for protected processes.
 
-## D-013. Migrated to.NET 10 (SDK 10.0.400) once installed on the build host
+## D-013 — Migrated to .NET 10 (SDK 10.0.400) once installed on the build host
 **Date** 2026-09-02
-**Decision** All projects target `net10.0-windows` (`net10.0-windows10.0.19041.0` for `PowerX.App`); `Microsoft.Extensions.*` at 10.0.0, `Microsoft.WindowsAppSDK` at 1.8. `global.json` pins 10.0.400 with `rollForward: latestFeature`.
-**Why** D-004 always planned this; .NET 10 is the intended target from the brief. Build, tests and the WinUI x64 Release all pass on .NET 10.
+**Decision** All projects target `net10.0-windows` (`net10.0-windows10.0.19041.0` for `PowerX.App`); `Microsoft.Extensions.*` → 10.0.0; `Microsoft.WindowsAppSDK` → 1.8.250907003. `global.json` pins 10.0.400 with `rollForward: latestFeature`.
+**Why** D-004 always planned this; .NET 10 is the intended target from the brief (§35). Build + 14 tests + WinUI x64 Release all green on 10.
 **Note for local dev:** the machine also has an SDK-less `C:\Program Files (x86)\dotnet` that can win PATH order and produce "No .NET SDKs were found". Put `C:\Program Files\dotnet` first on PATH (or remove the x86 entry).
 **Status** Active.
 
-## D-012. WinUI 3 app builds unpackaged via `dotnet build` (no VS, no workload)
+## D-012 — WinUI 3 app builds unpackaged via `dotnet build` (no VS, no workload)
 **Date** 2026-09-02
-**Decision** `PowerX.App` targets `net10.0-windows10.0.19041.0`, `WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, `Platforms=x64;arm64`. It restores and builds green on this host with only the.NET 9 SDK, the WindowsAppSDK NuGet carries its own XAML compiler.
+**Decision** `PowerX.App` targets `net9.0-windows10.0.19041.0`, `WindowsPackageType=None`, `WindowsAppSDKSelfContained=true`, `Platforms=x64;arm64`. It restores and builds green on this host with only the .NET 9 SDK — the WindowsAppSDK NuGet carries its own XAML compiler.
 **Consequence** `PowerX.App` is **not** in `PowerX.sln` (the solution stays AnyCPU for Core/CLI/Tests). CI builds it as a separate `-p:Platform=x64` step. INPC rows are hand-rolled (the CommunityToolkit source-gen for partial properties didn't emit under this SDK; plain `[ObservableProperty]` fields warn MVVMTK0045 for WinRT marshalling, so we dropped the dependency).
-**Status** Active. The app builds with zero warnings.
+**Status** Active. App builds with 0 warnings. Runtime visual QA still pending a desktop session.
 
-## D-011. CLI ships first, WinUI shell scaffolded alongside
+## D-011 — CLI ships first, WinUI shell scaffolded alongside
 **Date** 2026-09-02
 **Decision** Milestone 1 delivers a working `PowerX.Core` + `powerx` CLI on real Windows telemetry, with the WinUI 3 app added as a scaffold that consumes the same Core services.
-**Why** The build host has the.NET 9 SDK but no Visual Studio and no interactive desktop session, so a GUI cannot be visually QA'd here. The Core/CLI slice is fully buildable, testable and runnable now; it also satisfies the prompt's rule that GUI and CLI call the same underlying functionality. GUI polish happens on a machine where it can be seen.
-**Status** Done. The CLI shipped in 0.1.0 alongside the app.
+**Why** The build host has the .NET 9 SDK but no Visual Studio and no interactive desktop session, so a GUI cannot be visually QA'd here. The Core/CLI slice is fully buildable, testable and runnable now; it also satisfies the prompt's rule that GUI and CLI call the same underlying functionality. GUI polish happens on a machine where it can be seen.
+**Status** Active. Core + CLI build green, 11 tests pass, `powerx status/process/tweak/scan/history` verified against live data.
 
-## D-010. Tweak state model: Default / Applied / Custom / NotApplicable / Unknown
+## D-010 — Tweak state model: Default / Applied / Custom / NotApplicable / Unknown
 **Decision** Detection compares the live registry value against both the shipped Windows default and our desired value. Anything else is `Custom` (do not silently overwrite).
 **Why** Users and other tools also change these keys. Reporting `Custom` honestly and requiring an explicit apply is safer than assuming.
 **Status** Implemented in `RegistryTweakOperation`.
 
-## D-009. Every mutation goes through `TweakEngine.Execute` and is logged
-**Decision** No registry writes in UI/CLI handlers. `Execute` runs detect, a privilege check, a build check, apply and verify, then appends a `ChangeRecord` to `%LOCALAPPDATA%\PowerX\change-history.jsonl`.
+## D-009 — Every mutation goes through `TweakEngine.Execute` and is logged
+**Decision** No registry writes in UI/CLI handlers. `Execute` does detect → privilege check → build check → apply → verify → append `ChangeRecord` to `%LOCALAPPDATA%\PowerX\change-history.jsonl`.
 **Why** Enables undo, history timeline, CLI parity, dry-run, and testability. Single audited path.
 **Status** Implemented.
 
-## D-008. Providers return `ProviderResult<T>` with an explicit quality signal
+## D-008 — Providers return `ProviderResult<T>` with an explicit quality signal
 **Decision** `Reliable` / `Approximate` / `Unavailable`. Consumers must render "unavailable", never fabricate `0`.
-**Why** A fabricated `0` or a fake `0 C` reading is a lie about the machine. Say "unavailable" instead.
+**Why** Prompt §58/§10 — no fake `0°C`, no fake precision.
 **Status** Implemented for CPU and memory.
 
-## D-007. Process enumeration via a single `NtQuerySystemInformation(SystemProcessInformation)`
+## D-007 — Process enumeration via a single `NtQuerySystemInformation(SystemProcessInformation)`
 **Decision** One syscall per refresh, delta-based CPU% and I/O rate against the previous snapshot, rather than per-process Win32 handles.
-**Why** This is how Task-Manager-class tools stay cheap under process storms. Opening thousands of handles per second does not scale.
+**Why** This is how Task-Manager-class tools stay cheap under process storms (prompt §38). Opening thousands of handles per second does not scale.
 **Trade-off** Struct layout is community-documented, not fully in `winternl.h`. Guarded by tests that assert the current process is found and all values are in range. Per-process image path / signature / user need a follow-up handle and are resolved lazily.
-**Status** Implemented, with telemetry tests.
+**Status** Implemented; 4 telemetry tests green.
 
-## D-006. CPU%: `GetSystemTimes` for total, `NtQuerySystemInformation(ProcessorPerformance)` for per-core
+## D-006 — CPU%: `GetSystemTimes` for total, `NtQuerySystemInformation(ProcessorPerformance)` for per-core
 **Why** Documented, cheap, no PDH/WMI dependency or counter-corruption risk. PDH stays available as a later provider for counters these APIs don't expose.
 **Status** Implemented.
 
-## D-005. Central package management + `Directory.Build.props`; pin SDK via `global.json`
-**Status** Done.
+## D-005 — Central package management + `Directory.Build.props`; pin SDK via `global.json`
+**Status** Done. SDK 9.0.200.
 
-## D-004. Language/runtime: C# on.NET (now.NET 10, see D-013)
-**Why** `net10.0-windows` gives full Win32/registry access and source-generated P/Invoke (`LibraryImport`) with zero extra packages. No native C++/Rust component until profiling justifies one.
+## D-004 — Language/runtime: C# on .NET (now .NET 10 — see D-013)
+**Why** `net10.0-windows` gives full Win32/registry access and source-generated P/Invoke (`LibraryImport`) with zero extra packages. No native C++/Rust component until profiling justifies one (prompt §35).
 **Status** Superseded by D-013.
 
-## D-003. Hand-written `LibraryImport` P/Invoke, not CsWin32 (for now)
-**Why** Keeps the interop surface tiny, readable and reviewable. CsWin32 can be introduced if the surface grows large.
+## D-003 — Hand-written `LibraryImport` P/Invoke, not CsWin32 (for now)
+**Why** Keeps the interop surface tiny, readable and reviewable (prompt §64 "no unexplained constants"). CsWin32 can be introduced if the surface grows large.
 **Status** Active. See `src/PowerX.Core/Interop/`.
 
-## D-002. Licence: MIT, with a hard rule against importing GPL or restricted code
+## D-002 — License: MIT for our code (pending final confirmation), with a hard rule against importing GPL/restricted code
 **Why** Maximises reuse and contribution. Winhance's no-compete clause and GPL projects mean we study behaviour/UX only and reimplement from Microsoft docs. See `docs/research/LICENSE_REVIEW.md`.
-**Status** Active. `LICENSE` is MIT as of 0.1.0.
+**Status** Proposed — needs sign-off before first tagged release.
 
-## D-001. Product framing: "Windows Control Center", not "debloater"
-**Why** Monitor / Diagnose / Optimize / Configure / Clean / Repair / Manage / Understand. The tool must be useful to someone who never debloats.
-**Status** Active, drives the information architecture in `docs/PRODUCT_SPEC.md`.
+## D-001 — Product framing: "Windows Control Center", not "debloater"
+**Why** Prompt §7. Monitor / Diagnose / Optimize / Configure / Clean / Repair / Manage / Understand. The tool must be useful to someone who never debloats.
+**Status** Active — drives the information architecture in `docs/PRODUCT_SPEC.md`.

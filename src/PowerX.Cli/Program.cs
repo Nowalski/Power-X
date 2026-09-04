@@ -40,6 +40,7 @@ try
         "firewall" => FirewallCommand.Run(rest),
         "events" => EventsCommand.Run(rest),
         "config" => ConfigCommand.Run(rest),
+        "doctor" or "health" => DoctorCommand.Run(rest),
         "version" or "--version" => Version(),
         _ => Unknown(args[0]),
     };

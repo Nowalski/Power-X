@@ -39,6 +39,7 @@ internal static class Help
         Row("powerx firewall", "Firewall status and broad inbound rules  [--all]");
         Row("powerx events", "Recent event-log errors, grouped and explained  [--24h] [--30d] [--warnings]");
         Row("powerx config export|import", "Save or apply a shareable tweak setup  (import --apply)");
+        Row("powerx doctor", "Scan the PC and list what is worth doing, most impactful first  [--deep]");
         Row("powerx update", "Check the public repo for a newer version");
         Row("powerx history", "Change history timeline  [--revertable]");
         AnsiConsole.Write(grid);

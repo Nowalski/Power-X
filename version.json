@@ -1,10 +1,10 @@
 {
-  "version": "0.1.9",
+  "version": "0.1.10",
   "published": "2026-09-04",
-  "notes": "Fix: the per-process network view on the Network page never actually worked. It read a process ID and byte count from fields that Windows' own ETW parser cannot resolve for this event source, so the card was always empty, silently. It now reads the correct fields directly and was verified against live traffic. Also fixed: a scheduled delayed-startup entry could fire at any user's logon on a shared PC instead of just the one it belongs to, and a few COM handles from the newer pages are now released properly.",
+  "notes": "Four new features: a Health check page (and `powerx doctor`) that scans everything PowerX already knows how to check and lists what's worth doing, most impactful first; startup entries whose target program no longer exists are now flagged and removable in one click; a plain-language \"what is this\" note for common processes in the Process inspector; and a CSV export button on the Drivers, Firewall, Scheduled tasks and Event log pages.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.9/PowerX-Setup-0.1.9-win-x64.msi",
-  "installerSha256": "fa447c8ea6cbda106e6bfdff8493fe0b5cc73a19993a85deb2d6397eeaa2d781",
-  "installerBytes": 56405826
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.10/PowerX-Setup-0.1.10-win-x64.msi",
+  "installerSha256": "f9a4db052397042704b9cf868719bfed350a65d89c35e28ea161b57e9cc86ca7",
+  "installerBytes": 56414028
 }

@@ -68,14 +68,72 @@ public class StartupRunOnceTests
             check!.GetValue(valueName).Should().BeNull("the RunOnce value should be deleted");
 
             using var bak = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\PowerX\RemovedRunOnce");
-            bak!.GetValue($"HKCU\\{valueName}").Should().NotBeNull("the deleted value should be stashed for recovery");
+            bak!.GetValue($"HKCU\\{runOnce}\\{valueName}").Should().NotBeNull("the deleted value should be stashed for recovery");
         }
         finally
         {
             using var k = Registry.CurrentUser.OpenSubKey(runOnce, writable: true);
             k?.DeleteValue(valueName, throwOnMissingValue: false);
             using var bak = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\PowerX\RemovedRunOnce", writable: true);
-            bak?.DeleteValue($"HKCU\\{valueName}", throwOnMissingValue: false);
+            bak?.DeleteValue($"HKCU\\{runOnce}\\{valueName}", throwOnMissingValue: false);
+        }
+    }
+
+    [Fact]
+    public void A_broken_Run_entry_is_flagged_and_can_be_removed()
+    {
+        const string runKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+        string valueName = $"PowerXTest_{Guid.NewGuid():N}";
+        string missingPath = $@"C:\PowerXTestMissing\{Guid.NewGuid():N}\ghost.exe";
+        using (var k = Registry.CurrentUser.CreateSubKey(runKey, writable: true))
+            k.SetValue(valueName, $"\"{missingPath}\" --flag", RegistryValueKind.String);
+
+        try
+        {
+            var entry = StartupProvider.Enumerate().FirstOrDefault(e => e.Name == valueName);
+            entry.Should().NotBeNull();
+            entry!.Broken.Should().BeTrue();
+            entry.ExecutablePath.Should().BeNull();
+
+            StartupProvider.CanRemove(entry).Should().BeTrue();
+            StartupProvider.Remove(entry).Success.Should().BeTrue();
+
+            using var check = Registry.CurrentUser.OpenSubKey(runKey);
+            check!.GetValue(valueName).Should().BeNull("the broken Run value should be deleted");
+
+            using var bak = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\PowerX\RemovedRunOnce");
+            bak!.GetValue($"HKCU\\{runKey}\\{valueName}").Should().NotBeNull("the deleted value should be stashed for recovery");
+        }
+        finally
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(runKey, writable: true);
+            k?.DeleteValue(valueName, throwOnMissingValue: false);
+            using var bak = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\PowerX\RemovedRunOnce", writable: true);
+            bak?.DeleteValue($"HKCU\\{runKey}\\{valueName}", throwOnMissingValue: false);
+        }
+    }
+
+    [Fact]
+    public void A_bare_command_name_that_does_not_resolve_is_not_flagged_broken()
+    {
+        const string runKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+        string valueName = $"PowerXTest_{Guid.NewGuid():N}";
+        using (var k = Registry.CurrentUser.CreateSubKey(runKey, writable: true))
+            k.SetValue(valueName, "rundll32.exe shell32.dll,SomeEntryPoint", RegistryValueKind.String);
+
+        try
+        {
+            var entry = StartupProvider.Enumerate().FirstOrDefault(e => e.Name == valueName);
+            entry.Should().NotBeNull();
+            // rundll32.exe is a bare command name (PowerX does not search PATH), so it does not
+            // resolve — but it also should not be flagged as a broken/removable entry.
+            entry!.Broken.Should().BeFalse();
+            StartupProvider.CanRemove(entry).Should().BeFalse();
+        }
+        finally
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(runKey, writable: true);
+            k?.DeleteValue(valueName, throwOnMissingValue: false);
         }
     }
 }

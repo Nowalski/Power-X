@@ -218,6 +218,7 @@ public sealed partial class MainWindow : Window
         var page = tag switch
         {
             "home" => typeof(HomePage),
+            "health" => typeof(HealthCheckPage),
             "processes" => typeof(ProcessesPage),
             "cpu" => typeof(CpuPage),
             "memory" => typeof(MemoryPage),

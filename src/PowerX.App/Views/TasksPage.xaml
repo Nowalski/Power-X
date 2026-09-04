@@ -23,10 +23,12 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search tasks..." TextChanged="Filter_Changed" />
             <ToggleButton x:Name="ReviewedOnly" Grid.Column="1" Content="Reviewed only" Click="Filter_Toggled" />
-            <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
+            <Button x:Name="ExportButton" Grid.Column="2" Content="Export CSV..." Click="Export_Click" />
+            <Button x:Name="RefreshButton" Grid.Column="3" Content="Rescan" Click="Refresh_Click" />
         </Grid>
 
         <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">

@@ -83,4 +83,22 @@ public sealed partial class DriversPage : Page
             return new DriverVm(d.Device, meta, d.Version, flag, brush, vis);
         }).ToList();
     }
+
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            nint hwnd = App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+            string? path = Services.NativeFileDialog.SaveFile(hwnd, "powerx-drivers.csv", "csv", "Save the driver list");
+            if (string.IsNullOrEmpty(path)) return;
+
+            Services.CsvExport.Write(path,
+                ["Device", "Provider", "DeviceClass", "Version", "Date", "Signed", "AgeYears"],
+                _all.Select(d => (IReadOnlyList<string>)[
+                    d.Device, d.Provider, d.DeviceClass, d.Version,
+                    d.Date?.ToString("yyyy-MM-dd") ?? "", d.Signed ? "yes" : "no", d.AgeYears.ToString(),
+                ]));
+        }
+        catch (Exception ex) { App.Log("Drivers.Export", ex); }
+    }
 }

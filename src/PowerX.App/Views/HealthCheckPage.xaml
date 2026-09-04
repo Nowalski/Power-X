@@ -1,0 +1,43 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.HealthCheckPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Health check" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Runs the checks PowerX already knows how to make and lists what is worth doing, most impactful first. Nothing here changes anything by itself — every item points at the page that does." />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+            <Grid ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="0" MinWidth="90">
+                    <TextBlock x:Name="ScoreText" Style="{StaticResource MetricValueStyle}" FontSize="34" Text="—" />
+                    <TextBlock Text="out of 100" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock x:Name="ScanHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ready to scan" />
+                    <TextBlock x:Name="ScanDetail" Style="{StaticResource MutedStyle}" FontSize="12" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
+                    <ToggleButton x:Name="DeepToggle" Content="Include WinSxS (slower)" />
+                    <Button x:Name="ScanButton" Content="Scan my PC" Style="{StaticResource AccentButtonStyle}" Click="Scan_Click" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2" Style="{StaticResource PageScrollStyle}">
+            <StackPanel x:Name="List" Spacing="8" Padding="0,0,0,16" />
+        </ScrollViewer>
+    </Grid>
+</Page>

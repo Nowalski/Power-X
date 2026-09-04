@@ -10,6 +10,7 @@ public sealed partial class StartupPage : Page
     private List<StartupEntry> _entries = [];
     private IReadOnlyList<BootItem> _bootItems = [];
     private string _filter = "";
+    private bool _brokenOnly;
     private bool _loaded;
 
     public StartupPage()
@@ -42,7 +43,9 @@ public sealed partial class StartupPage : Page
             Summary.Text = "Could not read startup entries: " + ex.Message;
             return;
         }
-        Summary.Text = $"{_entries.Count} startup entries · {_entries.Count(e => e.Enabled)} enabled";
+        int broken = _entries.Count(e => e.Broken);
+        Summary.Text = $"{_entries.Count} startup entries · {_entries.Count(e => e.Enabled)} enabled"
+                     + (broken > 0 ? $" · {broken} point at a missing program" : "");
         ShowBootCard(boot);
         _loaded = true;
         Render();
@@ -121,9 +124,17 @@ public sealed partial class StartupPage : Page
         Render();
     }
 
+    private void BrokenOnly_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        _brokenOnly = BrokenOnly.IsChecked == true;
+        Render();
+    }
+
     private void Render()
     {
         var shown = _entries.AsEnumerable();
+        if (_brokenOnly) shown = shown.Where(e => e.Broken);
         if (_filter.Length > 0)
             shown = shown.Where(e =>
                 e.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase) ||
@@ -155,6 +166,8 @@ public sealed partial class StartupPage : Page
             titleRow.Children.Add(Chip(entry.Publisher, (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
         if (entry.RequiresAdmin)
             titleRow.Children.Add(Chip("all users", (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
+        if (entry.Broken)
+            titleRow.Children.Add(Chip("program missing", (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"]));
         if (BootFor(entry) is { Impact: not StartupImpact.NotMeasured } b)
         {
             var brush = b.Impact switch
@@ -263,11 +276,15 @@ public sealed partial class StartupPage : Page
 
     private async Task RemoveEntry(StartupEntry entry)
     {
+        string body = entry.Broken
+            ? $"\"{entry.Command}\" does not exist on this PC, so this entry cannot run anyway. Removing it deletes the registry value. "
+              + "PowerX saves a copy under HKCU\\SOFTWARE\\PowerX\\RemovedRunOnce so you can put it back by hand."
+            : "This deletes the RunOnce value so it won't run at the next sign-in. "
+              + "PowerX saves a copy under HKCU\\SOFTWARE\\PowerX\\RemovedRunOnce so you can put it back by hand.";
         var confirm = new ContentDialog
         {
             Title = $"Remove {entry.Name}?",
-            Content = "This deletes the RunOnce value so it won't run at the next sign-in. "
-                    + "PowerX saves a copy under HKCU\\SOFTWARE\\PowerX\\RemovedRunOnce so you can put it back by hand.",
+            Content = body,
             PrimaryButtonText = "Remove", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
         };

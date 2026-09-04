@@ -152,6 +152,24 @@ public sealed partial class TasksPage : Page
         await LoadAsync();
     }
 
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            nint hwnd = App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+            string? path = Services.NativeFileDialog.SaveFile(hwnd, "powerx-scheduled-tasks.csv", "csv", "Save the task list");
+            if (string.IsNullOrEmpty(path)) return;
+
+            Services.CsvExport.Write(path,
+                ["Path", "Name", "Enabled", "Stance", "Triggers", "Action", "LastRun"],
+                _all.Select(t => (IReadOnlyList<string>)[
+                    t.Path, t.Name, t.Enabled ? "yes" : "no", t.Stance.ToString(), t.Triggers, t.Action,
+                    t.LastRun?.ToString("yyyy-MM-dd HH:mm") ?? "",
+                ]));
+        }
+        catch (Exception ex) { App.Log("Tasks.Export", ex); }
+    }
+
     private static string StanceHeading(TaskStance s) => s switch
     {
         TaskStance.Telemetry => "Telemetry and reporting",

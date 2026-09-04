@@ -20,10 +20,12 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search devices, vendors..." TextChanged="Filter_Changed" />
             <ToggleButton x:Name="OldOnly" Grid.Column="1" Content="Old only" Click="OldOnly_Click" />
-            <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
+            <Button x:Name="ExportButton" Grid.Column="2" Content="Export CSV..." Click="Export_Click" />
+            <Button x:Name="RefreshButton" Grid.Column="3" Content="Rescan" Click="Refresh_Click" />
         </Grid>
 
         <ListView Grid.Row="2" x:Name="List" SelectionMode="None" ShowsScrollingPlaceholders="True">

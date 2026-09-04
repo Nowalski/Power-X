@@ -23,7 +23,7 @@ public sealed partial class MainWindow
         var list = new List<PaletteCommand>();
 
         void Nav(string title, string tag) => list.Add(new($"Go to {title}", "Page", () => { Navigate(tag); return Task.CompletedTask; }));
-        Nav("Home", "home"); Nav("Processes", "processes"); Nav("CPU", "cpu"); Nav("Memory", "memory");
+        Nav("Home", "home"); Nav("Health check", "health"); Nav("Processes", "processes"); Nav("CPU", "cpu"); Nav("Memory", "memory");
         Nav("GPU", "gpu"); Nav("Network", "network"); Nav("Firewall", "firewall");
         Nav("Programs", "programs"); Nav("Startup", "startup"); Nav("Scheduled tasks", "tasks");
         Nav("Services", "services"); Nav("Drivers", "drivers");

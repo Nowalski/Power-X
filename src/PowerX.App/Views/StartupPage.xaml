@@ -34,9 +34,16 @@
         </Border>
 
         <InfoBar Grid.Row="2" IsOpen="True" Severity="Informational" IsClosable="False"
-                 Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the RunOnce value." />
+                 Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the registry value — offered for RunOnce entries and for entries whose program no longer exists." />
 
-        <TextBox x:Name="Filter" Grid.Row="3" PlaceholderText="Search startup entries…" TextChanged="Filter_Changed" />
+        <Grid Grid.Row="3" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Search startup entries…" TextChanged="Filter_Changed" />
+            <ToggleButton x:Name="BrokenOnly" Grid.Column="1" Content="Missing programs only" Click="BrokenOnly_Click" />
+        </Grid>
 
         <ScrollViewer Grid.Row="4" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="6" Padding="0,0,0,16" />

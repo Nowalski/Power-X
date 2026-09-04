@@ -116,6 +116,25 @@ public sealed partial class EventLogPage : Page
         return new Border { Style = (Style)Application.Current.Resources["CardStyle"], Margin = new Thickness(0, 3, 0, 3), Child = text };
     }
 
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            nint hwnd = App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+            string? path = Services.NativeFileDialog.SaveFile(hwnd, "powerx-event-log.csv", "csv", "Save the event log summary");
+            if (string.IsNullOrEmpty(path)) return;
+
+            Services.CsvExport.Write(path,
+                ["Log", "Provider", "EventId", "Level", "Count", "FirstSeen", "LastSeen", "Message"],
+                _all.Select(g => (IReadOnlyList<string>)[
+                    g.Log, g.Provider, g.EventId.ToString(), g.Level.ToString(), g.Count.ToString(),
+                    g.FirstSeen.LocalDateTime.ToString("yyyy-MM-dd HH:mm"), g.LastSeen.LocalDateTime.ToString("yyyy-MM-dd HH:mm"),
+                    g.Explanation ?? g.SampleMessage,
+                ]));
+        }
+        catch (Exception ex) { App.Log("EventLog.Export", ex); }
+    }
+
     private static Border Chip(string text, Brush fg) => new()
     {
         Background = (Brush)Application.Current.Resources["LayerFillColorDefaultBrush"],

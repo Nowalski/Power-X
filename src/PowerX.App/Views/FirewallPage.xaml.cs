@@ -31,6 +31,26 @@ public sealed partial class FirewallPage : Page
         catch (Exception ex) { App.Log("Firewall.Open", ex); }
     }
 
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            nint hwnd = App.Window is { } w ? WinRT.Interop.WindowNative.GetWindowHandle(w) : 0;
+            string? path = Services.NativeFileDialog.SaveFile(hwnd, "powerx-firewall-rules.csv", "csv", "Save the firewall rules");
+            if (string.IsNullOrEmpty(path)) return;
+
+            Services.CsvExport.Write(path,
+                ["Name", "Direction", "Action", "Enabled", "Program", "Protocol", "LocalPorts", "RemotePorts", "Profiles", "WorthReviewing"],
+                _all.Select(r => (IReadOnlyList<string>)[
+                    r.Name, r.Direction.ToString(), r.Action.ToString(), r.Enabled ? "yes" : "no",
+                    r.Program, r.Protocol, r.LocalPorts, r.RemotePorts,
+                    string.Join('/', new[] { r.Domain ? "domain" : null, r.Private ? "private" : null, r.Public ? "public" : null }.Where(x => x != null)),
+                    r.WorthReviewing ? "yes" : "no",
+                ]));
+        }
+        catch (Exception ex) { App.Log("Firewall.Export", ex); }
+    }
+
     private async Task LoadAsync()
     {
         Summary.Text = "Reading firewall rules...";
