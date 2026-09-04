@@ -61,6 +61,12 @@ public static class HealthCheck
             catch (Exception) { /* one provider failing should not blank the report */ }
         }
 
+        // Every check below is synchronous Win32/WMI/COM/process-spawn work (the battery check
+        // alone shells out to powercfg) — run the whole batch on a background thread so a caller
+        // that awaits this directly from a UI thread (the Health check page does) does not freeze
+        // for the second-plus this can take.
+        await Task.Run(() =>
+        {
         Safe("Restart", () =>
         {
             var pending = PendingReboot.Check();
@@ -190,6 +196,7 @@ public static class HealthCheck
                 Add("Tweaks", $"{missing} recommended tweak{(missing == 1 ? " is" : "s are")} not applied",
                     "Conservative, broadly safe changes you have not turned on yet.", RecommendationImpact.Low, "tweaks", "Open Tweaks");
         });
+        }, ct);
 
         if (deep)
         {

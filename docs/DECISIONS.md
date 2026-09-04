@@ -4,6 +4,15 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-030 — Audit: network throttled to half rate, Health check froze the UI
+**Date** 2026-09-04
+**Decision** Two fixes prompted by a report that the Monitor pages, network in particular, "take a bit to show something".
+- **`TelemetryHub` sampled network on every other tick** (`_tick % 2 == 0`), a P2 fix from an earlier audit pass meant to save the ~10-20 ms `NetworkInterface.GetAllNetworkInterfaces()` costs. That sampling already runs entirely on the background loop thread, never the UI thread, so the saving bought nothing visible and cost real responsiveness: the Network page's down/up rate stuck at its old value for a full extra second between updates, and read blank for up to 2 seconds after the app opened (nothing to show until the first network sample landed). Reverted to sampling network every tick like CPU/memory/GPU; `Commit` and `SampleOnce` simplified now that a network sample is always present.
+- **`HealthCheck.ScanAsync` ran fully synchronously** — fourteen checks including a `powercfg /batteryreport` process spawn, WMI, COM firewall/task enumeration, and a 7-day event-log read — with no `Task.Run` anywhere in the non-`deep` path. `async Task<HealthReport>` with no `await` reached before the checks run just executes them on the caller's thread, and the Health check page calls it directly from `OnNavigatedTo`/a button click, so opening the page (it also auto-scans on first load) froze the whole app for a second or more. Fixed by wrapping the check batch in `await Task.Run(...)` inside `HealthCheck.ScanAsync` itself, so every caller (the page and `powerx doctor`) benefits without having to remember to offload it.
+**Status** Active (0.1.11). Verified: build clean, 119 tests, elevated smoke launch on the Network page. No behaviour change to what is reported, only when and how fast.
+
+---
+
 ## D-029 — Health check, broken-startup cleanup, "explain this process", CSV export
 **Date** 2026-09-04
 **Decision** 0.1.10, four features that round off the recent inventory work.

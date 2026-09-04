@@ -147,7 +147,6 @@ public sealed class TelemetryHub
     private void SampleOnce()
     {
         _tick++;
-        bool sampleNet = _tick % 2 == 0;   // network enumeration is the priciest part of a tick
 
         if (DemoData.Active)
         {
@@ -156,7 +155,7 @@ public sealed class TelemetryHub
             var dproc = DemoData.Processes(_tick);
             var dgpu = ProviderResult<GpuMetrics>.Ok(DemoData.Gpu(_tick));
             var dnet = ProviderResult<NetworkMetrics>.Ok(DemoData.Network(_tick));
-            _ui?.TryEnqueue(() => Commit(dcpu, dmem, dproc, dgpu, dnet, true));
+            _ui?.TryEnqueue(() => Commit(dcpu, dmem, dproc, dgpu, dnet));
             return;
         }
 
@@ -164,9 +163,14 @@ public sealed class TelemetryHub
         var mem = _mem.Sample();
         var proc = _proc.Enumerate();
         var gpu = _gpu.Sample();
-        var net = sampleNet ? _net.Sample() : null;
+        // This already runs on the background sampling thread (see RunAsync), never the UI
+        // thread, so there is no responsiveness reason to sample this any less often than
+        // everything else — it used to be skipped on odd ticks to save ~10-20ms of background
+        // work, which made the Network page's rate stick for a full extra second between
+        // updates and left it blank for up to 2 seconds after the app opened.
+        var net = _net.Sample();
 
-        _ui?.TryEnqueue(() => Commit(cpu, mem, proc, gpu, net, sampleNet));
+        _ui?.TryEnqueue(() => Commit(cpu, mem, proc, gpu, net));
     }
 
     /// <summary>Runs on the UI thread. Publishes the snapshot and raises <see cref="Updated"/>.</summary>
@@ -175,27 +179,17 @@ public sealed class TelemetryHub
         ProviderResult<MemoryMetrics> mem,
         ProcessSnapshot proc,
         ProviderResult<GpuMetrics> gpu,
-        ProviderResult<NetworkMetrics>? net,
-        bool sampledNet)
+        ProviderResult<NetworkMetrics> net)
     {
         LastCpu = cpu;
         LastMemory = mem;
         LastProcesses = proc;
         LastGpu = gpu;
-
-        if (sampledNet)
+        LastNetwork = net;
+        if (net.Value is { } n)
         {
-            LastNetwork = net;
-            if (net?.Value is { } n)
-            {
-                NetDownHistory.Seed(n.TotalReceiveBytesPerSec); NetDownHistory.Add(n.TotalReceiveBytesPerSec);
-                NetUpHistory.Seed(n.TotalSendBytesPerSec); NetUpHistory.Add(n.TotalSendBytesPerSec);
-            }
-        }
-        else if (LastNetwork?.Value is { } prev)
-        {
-            NetDownHistory.Add(prev.TotalReceiveBytesPerSec);
-            NetUpHistory.Add(prev.TotalSendBytesPerSec);
+            NetDownHistory.Seed(n.TotalReceiveBytesPerSec); NetDownHistory.Add(n.TotalReceiveBytesPerSec);
+            NetUpHistory.Seed(n.TotalSendBytesPerSec); NetUpHistory.Add(n.TotalSendBytesPerSec);
         }
 
         // Seed on the first sample so every chart opens already full instead of crawling in.
