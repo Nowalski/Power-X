@@ -14,7 +14,8 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 - **Share this setup** (Settings card). Export the tweaks you have applied to a small `powerx.config` JSON file with no machine detail; import shows exactly what it would change and asks before applying the tweak half. `powerx config export | import`.
 - **Per-process network use** (Network page card). A private ETW session on `Microsoft-Windows-Kernel-Network`, via the Microsoft TraceEvent library, attributes throughput to a process. Needs administrator rights; the card is hidden if the session cannot start.
 - **Delayed startup**. The Startup page menu can convert an eligible Run entry into a scheduled task that starts the program a chosen number of seconds after sign-in, and disable the original. Undo removes the task and re-enables the entry. Pairs with the boot-impact data: the slow program still starts, just after the desktop is usable.
-**Status** Active (0.1.7). 112 tests.
+**0.1.8** The Storage explorer now shows each folder the moment it is measured (loose files instantly, the rest one by one with a running total) instead of a frozen screen while the whole tree is walked; the default starting point is the user profile.
+**Status** Active (0.1.7; 0.1.8 storage fix). 112 tests.
 
 ## D-027. Config-drift snapshots, storage explorer, battery, pending restart, WinSxS
 **Date** 2026-09-04
