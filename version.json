@@ -1,10 +1,10 @@
 {
-  "version": "0.1.7",
+  "version": "0.1.8",
   "published": "2026-09-04",
-  "notes": "Seven features. Scheduled tasks: a curated view of every task with a stance on the well-known ones (telemetry, third-party updaters) and a reversible on/off. Drivers: an inventory that flags drivers three or more years old, and unsigned ones. Firewall: a read-only view of the rules with a flag on broad inbound-allow holes. Event log: recent errors grouped by source with a plain-language note for the common ones. Share this setup: export your applied tweaks to a small file and apply them on another PC behind a preview. Per-process network use on the Network page (needs administrator rights). And you can now delay a slow startup entry until after sign-in from the Startup page.",
+  "notes": "Fix: the Storage explorer sat on a frozen \"Scanning...\" screen for a long time when pointed at a whole drive, because it measured every folder before drawing anything. It now shows each folder the moment it is measured — loose files appear instantly, the rest fill in one by one with a running total — and the default starting point is your user profile rather than the whole C: drive.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.7/PowerX-Setup-0.1.7-win-x64.msi",
-  "installerSha256": "fea32f87210238f7d614a49b782ca5592df0f610f9b363a1201a3fd93c7ee488",
-  "installerBytes": 56405826
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.8/PowerX-Setup-0.1.8-win-x64.msi",
+  "installerSha256": "84e0c5c8d4724a3068783ff9e2fe1d7f3452ff5f8676ab998a99cf8105c45a4a",
+  "installerBytes": 56414018
 }

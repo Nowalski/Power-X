@@ -99,6 +99,14 @@ public class SystemDiagnosticsTests
             entries[0].SizeBytes.Should().BeGreaterThanOrEqualTo(50_000);
             entries[0].IsDirectory.Should().BeTrue();
             entries.Single(e => e.Name == "loose.bin").IsDirectory.Should().BeFalse();
+
+            // Streaming: loose files come back before any folder is measured.
+            var order = new System.Collections.Concurrent.ConcurrentQueue<FolderEntry>();
+            await FolderSizer.ScanAsync(root, new Progress<FolderEntry>(order.Enqueue));
+            await Task.Delay(50);
+            order.Should().Contain(e => e.Name == "loose.bin");
+            order.TryPeek(out var first).Should().BeTrue();
+            first!.Name.Should().Be("loose.bin");
         }
         finally
         {
