@@ -1,10 +1,10 @@
 {
-  "version": "0.1.8",
+  "version": "0.1.9",
   "published": "2026-09-04",
-  "notes": "Fix: the Storage explorer sat on a frozen \"Scanning...\" screen for a long time when pointed at a whole drive, because it measured every folder before drawing anything. It now shows each folder the moment it is measured — loose files appear instantly, the rest fill in one by one with a running total — and the default starting point is your user profile rather than the whole C: drive.",
+  "notes": "Fix: the per-process network view on the Network page never actually worked. It read a process ID and byte count from fields that Windows' own ETW parser cannot resolve for this event source, so the card was always empty, silently. It now reads the correct fields directly and was verified against live traffic. Also fixed: a scheduled delayed-startup entry could fire at any user's logon on a shared PC instead of just the one it belongs to, and a few COM handles from the newer pages are now released properly.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.8/PowerX-Setup-0.1.8-win-x64.msi",
-  "installerSha256": "84e0c5c8d4724a3068783ff9e2fe1d7f3452ff5f8676ab998a99cf8105c45a4a",
-  "installerBytes": 56414018
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.9/PowerX-Setup-0.1.9-win-x64.msi",
+  "installerSha256": "fa447c8ea6cbda106e6bfdff8493fe0b5cc73a19993a85deb2d6397eeaa2d781",
+  "installerBytes": 56405826
 }

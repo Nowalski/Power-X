@@ -48,16 +48,18 @@ public static class TaskInventory
     {
         var result = new List<ScheduledTaskInfo>();
         dynamic? svc = null;
+        dynamic? root = null;
         try
         {
             var type = Type.GetTypeFromProgID("Schedule.Service");
             if (type is null) return result;
             svc = Activator.CreateInstance(type);
             svc!.Connect();
-            Walk(svc.GetFolder("\\"), "\\", result);
+            root = svc.GetFolder("\\");
+            Walk(root, "\\", result);
         }
         catch (Exception) { }
-        finally { Release(svc); }
+        finally { Release(root); Release(svc); }
 
         return result
             .Select(t => t with
@@ -74,17 +76,28 @@ public static class TaskInventory
     {
         try
         {
-            foreach (dynamic task in folder.GetTasks(1))   // 1 = include hidden
+            dynamic tasks = folder.GetTasks(1);   // 1 = include hidden
+            try
             {
-                try { into.Add(Read(task, folderPath)); }
-                catch (Exception) { }
-                finally { Release(task); }
+                foreach (dynamic task in tasks)
+                {
+                    try { into.Add(Read(task, folderPath)); }
+                    catch (Exception) { }
+                    finally { Release(task); }
+                }
             }
-            foreach (dynamic sub in folder.GetFolders(0))
+            finally { Release(tasks); }
+
+            dynamic subFolders = folder.GetFolders(0);
+            try
             {
-                try { Walk(sub, (string)sub.Path, into); }
-                finally { Release(sub); }
+                foreach (dynamic sub in subFolders)
+                {
+                    try { Walk(sub, (string)sub.Path, into); }
+                    finally { Release(sub); }
+                }
             }
+            finally { Release(subFolders); }
         }
         catch (Exception) { }
     }

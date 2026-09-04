@@ -80,13 +80,15 @@ public static class FirewallRules
     {
         var result = new List<FirewallRule>();
         dynamic? policy = null;
+        dynamic? rules = null;
         try
         {
             var type = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
             if (type is null) return result;
             policy = Activator.CreateInstance(type);
+            rules = policy!.Rules;
 
-            foreach (dynamic r in policy!.Rules)
+            foreach (dynamic r in rules)
             {
                 try
                 {
@@ -115,7 +117,7 @@ public static class FirewallRules
             }
         }
         catch (Exception) { }
-        finally { Release(policy); }
+        finally { Release(rules); Release(policy); }
 
         return result
             .OrderByDescending(r => r.WorthReviewing)

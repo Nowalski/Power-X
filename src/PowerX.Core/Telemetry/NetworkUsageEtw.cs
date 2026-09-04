@@ -72,13 +72,17 @@ public sealed class NetworkUsageEtw : IDisposable
             bool send = SendIds.Contains(id);
             if (!send && !RecvIds.Contains(id)) return;
 
-            int pid = data.ProcessID;
-            if (pid <= 0) { try { pid = Convert.ToInt32(data.PayloadByName("PID")); } catch { return; } }
-
-            long size;
-            try { size = Convert.ToInt64(data.PayloadByName("size")); }
-            catch { return; }
-            if (size <= 0 || pid <= 0) return;
+            // Microsoft-Windows-Kernel-Network's TCP/UDP send/recv events are logged in the kernel's
+            // own context, so TraceEvent's own ProcessID/PayloadByName do not resolve to the owning
+            // process (ProcessID here is usually 4 = System, and the manifest fields do not surface
+            // through the generic parser). The owning PID and the byte count are, in every build
+            // observed, the first two UInt32 fields of the raw payload (PID, then size) — this is
+            // the same layout WPA's own network-usage view reads. Read them directly.
+            var raw = data.EventData();
+            if (raw.Length < 8) return;
+            int pid = BitConverter.ToInt32(raw, 0);
+            long size = BitConverter.ToUInt32(raw, 4);
+            if (pid <= 0 || size <= 0) return;
 
             var slot = _totals.GetOrAdd(pid, static _ => new long[2]);
             Interlocked.Add(ref slot[send ? 0 : 1], size);

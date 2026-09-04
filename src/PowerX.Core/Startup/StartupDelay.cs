@@ -42,6 +42,9 @@ public static class StartupDelay
         string args = ArgumentsFrom(entry.Command, exe);
 
         dynamic? svc = null;
+        dynamic? root = null;
+        dynamic? folder = null;
+        dynamic? def = null;
         try
         {
             var type = Type.GetTypeFromProgID("Schedule.Service");
@@ -49,12 +52,11 @@ public static class StartupDelay
             svc = Activator.CreateInstance(type);
             svc!.Connect();
 
-            dynamic root = svc.GetFolder("\\");
-            dynamic folder;
+            root = svc.GetFolder("\\");
             try { folder = root.GetFolder(TaskFolder); }
             catch { folder = root.CreateFolder(TaskFolder); }
 
-            dynamic def = svc.NewTask(0);
+            def = svc.NewTask(0);
             def.RegistrationInfo.Author = "PowerX";
             def.RegistrationInfo.Description =
                 $"Runs \"{entry.Name}\" {seconds}s after sign-in. Created by PowerX to reduce boot-time impact. "
@@ -62,11 +64,19 @@ public static class StartupDelay
 
             dynamic trigger = def.Triggers.Create(TASK_TRIGGER_LOGON);
             trigger.Delay = $"PT{seconds}S";
+            // Scope the trigger to this entry's own user, matching Run-key semantics — an
+            // unscoped logon trigger fires for ANY user who signs in on a shared machine.
+            if (entry.Source == StartupSource.RunUser)
+            {
+                try { trigger.UserId = $"{Environment.UserDomainName}\\{Environment.UserName}"; } catch { }
+            }
+            Release(trigger);
 
             dynamic action = def.Actions.Create(TASK_ACTION_EXEC);
             action.Path = exe;
             if (!string.IsNullOrWhiteSpace(args)) action.Arguments = args;
             try { action.WorkingDirectory = Path.GetDirectoryName(exe); } catch { }
+            Release(action);
 
             def.Settings.DisallowStartIfOnBatteries = false;
             def.Settings.StopIfGoingOnBatteries = false;
@@ -90,12 +100,14 @@ public static class StartupDelay
         }
         catch (UnauthorizedAccessException) { return ActionResult.Fail("Administrator rights are required for this entry."); }
         catch (Exception ex) { return ActionResult.Fail(ex.Message); }
-        finally { Release(svc); }
+        finally { Release(def); Release(folder); Release(root); Release(svc); }
     }
 
     public static ActionResult Undelay(StartupEntry entry)
     {
         dynamic? svc = null;
+        dynamic? root = null;
+        dynamic? folder = null;
         try
         {
             var type = Type.GetTypeFromProgID("Schedule.Service");
@@ -105,10 +117,12 @@ public static class StartupDelay
 
             try
             {
-                dynamic folder = svc.GetFolder($"\\{TaskFolder}");
+                folder = svc.GetFolder($"\\{TaskFolder}");
                 folder.DeleteTask($"Delayed - {Sanitize(entry.Name)}", 0);
                 // tidy the folder if it is now empty
-                try { if (folder.GetTasks(1).Count == 0) svc.GetFolder("\\").DeleteFolder(TaskFolder, 0); } catch { }
+                dynamic remaining = folder.GetTasks(1);
+                try { if (remaining.Count == 0) { root = svc.GetFolder("\\"); root.DeleteFolder(TaskFolder, 0); } }
+                finally { Release(remaining); }
             }
             catch (Exception) { /* task already gone */ }
 
@@ -117,7 +131,7 @@ public static class StartupDelay
                 : ActionResult.Fail("Removed the delay task but could not re-enable the original entry: " + enabled.Message);
         }
         catch (Exception ex) { return ActionResult.Fail(ex.Message); }
-        finally { Release(svc); }
+        finally { Release(folder); Release(root); Release(svc); }
     }
 
     private static string ArgumentsFrom(string command, string exe)
