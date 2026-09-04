@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Win32;
 using PowerX.Core.Processes;
+using PowerX.Core.Programs;
 
 namespace PowerX.Core.Startup;
 
@@ -184,7 +185,7 @@ public static class StartupProvider
         using var key = hive.OpenSubKey(subKey);
         if (key is null) return;
 
-        var approved = approvedKey is not null && approvedHive is not null
+        using var approved = approvedKey is not null && approvedHive is not null
             ? approvedHive.OpenSubKey(approvedKey)
             : null;
 
@@ -203,7 +204,6 @@ public static class StartupProvider
                 Publisher = exe is not null ? SafeCompany(exe) : null,
             });
         }
-        approved?.Dispose();
     }
 
     private static void ReadFolder(List<StartupEntry> list, string folder, StartupSource source, RegistryKey approvedHive)
@@ -237,16 +237,9 @@ public static class StartupProvider
         command = command.Trim();
         if (command.Length == 0) return null;
 
-        string path;
-        if (command[0] == '"')
-        {
-            int end = command.IndexOf('"', 1);
-            path = end > 1 ? command[1..end] : command[1..];
-        }
-        else
-        {
-            path = command.Split(' ', 2)[0];
-        }
+        // Handles a quoted path, and an unquoted path that itself contains spaces
+        // (e.g. C:\Program Files\App\app.exe --flag), by splitting at the .exe boundary.
+        string path = InstalledPrograms.SplitCommand(command).File;
 
         try
         {

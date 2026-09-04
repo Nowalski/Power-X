@@ -104,10 +104,26 @@ public static class HashLookup
         string? malDetail = null;
         if (root.TryGetProperty("KnownMalicious", out var km))
         {
-            malicious = true;
-            malDetail = km.ValueKind == JsonValueKind.String ? km.GetString()
-                : km.ValueKind == JsonValueKind.Array ? string.Join(", ", km.EnumerateArray().Select(e => e.GetString()))
-                : "listed on a blocklist";
+            // The service only sends this key for a flagged file, but guard against a falsy value
+            // so we never raise a "known malicious" verdict on an empty string / false / [].
+            switch (km.ValueKind)
+            {
+                case JsonValueKind.String when !string.IsNullOrWhiteSpace(km.GetString()):
+                    malicious = true;
+                    malDetail = km.GetString();
+                    break;
+                case JsonValueKind.Array when km.GetArrayLength() > 0:
+                    var names = km.EnumerateArray()
+                        .Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() : e.ToString())
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .ToList();
+                    if (names.Count > 0) { malicious = true; malDetail = string.Join(", ", names); }
+                    break;
+                case JsonValueKind.True:
+                    malicious = true;
+                    malDetail = "listed on a blocklist";
+                    break;
+            }
         }
         string summary = malicious
             ? $"Flagged as malicious ({malDetail}). Treat this file as dangerous, and run a full antivirus scan."

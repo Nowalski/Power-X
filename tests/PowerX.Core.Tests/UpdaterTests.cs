@@ -44,8 +44,22 @@ public class UpdaterTests
     [Fact]
     public void Launch_fails_cleanly_on_a_missing_file()
     {
-        var r = UpdateInstaller.Launch(Path.Combine(Path.GetTempPath(), $"nope-{Guid.NewGuid():N}.msi"));
+        var r = UpdateInstaller.Launch(Path.Combine(Path.GetTempPath(), $"nope-{Guid.NewGuid():N}.msi"), Sha64);
         r.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Launch_refuses_a_file_whose_hash_does_not_match()
+    {
+        string tmp = Path.Combine(Path.GetTempPath(), $"powerx-fake-{Guid.NewGuid():N}.msi");
+        File.WriteAllText(tmp, "not really an installer");
+        try
+        {
+            var r = UpdateInstaller.Launch(tmp, Sha64);
+            r.Success.Should().BeFalse();
+            r.Message.Should().Contain("hash");
+        }
+        finally { File.Delete(tmp); }
     }
 
     [Fact]

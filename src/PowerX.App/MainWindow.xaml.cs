@@ -140,7 +140,7 @@ public sealed partial class MainWindow : Window
         }.ShowAsync();
         if (go != ContentDialogResult.Primary) return;
 
-        var launch = PowerX.Core.Diagnostics.UpdateInstaller.Launch(dl.Path);
+        var launch = PowerX.Core.Diagnostics.UpdateInstaller.Launch(dl.Path, _update.InstallerSha256 ?? "");
         if (launch.Success)
             Application.Current.Exit();
         else

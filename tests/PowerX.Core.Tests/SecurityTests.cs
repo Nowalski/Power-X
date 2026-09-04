@@ -28,6 +28,18 @@ public class SecurityTests
         r.Summary.Should().Contain("malicious").And.Contain("antivirus scan");
     }
 
+    [Theory]
+    [InlineData("""{"FileName":"a.dll","KnownMalicious":"","source":"RDS"}""")]
+    [InlineData("""{"FileName":"a.dll","KnownMalicious":false,"source":"RDS"}""")]
+    [InlineData("""{"FileName":"a.dll","KnownMalicious":[],"source":"RDS"}""")]
+    public void Parse_does_not_flag_a_falsy_KnownMalicious_value(string json)
+    {
+        var r = Parse(json);
+        r.Found.Should().BeTrue();
+        r.KnownMalicious.Should().BeFalse();
+        r.Summary.Should().NotContain("malicious");
+    }
+
     [Fact]
     public void Parse_reports_a_trusted_known_good_file()
     {

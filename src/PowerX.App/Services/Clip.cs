@@ -12,13 +12,15 @@ internal static class Clip
 {
     public static bool SetText(string text)
     {
-        var pkg = new DataPackage();
-        pkg.SetText(text);
         for (int attempt = 0; attempt < 3; attempt++)
         {
             try
             {
+                var pkg = new DataPackage();
+                pkg.SetText(text);
                 Clipboard.SetContent(pkg);
+                // Push the data into the clipboard so it survives PowerX closing right after.
+                try { Clipboard.Flush(); } catch { /* Flush is a nicety; the SetContent already took */ }
                 return true;
             }
             catch (Exception ex)

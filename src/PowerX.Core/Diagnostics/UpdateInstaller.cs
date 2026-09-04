@@ -93,10 +93,25 @@ public static class UpdateInstaller
     /// Launch the verified MSI. It carries the same UpgradeCode, so Windows Installer does an
     /// in-place major upgrade (and prompts for elevation itself). The caller should close PowerX
     /// right after — the running exe would otherwise block the file replace.
+    ///
+    /// The file's SHA-256 is checked again here, immediately before it runs: the download was
+    /// verified earlier, but it sits in a user-writable folder in between, so re-checking closes
+    /// the gap between "verified" and "executed" before we hand an installer elevation.
     /// </summary>
-    public static ActionResult Launch(string msiPath)
+    public static ActionResult Launch(string msiPath, string expectedSha256)
     {
         if (!File.Exists(msiPath)) return ActionResult.Fail("The installer file is missing.");
+        try
+        {
+            using var fs = File.OpenRead(msiPath);
+            string actual = Convert.ToHexString(SHA256.HashData(fs));
+            if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                return ActionResult.Fail("The installer on disk no longer matches the verified hash. It was NOT run.");
+        }
+        catch (Exception ex)
+        {
+            return ActionResult.Fail("Could not re-verify the installer: " + ex.Message);
+        }
         try
         {
             Process.Start(new ProcessStartInfo("msiexec.exe", $"/i \"{msiPath}\"") { UseShellExecute = true });
