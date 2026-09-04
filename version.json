@@ -1,10 +1,10 @@
 {
-  "version": "0.1.5",
+  "version": "0.1.6",
   "published": "2026-09-04",
-  "notes": "Four read-only features. What changed: a daily background config snapshot (startup entries, scheduled tasks, services, programs, drivers, tweaks) with an added/removed/changed diff between any two, so 'my PC got weird lately' has an answer. Storage explorer: sizes the folders under a drive or path, largest first, drill down by click. Tools gains a pending-restart check (and why), a WinSxS component-store analysis with the safe Microsoft cleanup, and battery health (wear, cycles, runtime) on laptops. The Startup boot card gained a last-12-boots trend. Plus an audit pass: the updater re-verifies the installer immediately before running it, unquoted startup paths resolve, and a few smaller fixes.",
+  "notes": "Hardening pass over the 0.1.5 features. The 'What changed' page no longer fails to draw a diff on machines where two installed programs share a display name (common on a gaming PC with several bundled VC++ redistributables). Storage explorer sizes a full drive much faster. The component-store analysis has a time limit and reports DISM's own error text. Battery health reads the runtime estimate correctly. Plus smaller fixes to the pending-restart check.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.5/PowerX-Setup-0.1.5-win-x64.msi",
-  "installerSha256": "45b8753c73ca322afa9cc2bc86493032372e752479c13169d408ed3815d919f5",
-  "installerBytes": 56237109
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.6/PowerX-Setup-0.1.6-win-x64.msi",
+  "installerSha256": "40c03520afcf108b87d5b575ec7498cc11fa36f390a8780af2604232fa542337",
+  "installerBytes": 56245301
 }

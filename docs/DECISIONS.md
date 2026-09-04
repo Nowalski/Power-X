@@ -14,7 +14,8 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 - **Battery health** (Tools, laptops only). `BatteryHealth` reads wear, cycle count and runtime from `powercfg`'s battery report plus the live charge state. `powerx battery`.
 - The Startup boot card gained a small trend of the last dozen boots.
 **Audit pass, same release** The updater now re-checks the installer's SHA-256 on disk immediately before running it, closing the gap between "verified" and "executed" for a file that sits in a user-writable folder in between. Unquoted startup paths that contain spaces now resolve to a real file. The hash lookup can never raise a "known malicious" verdict on an empty value. The system report scrubs the user and machine name on whole-word boundaries. Startup-folder shortcuts resolve to their target for a publisher and impact match. Smaller fixes across reverse DNS, the network page and the process list.
-**Status** Active (0.1.5). 95 tests.
+**0.1.6** hardening: the "What changed" diff no longer throws when two installed programs share a display name; Storage explorer sizes a full drive without a syscall per file; the component-store analysis has a time cap and surfaces DISM's own error; battery health parses the runtime estimate correctly; smaller pending-restart fixes.
+**Status** Active (0.1.5; hardened 0.1.6). 97 tests.
 
 ## D-026. Startup impact from the Diagnostics-Performance log; an audit pass
 **Date** 2026-09-04
