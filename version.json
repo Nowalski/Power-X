@@ -1,10 +1,10 @@
 {
-  "version": "0.1.10",
+  "version": "0.1.11",
   "published": "2026-09-04",
-  "notes": "Four new features: a Health check page (and `powerx doctor`) that scans everything PowerX already knows how to check and lists what's worth doing, most impactful first; startup entries whose target program no longer exists are now flagged and removable in one click; a plain-language \"what is this\" note for common processes in the Process inspector; and a CSV export button on the Drivers, Firewall, Scheduled tasks and Event log pages.",
+  "notes": "Audit fix: the Network page's rate used to stick for a full extra second between updates and read blank for up to 2 seconds after the app opened, because network was sampled at half the rate of CPU/memory/GPU for no real benefit. It now samples every tick. Also fixed: opening the Health check page could freeze the whole app for a second or more, because its checks (including a powercfg process spawn) ran fully on the calling thread instead of in the background.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.10/PowerX-Setup-0.1.10-win-x64.msi",
-  "installerSha256": "f9a4db052397042704b9cf868719bfed350a65d89c35e28ea161b57e9cc86ca7",
-  "installerBytes": 56414028
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.11/PowerX-Setup-0.1.11-win-x64.msi",
+  "installerSha256": "bc4efef51a6c053d37fb0f519d135b691a232ce01a72b3877ed20cf2e57500ac",
+  "installerBytes": 56418124
 }
