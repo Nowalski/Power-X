@@ -173,14 +173,20 @@ public static class SystemSnapshot
 
     public static ConfigSnapshot? LoadLatest() => List() is [var (_, path), ..] ? Load(path) : null;
 
-    /// <summary>Take a snapshot now if the newest one is older than <paramref name="maxAge"/>.</summary>
+    private static readonly Lock StaleGate = new();
+
+    /// <summary>Take a snapshot now if the newest one is older than <paramref name="maxAge"/>.
+    /// Safe to call from several places at once on start-up; only the first wins.</summary>
     public static ConfigSnapshot? CaptureIfStale(TimeSpan maxAge)
     {
-        var newest = List().FirstOrDefault();
-        if (newest.Path is not null && DateTimeOffset.Now - newest.When < maxAge) return null;
-        var snap = Capture(automatic: true);
-        Save(snap);
-        return snap;
+        lock (StaleGate)
+        {
+            var newest = List().FirstOrDefault();
+            if (newest.Path is not null && DateTimeOffset.Now - newest.When < maxAge) return null;
+            var snap = Capture(automatic: true);
+            Save(snap);
+            return snap;
+        }
     }
 
     private static void Prune()
@@ -198,8 +204,10 @@ public static class SystemSnapshot
 
         foreach (SnapshotCategory cat in Enum.GetValues<SnapshotCategory>())
         {
-            var before = (from.Items.GetValueOrDefault(cat) ?? []).ToDictionary(i => i.Key);
-            var after = (to.Items.GetValueOrDefault(cat) ?? []).ToDictionary(i => i.Key);
+            // Two entries can legitimately share a key (an installer that registers the same
+            // display name twice), so collapse rather than let ToDictionary throw.
+            var before = ByKey(from.Items.GetValueOrDefault(cat));
+            var after = ByKey(to.Items.GetValueOrDefault(cat));
 
             foreach (var (key, item) in after)
             {
@@ -220,5 +228,12 @@ public static class SystemSnapshot
             .ToList();
 
         return new SnapshotDiff(from.TakenAt, to.TakenAt, changes);
+    }
+
+    private static Dictionary<string, SnapshotItem> ByKey(List<SnapshotItem>? items)
+    {
+        var d = new Dictionary<string, SnapshotItem>();
+        foreach (var i in items ?? []) d[i.Key] = i;   // last write wins
+        return d;
     }
 }

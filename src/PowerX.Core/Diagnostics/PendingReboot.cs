@@ -39,10 +39,11 @@ public static class PendingReboot
 
             using (var sm = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager"))
             {
-                if (sm?.GetValue("PendingFileRenameOperations") is string[] { Length: > 0 } ops)
-                    reasons.Add($"{CountRenames(ops)} file(s) are queued to be replaced or deleted on restart "
-                              + "(usually a program that updated files still in use).");
-                if (sm?.GetValue("PendingFileRenameOperations2") is string[] { Length: > 0 })
+                if (sm?.GetValue("PendingFileRenameOperations") is string[] { Length: > 1 } ops)
+                    reasons.Add($"{ops.Length / 2} file(s) are queued to be replaced or deleted at the next restart. "
+                              + "This is often left behind by an installer and usually clears itself, but a setting or "
+                              + "update that will not stick is the reason to restart.");
+                if (sm?.GetValue("PendingFileRenameOperations2") is string[] { Length: > 1 })
                     reasons.Add("A second batch of file replacements is queued for the next restart.");
             }
 
@@ -51,9 +52,6 @@ public static class PendingReboot
             if (active is not null && pendingName is not null &&
                 !active.Equals(pendingName, StringComparison.OrdinalIgnoreCase))
                 reasons.Add($"The PC was renamed to \"{pendingName}\"; the new name takes effect on restart (currently \"{active}\").");
-
-            if (Read(hklm, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing", "RebootPending") is not null)
-                reasons.Add("Component servicing marked a reboot pending.");
         }
         catch (Exception)
         {
@@ -79,11 +77,5 @@ public static class PendingReboot
     {
         using var k = root.OpenSubKey(path);
         return k?.GetValue(value) as string;
-    }
-
-    private static int CountRenames(string[] ops)
-    {
-        // The value is pairs of (source, target); an empty target means "delete".
-        return Math.Max(1, ops.Count(s => !string.IsNullOrEmpty(s)) / 2);
     }
 }

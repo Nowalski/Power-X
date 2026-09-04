@@ -28,9 +28,8 @@ public sealed record BatteryInfo
     public bool Charging { get; init; }
     public TimeSpan? EstimatedRuntime { get; init; }
 
-    /// <summary>Full-charge runtime estimate from the battery report, if present.</summary>
-    public TimeSpan? DesignRuntime { get; init; }
-    public TimeSpan? CurrentRuntimeAtFullCharge { get; init; }
+    /// <summary>Active-use runtime at full charge, from the battery report's most recent estimate.</summary>
+    public TimeSpan? FullChargeRuntime { get; init; }
 
     public string? Error { get; init; }
 
@@ -65,10 +64,15 @@ public static class BatteryHealth
             {
                 using (var p = Process.Start(new ProcessStartInfo("powercfg.exe", $"/batteryreport /xml /output \"{tmp}\"")
                 {
-                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true,
+                    UseShellExecute = false, CreateNoWindow = true,
                 }))
                 {
-                    if (p is not null) await p.WaitForExitAsync(ct);
+                    if (p is not null)
+                    {
+                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                        timeout.CancelAfter(TimeSpan.FromSeconds(30));
+                        await p.WaitForExitAsync(timeout.Token);
+                    }
                 }
 
                 if (!File.Exists(tmp))
@@ -110,14 +114,13 @@ public static class BatteryHealth
         long design = L(battery, "DesignCapacity");
         long full = L(battery, "FullChargeCapacity");
 
-        // Runtime estimates: the report lists many rows over time; take the most recent.
-        TimeSpan? Dur(string? s) => TimeSpan.TryParse(s, out var t) ? t
-            : int.TryParse(s, out var secs) ? TimeSpan.FromSeconds(secs) : null;
-
-        var lastEstimate = doc.Descendants(ns + "RuntimeEstimate").LastOrDefault();
-        TimeSpan? atFull = Dur((string?)lastEstimate?.Attribute("FullChargeCapacity"))
-                        ?? Dur((string?)lastEstimate?.Attribute("ActiveRuntime"));
-        TimeSpan? atDesign = Dur((string?)lastEstimate?.Attribute("DesignCapacity"));
+        // The report's runtime estimates carry an ActiveRuntime as an ISO-8601 duration
+        // ("PT4H49M0S") or a clock string ("4:49:00"). Take the most recent non-empty one.
+        TimeSpan? atFull = doc.Descendants(ns + "RuntimeEstimate")
+            .Select(e => (string?)e.Attribute("ActiveRuntime"))
+            .Reverse()
+            .Select(ParseDuration)
+            .FirstOrDefault(t => t is not null);
 
         return new BatteryInfo
         {
@@ -128,9 +131,19 @@ public static class BatteryHealth
             DesignCapacityMwh = design,
             FullChargeCapacityMwh = full,
             CycleCount = I(battery, "CycleCount"),
-            CurrentRuntimeAtFullCharge = atFull,
-            DesignRuntime = atDesign,
+            FullChargeRuntime = atFull,
         };
+    }
+
+    private static TimeSpan? ParseDuration(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        try
+        {
+            var t = s.StartsWith('P') ? System.Xml.XmlConvert.ToTimeSpan(s) : TimeSpan.Parse(s);
+            return t > TimeSpan.Zero ? t : null;
+        }
+        catch (Exception) { return null; }
     }
 
     private static bool HasBatteryDevice()

@@ -504,6 +504,7 @@ internal static class DemoData
         OnAcPower = false,
         Charging = false,
         EstimatedRuntime = TimeSpan.FromMinutes(212),
+        FullChargeRuntime = TimeSpan.FromMinutes(305),
     };
 
     // ---- what changed ----------------------------------------------

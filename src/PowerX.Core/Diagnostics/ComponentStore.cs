@@ -31,18 +31,42 @@ public static class ComponentStore
 {
     public static async Task<ComponentStoreInfo> AnalyzeAsync(CancellationToken ct = default)
     {
+        // DISM analyze usually takes under a minute but has been known to stall; cap it so the
+        // caller's button never gets stuck disabled.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromMinutes(4));
         try
         {
-            var (code, output) = await RunDismAsync("/Online /Cleanup-Image /AnalyzeComponentStore", null, ct);
-            if (code != 0 && output.Length == 0)
-                return new ComponentStoreInfo { Error = $"DISM exited with code {code}." };
-            return Parse(output);
+            var (code, output) = await RunDismAsync("/Online /Cleanup-Image /AnalyzeComponentStore", null, timeout.Token);
+            var info = Parse(output);
+            if (code != 0 && info.ActualSizeBytes == 0)
+                return new ComponentStoreInfo
+                {
+                    Error = DismError(output) ?? $"DISM exited with code {code}. Administrator rights are required.",
+                };
+            return info;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException)
+        {
+            return new ComponentStoreInfo { Error = "The analysis took too long and was stopped." };
+        }
         catch (Exception ex)
         {
             return new ComponentStoreInfo { Error = ex.Message };
         }
+    }
+
+    private static string? DismError(string output)
+    {
+        foreach (var line in output.Split('\n').Reverse())
+        {
+            var t = line.Trim();
+            if (t.StartsWith("Error:", StringComparison.OrdinalIgnoreCase) ||
+                t.Contains("elevated permissions", StringComparison.OrdinalIgnoreCase))
+                return t;
+        }
+        return null;
     }
 
     /// <summary>Run <c>/StartComponentCleanup</c>, streaming DISM's progress lines. Reversible in the

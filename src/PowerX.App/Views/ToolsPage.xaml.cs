@@ -172,6 +172,7 @@ public sealed partial class ToolsPage : Page
         if (info.DesignCapacityMwh > 0)
             parts.Add($"full charge holds {info.FullChargeCapacityMwh:N0} mWh of the original {info.DesignCapacityMwh:N0} mWh");
         if (info.CycleCount > 0) parts.Add($"{info.CycleCount} charge cycles");
+        if (info.FullChargeRuntime is { } fr) parts.Add($"about {Fmt.Duration(fr)} of active use on a full charge");
         if (info.Error is not null) parts.Add(info.Error);
         BatteryDetail.Text = string.Join(".  ", parts) + ".";
     }

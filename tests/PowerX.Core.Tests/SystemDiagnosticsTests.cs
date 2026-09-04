@@ -133,4 +133,39 @@ public class SystemDiagnosticsTests
         diff.Changes.Should().Contain(c => c.Label == "New" && c.Kind == ChangeKind.Added);
         diff.Changes.Should().NotContain(c => c.Label == "Prog");
     }
+
+    [Fact]
+    public void SnapshotDiff_tolerates_two_entries_with_the_same_key()
+    {
+        // A badly-behaved installer can register the same display name twice.
+        ConfigSnapshot Snap(params SnapshotItem[] programs) => new()
+        {
+            TakenAt = DateTimeOffset.Now,
+            Items = new() { [SnapshotCategory.Program] = programs.ToList() },
+        };
+        var before = Snap(new("dup", "Thing", "1.0"), new("dup", "Thing", "1.0"));
+        var after = Snap(new("dup", "Thing", "2.0"), new("dup", "Thing", "2.0"));
+
+        var act = () => SystemSnapshot.Diff(before, after);
+        act.Should().NotThrow();
+        act().Changes.Should().OnlyContain(c => c.Kind == ChangeKind.Changed);
+    }
+
+    [Fact]
+    public void BatteryReport_reads_the_active_runtime_estimate()
+    {
+        const string xml = """
+            <?xml version="1.0"?>
+            <BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+              <Batteries><Battery><DesignCapacity>60000</DesignCapacity><FullChargeCapacity>54000</FullChargeCapacity></Battery></Batteries>
+              <EstimatedBatteryLife>
+                <RuntimeEstimate ActiveRuntime="PT3H12M0S" />
+                <RuntimeEstimate ActiveRuntime="PT4H49M0S" />
+              </EstimatedBatteryLife>
+            </BatteryReport>
+            """;
+        var info = BatteryHealth.ParseReport(xml);
+        info.FullChargeRuntime.Should().Be(TimeSpan.FromMinutes(4 * 60 + 49));
+        info.WearPercent.Should().Be(10);
+    }
 }

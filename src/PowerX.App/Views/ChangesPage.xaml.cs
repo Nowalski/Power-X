@@ -96,12 +96,20 @@ public sealed partial class ChangesPage : Page
         int from = FromBox.SelectedIndex, to = ToBox.SelectedIndex;
         if (from < 0 || to < 0 || from >= _snapshots.Count || to >= _snapshots.Count) return;
 
-        var a = SystemSnapshot.Load(_snapshots[from].Path);
-        var b = SystemSnapshot.Load(_snapshots[to].Path);
-        if (a is null || b is null) { Summary.Text = "One of the snapshots could not be read."; return; }
+        try
+        {
+            var a = SystemSnapshot.Load(_snapshots[from].Path);
+            var b = SystemSnapshot.Load(_snapshots[to].Path);
+            if (a is null || b is null) { Summary.Text = "One of the snapshots could not be read."; return; }
 
-        if (a.TakenAt > b.TakenAt) (a, b) = (b, a);   // Diff wants older then newer
-        RenderDiff(SystemSnapshot.Diff(a, b));
+            if (a.TakenAt > b.TakenAt) (a, b) = (b, a);   // Diff wants older then newer
+            RenderDiff(SystemSnapshot.Diff(a, b));
+        }
+        catch (Exception ex)
+        {
+            App.Log("Changes.Compare", ex);
+            Summary.Text = "Could not compare these snapshots: " + ex.Message;
+        }
     }
 
     private void RenderDiff(SnapshotDiff diff)

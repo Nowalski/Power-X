@@ -71,12 +71,14 @@ public static class FolderSizer
 
         try
         {
-            foreach (var file in Directory.EnumerateFiles(path, "*", TopLevel))
+            // DirectoryInfo.EnumerateFiles hands back FileInfo objects already populated from the
+            // directory scan, so .Length costs no extra syscall (unlike Directory.EnumerateFiles + new FileInfo).
+            foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", TopLevel))
             {
                 ct.ThrowIfCancellationRequested();
                 long len;
-                try { len = new FileInfo(file).Length; } catch { continue; }
-                result.Add(new FolderEntry(file, System.IO.Path.GetFileName(file), false, len, 1));
+                try { len = file.Length; } catch { continue; }
+                result.Add(new FolderEntry(file.FullName, file.Name, false, len, 1));
             }
         }
         catch (Exception) when (!ct.IsCancellationRequested) { }
@@ -87,12 +89,13 @@ public static class FolderSizer
     private static (long Size, long Files) Measure(string dir, CancellationToken ct)
     {
         long total = 0, files = 0;
+        int tick = 0;
         try
         {
-            foreach (var file in Directory.EnumerateFiles(dir, "*", Recurse))
+            foreach (var file in new DirectoryInfo(dir).EnumerateFiles("*", Recurse))
             {
-                ct.ThrowIfCancellationRequested();
-                try { total += new FileInfo(file).Length; files++; }
+                if ((++tick & 0x3FFF) == 0) ct.ThrowIfCancellationRequested();
+                try { total += file.Length; files++; }
                 catch { /* vanished or denied mid-walk */ }
             }
         }

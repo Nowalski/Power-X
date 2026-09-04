@@ -67,6 +67,7 @@ public sealed partial class StoragePage : Page
         Summary.Text = "Scanning...";
 
         IReadOnlyList<FolderEntry> entries = [];
+        bool cancelled = false;
         try
         {
             if (DemoData.Active)
@@ -83,6 +84,7 @@ public sealed partial class StoragePage : Page
         }
         catch (OperationCanceledException)
         {
+            cancelled = true;
             Summary.Text = "Scan stopped.";
         }
         catch (Exception ex)
@@ -101,7 +103,7 @@ public sealed partial class StoragePage : Page
         }
 
         if (entries.Count > 0) Render(entries);
-        else if (!cts.IsCancellationRequested) Summary.Text = $"{_current} has no readable sub-folders or files.";
+        else if (!cancelled) Summary.Text = $"{_current} has no readable sub-folders or files.";
     }
 
     private void Render(IReadOnlyList<FolderEntry> entries)
