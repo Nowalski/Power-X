@@ -13,7 +13,7 @@ internal static class Fmt
 
     public static string Bytes(double b) => Bytes((ulong)Math.Max(0, b));
 
-    public static string Rate(double bytesPerSec) => bytesPerSec < 1 ? "—" : $"{Bytes(bytesPerSec)}/s";
+    public static string Rate(double bytesPerSec) => bytesPerSec < 1 ? "0/s" : $"{Bytes(bytesPerSec)}/s";
 
     public static string Duration(TimeSpan t) =>
         t.TotalDays >= 1 ? $"{(int)t.TotalDays}d {t.Hours}h" :

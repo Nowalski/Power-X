@@ -44,8 +44,11 @@ public static class ReverseDns
 
     private static bool IsPrivateOrLinkLocal(IPAddress a)
     {
-        if (a.IsIPv6LinkLocal || a.IsIPv6SiteLocal) return true;
+        if (a.IsIPv6LinkLocal || a.IsIPv6SiteLocal || a.IsIPv6Multicast) return true;
         var b = a.GetAddressBytes();
+        if (b.Length == 16)
+            return (b[0] & 0xFE) == 0xFC   // fc00::/7 unique-local
+                || (b[0] == 0x00 && b.Take(15).All(x => x == 0));   // ::/128, ::1 already loopback
         if (b.Length != 4) return false;
         return b[0] == 10
             || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)

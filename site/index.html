@@ -280,7 +280,7 @@
 <main id="main">
 
   <section class="hero shell">
-    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.4, an early milestone build</p>
+    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.5, an early milestone build</p>
     <h1 class="r r2">The Windows control center <span class="em">that respects your machine</span></h1>
     <p class="lead r r3">
       Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one
@@ -446,6 +446,29 @@
 
     <div class="feature">
       <div class="copy">
+        <p class="eyebrow reveal">What changed</p>
+        <h2 class="reveal">Answer "my PC got weird lately"</h2>
+        <p class="reveal">
+          About once a day PowerX takes a quiet snapshot of your configuration: startup entries,
+          scheduled tasks, auto-start services, installed programs, signed drivers and the tweaks
+          it has applied. Then it shows you the difference between any two, so a new startup entry,
+          a driver bump or a program you do not remember installing has a name and a date. It all
+          stays on your PC.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Daily snapshots</span>
+          <span class="tag">Added, removed, changed</span>
+          <span class="tag">Local only</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-changes.png" width="1600" height="1050"
+             alt="The PowerX What changed page: a diff between last week and today showing a new Spotify startup entry, a disabled Epic Games Launcher, a new scheduled task, a new service, a Discord version bump, Steam installed, CCleaner removed and an NVIDIA driver update." />
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="copy">
         <p class="eyebrow reveal">Network</p>
         <h2 class="reveal">See what your machine is talking to</h2>
         <p class="reveal">
@@ -463,6 +486,27 @@
       <figure class="shot reveal">
         <img src="assets/shot-network.png" width="1560" height="1400"
              alt="The PowerX Network page: live download and upload charts, adapter details, a listening-ports table showing which ports are reachable from the network, and a per-process connection list." />
+      </figure>
+    </div>
+
+    <div class="feature">
+      <div class="copy">
+        <p class="eyebrow reveal">Storage explorer</p>
+        <h2 class="reveal">Find where the space went</h2>
+        <p class="reveal">
+          Point it at a drive or a folder and it sizes every sub-folder, largest first, so you can
+          walk straight to the 40 GB you forgot about. Junctions and symlinks are skipped so
+          nothing is counted twice. Then open the folder in Explorer, or keep drilling.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Recursive folder sizes</span>
+          <span class="tag">Click to drill in</span>
+          <span class="tag">No treemap to squint at</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-storage.png" width="1600" height="1050"
+             alt="The PowerX Storage explorer page: the folders under C: sized largest first, with Users, Windows and Program Files at the top and hiberfil.sys and pagefile.sys called out as large loose files." />
       </figure>
     </div>
 
@@ -533,7 +577,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\Sy
   <section id="download" class="download">
     <div class="shell">
       <p class="eyebrow reveal">Download</p>
-      <h2 class="reveal">Get PowerX 0.1.4</h2>
+      <h2 class="reveal">Get PowerX 0.1.5</h2>
       <p class="lead prose reveal" style="margin-top:var(--s3)">
         64-bit Windows 10 (build 19041) or Windows 11. PowerX runs as administrator because it
         manages system state. It is not code-signed yet, so Windows SmartScreen will show an
@@ -555,7 +599,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\Sy
 
       <p class="dl-note reveal">
         Every release lists a SHA-256 for each file. To check the installer:
-        <code>Get-FileHash .\PowerX-Setup-0.1.4-win-x64.msi</code> in PowerShell, and compare it to
+        <code>Get-FileHash .\PowerX-Setup-0.1.5-win-x64.msi</code> in PowerShell, and compare it to
         the value on the <a href="https://github.com/Nowalski/Power-X/releases" style="color:var(--accent-2)">releases page</a>.
       </p>
     </div>

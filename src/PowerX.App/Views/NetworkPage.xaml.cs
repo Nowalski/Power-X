@@ -251,8 +251,25 @@ public sealed partial class NetworkPage : Page
 
     // ---------------------------------------------------------------- interfaces
 
+    private string _interfaceSig = "";
+    private readonly List<TextBlock> _ifaceThroughput = [];
+
     private void RebuildInterfaces(NetworkMetrics net)
     {
+        // The card contents (name, IP, state, link speed) rarely change tick to tick; only the
+        // throughput numbers do. Skip the full teardown-and-rebuild unless the set of interfaces
+        // or their addresses actually changed — just refresh the throughput line in place.
+        string sig = string.Join("|", net.Interfaces.Select(i =>
+            $"{i.Name};{i.IsUp};{i.LinkSpeedBps};{string.Join(",", i.IpAddresses)}"));
+        if (sig == _interfaceSig && _ifaceThroughput.Count == net.Interfaces.Count)
+        {
+            for (int n = 0; n < net.Interfaces.Count; n++)
+                _ifaceThroughput[n].Text = $"down {Fmt.Rate(net.Interfaces[n].ReceiveBytesPerSec)}    up {Fmt.Rate(net.Interfaces[n].SendBytesPerSec)}";
+            return;
+        }
+        _interfaceSig = sig;
+        _ifaceThroughput.Clear();
+
         Interfaces.Children.Clear();
         foreach (var i in net.Interfaces)
         {
@@ -271,7 +288,10 @@ public sealed partial class NetworkPage : Page
             header.Children.Add(Chip(i.Type, (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
             rows.Children.Add(header);
 
-            rows.Children.Add(Line("Throughput", $"down {Fmt.Rate(i.ReceiveBytesPerSec)}    up {Fmt.Rate(i.SendBytesPerSec)}"));
+            var (throughputRow, throughputValue) = LinePair("Throughput",
+                $"down {Fmt.Rate(i.ReceiveBytesPerSec)}    up {Fmt.Rate(i.SendBytesPerSec)}");
+            _ifaceThroughput.Add(throughputValue);
+            rows.Children.Add(throughputRow);
             if (i.LinkSpeedBps > 0)
                 rows.Children.Add(Line("Link speed", $"{i.LinkSpeedBps / 1_000_000:N0} Mbps"));
             rows.Children.Add(Line("Total", $"received {Fmt.Bytes((ulong)i.TotalBytesReceived)}, sent {Fmt.Bytes((ulong)i.TotalBytesSent)}"));
@@ -292,7 +312,9 @@ public sealed partial class NetworkPage : Page
         }
     }
 
-    private static Grid Line(string label, string value)
+    private static Grid Line(string label, string value) => LinePair(label, value).Row;
+
+    private static (Grid Row, TextBlock Value) LinePair(string label, string value)
     {
         var g = new Grid { Padding = new Thickness(0, 3, 0, 0) };
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
@@ -302,7 +324,7 @@ public sealed partial class NetworkPage : Page
         Grid.SetColumn(v, 1);
         g.Children.Add(l);
         g.Children.Add(v);
-        return g;
+        return (g, v);
     }
 
     private static Border Chip(string text, Brush fg) => new()

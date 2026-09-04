@@ -71,6 +71,37 @@ public sealed partial class StartupPage : Page
         if (b.Degraded) parts.Add("Windows flagged this boot as slower than usual");
         BootDetail.Text = string.Join(".   ", parts) + (parts.Count > 0 ? "." : "")
                         + "   From the same data as Task Manager's Startup impact.";
+
+        ShowBootTrend(b);
+    }
+
+    private void ShowBootTrend(BootTimeline b)
+    {
+        BootTrend.Children.Clear();
+        var recent = b.Recent.Take(14).Reverse().ToList();   // oldest -> newest, left -> right
+        if (recent.Count < 3) { BootTrendPanel.Visibility = Visibility.Collapsed; return; }
+        BootTrendPanel.Visibility = Visibility.Visible;
+
+        int max = recent.Max(r => r.TotalMs);
+        int min = recent.Min(r => r.TotalMs);
+        var slow = (Brush)Application.Current.Resources["SystemFillColorCautionBrush"];
+        var fast = (Brush)Application.Current.Resources["SystemFillColorSuccessBrush"];
+        var mid = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+
+        foreach (var r in recent)
+        {
+            double h = max > 0 ? 8 + 38.0 * r.TotalMs / max : 8;
+            BootTrend.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle
+            {
+                Width = 6,
+                Height = h,
+                RadiusX = 2, RadiusY = 2,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Fill = r.TotalMs == max ? slow : r.TotalMs == min ? fast : mid,
+                Opacity = 0.9,
+            });
+        }
+        BootTrendLabel.Text = $"last {recent.Count} boots · {min / 1000.0:0.0} to {max / 1000.0:0.0} s";
     }
 
     private BootItem? BootFor(StartupEntry e)
@@ -197,7 +228,7 @@ public sealed partial class StartupPage : Page
     {
         var confirm = new ContentDialog
         {
-            Title = $"Remove “{entry.Name}”?",
+            Title = $"Remove {entry.Name}?",
             Content = "This deletes the RunOnce value so it won't run at the next sign-in. "
                     + "PowerX saves a copy under HKCU\\SOFTWARE\\PowerX\\RemovedRunOnce so you can put it back by hand.",
             PrimaryButtonText = "Remove", CloseButtonText = "Cancel",

@@ -30,11 +30,170 @@ public sealed partial class ToolsPage : Page
         Guard("Windows Update status", RefreshWu);
         Guard("System Restore status", RefreshRestore);
         Guard("environment variables", LoadEnv);
+        Guard("pending restart", RefreshRebootState);
 
         // process spawn + WMI — off the UI thread so navigating to Tools stays snappy
         try { await RefreshPowerAsync(); } catch (Exception ex) { App.Log("Tools.Power", ex); }
         try { await BuildDisksAsync(); } catch (Exception ex) { App.Log("Tools.Disks", ex); }
         try { await ScanCleanupAsync(); } catch (Exception ex) { App.Log("Tools.Cleanup", ex); }
+        try { await RefreshBatteryAsync(); } catch (Exception ex) { App.Log("Tools.Battery", ex); }
+    }
+
+    // ---------------------------------------------------------------- pending restart
+
+    private void RefreshRebootState()
+    {
+        var status = Services.DemoData.Active ? Services.DemoData.PendingReboot() : PendingReboot.Check();
+        RebootBar.IsOpen = status.Pending;
+        RebootReasons.Text = status.Pending
+            ? string.Join("\n", status.Reasons.Select(r => "- " + r))
+            : "";
+    }
+
+    private void RebootRecheck_Click(object sender, RoutedEventArgs e) => Guard("pending restart", RefreshRebootState);
+
+    private async void RestartNow_Click(object sender, RoutedEventArgs e)
+    {
+        var confirm = new ContentDialog
+        {
+            Title = "Restart now?",
+            Content = "Windows will close your open apps and restart. Save your work first.",
+            PrimaryButtonText = "Restart", CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
+        };
+        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 5 /d p:0:0") { UseShellExecute = false, CreateNoWindow = true });
+        }
+        catch (Exception ex) { App.Log("Tools.Restart", ex); }
+    }
+
+    // ---------------------------------------------------------------- component store
+
+    private CancellationTokenSource? _winsxsCts;
+
+    private async void WinSxsAnalyze_Click(object sender, RoutedEventArgs e)
+    {
+        WinSxsAnalyzeButton.IsEnabled = false;
+        WinSxsText.Text = "Analyzing the component store. This can take a minute...";
+        try
+        {
+            var info = Services.DemoData.Active
+                ? Services.DemoData.ComponentStore()
+                : await ComponentStore.AnalyzeAsync();
+
+            if (info.Error is not null)
+            {
+                WinSxsText.Text = "Could not analyze the component store: " + info.Error;
+            }
+            else
+            {
+                WinSxsText.Text =
+                    $"Actual size on disk: {Fmt.Bytes((ulong)info.ActualSizeBytes)}   "
+                    + $"(shared with Windows: {Fmt.Bytes((ulong)info.SharedWithWindowsBytes)}).\n"
+                    + $"Reclaimable: backups and disabled features {Fmt.Bytes((ulong)info.BackupsAndDisabledBytes)}, "
+                    + $"cache and temp {Fmt.Bytes((ulong)info.CacheAndTempBytes)}. "
+                    + $"{info.ReclaimablePackages} superseded package(s).\n"
+                    + (info.CleanupRecommended
+                        ? "Windows recommends a component cleanup."
+                        : "Windows does not think a cleanup is needed right now.")
+                    + (info.LastCleanup is { } d ? $"  Last cleanup {d.LocalDateTime:d}." : "");
+                WinSxsCleanButton.IsEnabled = info.ReclaimablePackages > 0 || info.CleanupRecommended;
+            }
+        }
+        catch (Exception ex)
+        {
+            App.Log("Tools.WinSxs", ex);
+            WinSxsText.Text = "Could not analyze the component store: " + ex.Message;
+        }
+        finally
+        {
+            WinSxsAnalyzeButton.IsEnabled = true;
+        }
+    }
+
+    private async void WinSxsClean_Click(object sender, RoutedEventArgs e)
+    {
+        if (_winsxsCts is not null) return;
+        _winsxsCts = new CancellationTokenSource();
+        var cts = _winsxsCts;
+        WinSxsOut.Visibility = Visibility.Visible;
+        WinSxsOut.Text = "";
+        WinSxsCleanButton.IsEnabled = false;
+        WinSxsAnalyzeButton.IsEnabled = false;
+        WinSxsStopButton.IsEnabled = true;
+
+        void Line(string s) => DispatcherQueue.TryEnqueue(() =>
+        {
+            WinSxsOut.Text += s + "\n";
+            WinSxsOut.Select(WinSxsOut.Text.Length, 0);
+        });
+
+        try
+        {
+            if (Services.DemoData.Active) { Line("Component cleanup finished. (demo)"); }
+            else await ComponentStore.StartCleanupAsync(Line, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            App.Log("Tools.WinSxsClean", ex);
+            Line("error: " + ex.Message);
+        }
+        finally
+        {
+            cts.Dispose();
+            _winsxsCts = null;
+            WinSxsStopButton.IsEnabled = false;
+            WinSxsAnalyzeButton.IsEnabled = true;
+        }
+    }
+
+    private void WinSxsStop_Click(object sender, RoutedEventArgs e) => _winsxsCts?.Cancel();
+
+    // ---------------------------------------------------------------- battery
+
+    private async Task RefreshBatteryAsync()
+    {
+        var info = Services.DemoData.Active ? Services.DemoData.Battery() : await BatteryHealth.ReadAsync();
+        if (!info.HasBattery) { BatteryCard.Visibility = Visibility.Collapsed; return; }
+        BatteryCard.Visibility = Visibility.Visible;
+
+        string charge = info.OnAcPower
+            ? (info.Charging ? $"{info.ChargePercent}%, charging" : $"{info.ChargePercent}%, plugged in")
+            : $"{info.ChargePercent}% on battery"
+              + (info.EstimatedRuntime is { } rt ? $", about {Fmt.Duration(rt)} left" : "");
+
+        BatteryHeadline.Text = info.WearPercent > 0
+            ? $"Battery health: {info.Health}, {info.WearPercent}% of original capacity lost"
+            : $"Battery: {charge}";
+
+        var parts = new List<string> { charge };
+        if (info.DesignCapacityMwh > 0)
+            parts.Add($"full charge holds {info.FullChargeCapacityMwh:N0} mWh of the original {info.DesignCapacityMwh:N0} mWh");
+        if (info.CycleCount > 0) parts.Add($"{info.CycleCount} charge cycles");
+        if (info.Error is not null) parts.Add(info.Error);
+        BatteryDetail.Text = string.Join(".  ", parts) + ".";
+    }
+
+    private void BatteryRefresh_Click(object sender, RoutedEventArgs e) =>
+        _ = RefreshBatteryAsync();
+
+    private async void BatteryReport_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string outPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PowerX-battery-report.html");
+            using (var p = Process.Start(new ProcessStartInfo("powercfg.exe", $"/batteryreport /output \"{outPath}\"")
+            { UseShellExecute = false, CreateNoWindow = true }))
+            {
+                if (p is not null) await p.WaitForExitAsync();
+            }
+            if (System.IO.File.Exists(outPath))
+                Process.Start(new ProcessStartInfo(outPath) { UseShellExecute = true });
+        }
+        catch (Exception ex) { App.Log("Tools.BatteryReport", ex); }
     }
 
     private static void Guard(string what, Action step)

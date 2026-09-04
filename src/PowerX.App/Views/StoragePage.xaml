@@ -1,0 +1,40 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.StoragePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="2">
+            <TextBlock Text="Storage explorer" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Pick a drive or folder to see what is using the space." />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="RootBox" Grid.Column="0" MinWidth="120" SelectionChanged="Root_Changed" />
+            <Button x:Name="UpButton" Grid.Column="1" Content="Up" Click="Up_Click" IsEnabled="False" />
+            <TextBlock x:Name="PathText" Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                       Style="{StaticResource MonoStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Button x:Name="ScanButton" Grid.Column="3" Content="Scan" Style="{StaticResource AccentButtonStyle}" Click="Scan_Click" />
+            <Button x:Name="StopButton" Grid.Column="4" Content="Stop" Click="Stop_Click" IsEnabled="False" />
+        </Grid>
+
+        <ProgressBar Grid.Row="2" x:Name="Progress" IsIndeterminate="True" Visibility="Collapsed" />
+
+        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+            <StackPanel x:Name="List" Spacing="4" Padding="0,0,0,16" />
+        </ScrollViewer>
+    </Grid>
+</Page>

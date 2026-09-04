@@ -421,12 +421,20 @@ public sealed partial class ProcessesPage : Page
     private async void Report(PowerX.Core.Processes.ActionResult result, string what)
     {
         if (result.Success) return;
-        await new ContentDialog
+        try
         {
-            Title = $"Could not {what.ToLowerInvariant()}",
-            Content = result.Message ?? "Unknown error.",
-            CloseButtonText = "Close", XamlRoot = XamlRoot,
-        }.ShowAsync();
+            await new ContentDialog
+            {
+                Title = $"Could not {what.ToLowerInvariant()}",
+                Content = result.Message ?? "Unknown error.",
+                CloseButtonText = "Close", XamlRoot = XamlRoot,
+            }.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            // e.g. another ContentDialog is already open — don't let a fire-and-forget helper crash the app.
+            App.Log("Processes.Report", ex);
+        }
     }
 
     private async Task ShowDetails(ProcessRow row)

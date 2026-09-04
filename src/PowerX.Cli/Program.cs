@@ -31,6 +31,10 @@ try
         "report" => ReportCommand.Run(rest),
         "update" => UpdateCommand.Run(rest),
         "history" => HistoryCommand.Run(rest),
+        "changes" or "changed" => ChangesCommand.Run(rest),
+        "reboot" or "pending-reboot" => RebootCommand.Run(rest),
+        "battery" => BatteryCommand.Run(rest),
+        "storage" or "du" => StorageCommand.Run(rest),
         "version" or "--version" => Version(),
         _ => Unknown(args[0]),
     };

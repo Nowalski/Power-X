@@ -17,10 +17,20 @@
         </StackPanel>
 
         <Border x:Name="BootCard" Grid.Row="1" Style="{StaticResource CardStyle}" Visibility="Collapsed">
-            <StackPanel Spacing="4">
-                <TextBlock x:Name="BootHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                <TextBlock x:Name="BootDetail" Style="{StaticResource MutedStyle}" FontSize="12" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock x:Name="BootHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Name="BootDetail" Style="{StaticResource MutedStyle}" FontSize="12" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel x:Name="BootTrendPanel" Grid.Column="1" Spacing="4" VerticalAlignment="Center" Visibility="Collapsed">
+                    <StackPanel x:Name="BootTrend" Orientation="Horizontal" Spacing="3" Height="46" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="BootTrendLabel" Style="{StaticResource MutedStyle}" FontSize="11" HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
         </Border>
 
         <InfoBar Grid.Row="2" IsOpen="True" Severity="Informational" IsClosable="False"

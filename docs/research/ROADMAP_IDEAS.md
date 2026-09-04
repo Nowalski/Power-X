@@ -46,11 +46,12 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 
 ## Tier 2, good, later
 
-### 5. Driver inventory + update *check* (no auto-install)
-- List devices, driver version/date/publisher, flag very old drivers. Link to the vendor /
- Windows Update, **never** download or install a driver ourselves (same stance as D-017).
-- **Effort** M, **Risk** medium (must not become a "driver updater" scareware pattern) -
- **Prior art** most "PC optimizers" do this badly. We do the honest version.
+### 5. Driver inventory + update *check* (no auto-install)  [PARTLY SHIPPED 0.1.5]
+- 0.1.5's config snapshot records each `Win32_PnPSignedDriver` name and version, so the "What
+ changed" page flags a driver version bump between snapshots. Still to do: a standalone driver
+ list with age flags and a "check with the vendor" link.
+- **Never** download or install a driver ourselves (same stance as D-017).
+- **Effort** M remaining, **Risk** medium (must not become a "driver updater" scareware pattern).
 
 ### 6. Per-process drill-down parity with System Informer (user-mode only)
 - Handles, modules, threads with start address, environment block, token groups. Capability-detect
@@ -92,12 +93,16 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
   no signatures, no quarantine, no all-clear, no auto-removal. See D-025. Fast-follow: opt-in
   VirusTotal / MalwareBazaar keys for an engine-count verdict.
 - **Context-menu / "Open with" editor**, popular in Winhance; medium risk (shell hive edits).
-- **Storage treemap** (WizTree-style), high value, but big rendering effort; a folder-size
- table is the S version.
+- **Storage treemap** (WizTree-style), the folder-size table shipped 0.1.5 as the Storage
+ explorer page (`FolderSizer`, drill-down, `powerx storage`). A true treemap and an MFT-speed
+ scan are the remaining upgrade.
 - **Firewall rule viewer**, read-first; adding/removing rules is a security surface, gate hard.
 - **Hosts-file manager with known blocklists**, must not ship opinionated blocklists; only
  edit + backup + toggle.
-- **Battery report / power usage** (`powercfg /batteryreport`, /srumutil), laptop value.
+- **Battery report / power usage**, SHIPPED 0.1.5 (`BatteryHealth`: wear, cycles, runtime from
+ `powercfg /batteryreport /xml`; Tools card + `powerx battery`). Fast-follow: SRUM per-app energy.
+- **Pending-restart detector**, SHIPPED 0.1.5 (`PendingReboot`, Tools InfoBar, `powerx reboot`).
+- **Component store (WinSxS) analysis**, SHIPPED 0.1.5 (`ComponentStore`, DISM analyze + safe cleanup).
 - **Crash & dump insights**, a "Repair > Crash insights" timeline from WER `ReportArchive`,
  Application-log events 1000/1001/1002/1026, `Win32_ReliabilityRecords`, and (elevated,
  optional) `C:\Windows\Minidump` bugcheck codes. Full design + safety rules in

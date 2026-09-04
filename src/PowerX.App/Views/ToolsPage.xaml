@@ -7,6 +7,17 @@
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
             <TextBlock Text="Tools" Style="{StaticResource PageTitleStyle}" />
 
+            <InfoBar x:Name="RebootBar" IsOpen="False" IsClosable="False" Severity="Warning"
+                     Title="A restart is pending">
+                <StackPanel Spacing="4" Margin="0,4,0,4">
+                    <TextBlock x:Name="RebootReasons" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Restart now" Click="RestartNow_Click" />
+                        <Button Content="Re-check" Click="RebootRecheck_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </InfoBar>
+
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -73,6 +84,41 @@
                     </StackPanel>
 
                     <StackPanel x:Name="CleanupList" Spacing="2" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Component store (WinSxS)" Style="{StaticResource SectionHeaderStyle}" />
+                        <ctl:InfoButton Title="The component store"
+                                        Body="WinSxS holds every version of every Windows component, so updates can be uninstalled and system files repaired. It looks huge in Explorer because most of it is hard links shared with the live system, not a second copy. The part that is safe to reclaim is superseded components and backups. PowerX runs the Microsoft-recommended cleanup only, never /ResetBase (which would permanently block uninstalling installed updates)." />
+                    </StackPanel>
+                    <TextBlock x:Name="WinSxsText" Style="{StaticResource MutedStyle}" Text="Not analyzed yet." TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="WinSxsAnalyzeButton" Content="Analyze" Click="WinSxsAnalyze_Click" />
+                        <Button x:Name="WinSxsCleanButton" Content="Run component cleanup" Click="WinSxsClean_Click" IsEnabled="False" />
+                        <Button x:Name="WinSxsStopButton" Content="Stop" Click="WinSxsStop_Click" IsEnabled="False" />
+                    </StackPanel>
+                    <TextBox x:Name="WinSxsOut" IsReadOnly="True" TextWrapping="NoWrap" FontFamily="Consolas, Cascadia Mono, monospace"
+                             MaxHeight="160" Visibility="Collapsed"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="BatteryCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Battery health" Style="{StaticResource SectionHeaderStyle}" />
+                        <ctl:InfoButton Title="Battery wear"
+                                        Body="Every rechargeable battery loses capacity with age and charge cycles. Wear is how much of the original (design) capacity is gone: under 15 percent is normal for a healthy battery, 30 percent or more means noticeably shorter runtime. The numbers come from powercfg's battery report. Nothing here changes any setting." />
+                    </StackPanel>
+                    <TextBlock x:Name="BatteryHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Name="BatteryDetail" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Full battery report" Click="BatteryReport_Click" />
+                        <Button Content="Refresh" Click="BatteryRefresh_Click" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

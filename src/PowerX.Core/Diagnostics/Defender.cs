@@ -232,7 +232,9 @@ public static class Defender
         if (Directory.Exists(platform))
         {
             var newest = new DirectoryInfo(platform).GetDirectories()
-                .OrderByDescending(d => d.Name).FirstOrDefault();
+                .OrderByDescending(d => Version.TryParse(d.Name, out var v) ? v : new Version(0, 0))
+                .ThenByDescending(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
             string p = Path.Combine(newest?.FullName ?? "", "MpCmdRun.exe");
             if (File.Exists(p)) return p;
         }

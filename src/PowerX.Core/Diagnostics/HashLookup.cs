@@ -32,6 +32,16 @@ public static class HashLookup
 
     private static readonly ConcurrentDictionary<string, HashResult> Cache = new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly HttpClient Http = CreateClient();
+
+    private static HttpClient CreateClient()
+    {
+        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("PowerX-HashLookup");
+        http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        return http;
+    }
+
     public static HashResult? Cached(string sha256) => Cache.GetValueOrDefault(sha256);
 
     public static async Task<string> Sha256FileAsync(string path, CancellationToken ct = default)
@@ -51,11 +61,7 @@ public static class HashLookup
         HashResult result;
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("PowerX-HashLookup");
-            http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
-
-            using var resp = await http.GetAsync(Endpoint + sha256, ct);
+            using var resp = await Http.GetAsync(Endpoint + sha256, ct);
             if (resp.StatusCode == HttpStatusCode.NotFound)
             {
                 result = new HashResult(false, null, null, [], false, null,

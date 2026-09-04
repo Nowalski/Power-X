@@ -73,6 +73,28 @@ public class BootPerformanceTests
         items[0].Path.Should().EndWith("Discord.exe");
         items[0].DegradationMs.Should().Be(1600);
         items[0].Impact.Should().Be(StartupImpact.High);
+
+        timeline.Recent.Should().ContainSingle();
+        timeline.FastestBootMs.Should().Be(42100);
+        timeline.SlowestBootMs.Should().Be(42100);
+    }
+
+    [Fact]
+    public void Parse_builds_a_recent_boot_trend_newest_first()
+    {
+        var now = DateTimeOffset.Now;
+        string Boot(int ms) => Ev100.Replace("42100", ms.ToString());
+        var events = new List<(int, string, DateTimeOffset)>
+        {
+            (100, Boot(30000), now),
+            (100, Boot(45000), now.AddDays(-1)),
+            (100, Boot(38000), now.AddDays(-2)),
+        };
+        var (timeline, _) = BootPerformance.Parse(events, recentBoots: 12);
+        timeline!.Recent.Select(r => r.TotalMs).Should().Equal(30000, 45000, 38000);
+        timeline.FastestBootMs.Should().Be(30000);
+        timeline.SlowestBootMs.Should().Be(45000);
+        timeline.LastBootMs.Should().Be(30000);
     }
 
     [Fact]

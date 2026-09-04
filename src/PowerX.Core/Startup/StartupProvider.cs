@@ -214,14 +214,18 @@ public static class StartupProvider
         {
             if (file.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)) continue;
             string name = Path.GetFileName(file);
+            string? exe = file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? file
+                : file.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? Interop.ShellLink.ResolveTarget(file)
+                : null;
+            if (exe is not null && !File.Exists(exe)) exe = null;
             list.Add(new StartupEntry
             {
                 Name = name,
-                Command = file,
+                Command = exe is not null && !file.Equals(exe, StringComparison.OrdinalIgnoreCase) ? $"{file}  →  {exe}" : file,
                 Source = source,
                 Enabled = IsApproved(approved, name),
-                ExecutablePath = file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? file : null,
-                Publisher = null,
+                ExecutablePath = exe,
+                Publisher = exe is not null ? SafeCompany(exe) : null,
             });
         }
     }

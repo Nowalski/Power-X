@@ -30,6 +30,10 @@ internal static class Help
         Row("powerx security", "Microsoft Defender status and threat history  (scan [--full])");
         Row("powerx hash <file>", "SHA-256 of a file, checked against the CIRCL hash database");
         Row("powerx report", "Write a system report for support  [--out PATH] [--no-redact] [--print]");
+        Row("powerx changes", "What changed since the last snapshot  [--snapshot to take one now]");
+        Row("powerx reboot", "Whether a restart is pending, and why");
+        Row("powerx battery", "Battery wear, cycle count and runtime");
+        Row("powerx storage <path>", "Size the folders under a path, largest first");
         Row("powerx update", "Check the public repo for a newer version");
         Row("powerx history", "Change history timeline  [--revertable]");
         AnsiConsole.Write(grid);

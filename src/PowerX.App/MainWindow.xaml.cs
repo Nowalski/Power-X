@@ -62,6 +62,14 @@ public sealed partial class MainWindow : Window
         {
             _ = CheckForUpdatesAsync(silent: true);
         }
+
+        // Keep a rolling daily configuration snapshot so the "What changed" page has history.
+        if (!Services.DemoData.Active)
+            _ = Task.Run(() =>
+            {
+                try { PowerX.Core.Diagnostics.SystemSnapshot.CaptureIfStale(TimeSpan.FromHours(20)); }
+                catch (Exception ex) { App.Log("Snapshot", ex); }
+            });
     }
 
     private string? _updateUrl;
@@ -224,6 +232,8 @@ public sealed partial class MainWindow : Window
             "crashes" => typeof(CrashPage),
             "security" => typeof(SecurityPage),
             "tools" => typeof(ToolsPage),
+            "storage" => typeof(StoragePage),
+            "changes" => typeof(ChangesPage),
             "history" => typeof(HistoryPage),
             _ => typeof(HomePage),
         };

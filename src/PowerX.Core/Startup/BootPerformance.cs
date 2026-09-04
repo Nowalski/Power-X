@@ -26,6 +26,8 @@ public sealed record BootItem
     };
 }
 
+public sealed record BootRecord(DateTimeOffset When, int TotalMs, int MainPathMs);
+
 public sealed record BootTimeline
 {
     public required DateTimeOffset LastBootWhen { get; init; }
@@ -34,6 +36,12 @@ public sealed record BootTimeline
     public int AverageBootMs { get; init; }              // mean of the recent boots
     public int StartupAppCount { get; init; }
     public bool Degraded { get; init; }                  // this boot was flagged slower than usual
+
+    /// <summary>Recent boots, newest first, for a trend line.</summary>
+    public IReadOnlyList<BootRecord> Recent { get; init; } = [];
+
+    public int FastestBootMs => Recent.Count > 0 ? Recent.Min(b => b.TotalMs) : LastBootMs;
+    public int SlowestBootMs => Recent.Count > 0 ? Recent.Max(b => b.TotalMs) : LastBootMs;
 }
 
 /// <summary>
@@ -136,6 +144,9 @@ public static class BootPerformance
             AverageBootMs = withTotals.Count > 0 ? (int)withTotals.Average() : 0,
             StartupAppCount = latest.apps,
             Degraded = latest.degraded,
+            Recent = boots.Where(b => b.total > 0)
+                          .Select(b => new BootRecord(b.when, b.total, b.main))
+                          .ToList(),
         }, deduped);
     }
 

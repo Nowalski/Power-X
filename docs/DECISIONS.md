@@ -4,6 +4,18 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 
 ---
 
+## D-027. Config-drift snapshots, storage explorer, battery, pending restart, WinSxS
+**Date** 2026-09-04
+**Decision** 0.1.5. Four read-only features, plus an audit pass.
+- **What changed** (new page). `SystemSnapshot` takes a daily background snapshot of the machine's configuration: startup entries, scheduled tasks, auto-start services, installed programs, signed drivers and the tweaks PowerX has applied. It compares any two and shows what was added, removed or changed. Snapshots are plain JSON under `%LOCALAPPDATA%\PowerX\snapshots` (the last 40 are kept); nothing leaves the machine. This sits above the existing Change history, which stays PowerX's own action log. `powerx changes [--snapshot]`.
+- **Storage explorer** (new page). `FolderSizer` sizes the immediate children of a drive or folder, each sub-folder measured recursively and in parallel. Junctions and symlinks are skipped so nothing is counted twice or followed forever. Click a folder to go deeper. `powerx storage <path>`.
+- **Pending restart** (Tools). `PendingReboot` reads the documented places Windows records that a restart is owed (component servicing, Windows Update, queued file replacements, a computer rename) and says which one. `powerx reboot`.
+- **Component store** (Tools). `ComponentStore` runs `DISM /Online /Cleanup-Image /AnalyzeComponentStore` for the WinSxS size breakdown, and the Microsoft-recommended `/StartComponentCleanup`. It never runs `/ResetBase`, which would permanently block uninstalling installed updates.
+- **Battery health** (Tools, laptops only). `BatteryHealth` reads wear, cycle count and runtime from `powercfg`'s battery report plus the live charge state. `powerx battery`.
+- The Startup boot card gained a small trend of the last dozen boots.
+**Audit pass, same release** The updater now re-checks the installer's SHA-256 on disk immediately before running it, closing the gap between "verified" and "executed" for a file that sits in a user-writable folder in between. Unquoted startup paths that contain spaces now resolve to a real file. The hash lookup can never raise a "known malicious" verdict on an empty value. The system report scrubs the user and machine name on whole-word boundaries. Startup-folder shortcuts resolve to their target for a publisher and impact match. Smaller fixes across reverse DNS, the network page and the process list.
+**Status** Active (0.1.5). 95 tests.
+
 ## D-026. Startup impact from the Diagnostics-Performance log; an audit pass
 **Date** 2026-09-04
 **Decision** 0.1.4. `BootPerformance` (Core) reads the `Microsoft-Windows-Diagnostics-Performance/Operational` event log: event 100 (boot total, time to the desktop, and Windows' own slow-boot flag) and events 101/102/103 (a slow app, driver or service, with the milliseconds it added). That log needs administrator rights to read; without them the result is empty, never an error. The Startup page shows a boot-time card and a High, Medium or Low impact tag on the entries it can match. This is the same data source as Task Manager's "Startup impact": PowerX shows the real numbers where Windows recorded them and says nothing where it did not, rather than inventing a per-app score.

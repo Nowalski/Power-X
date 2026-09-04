@@ -329,15 +329,21 @@ internal static class DemoData
         new() { Name = "OneDrive per-machine standalone updater", Command = "\"C:\\Program Files (x86)\\Microsoft OneDrive\\StandaloneUpdater\\OneDriveSetup.exe\" /update", Source = StartupSource.ScheduledTask, Enabled = true, Publisher = "Microsoft Corporation", TaskPath = @"\Microsoft\OneDrive\Standalone Update Task-S-1-5-21" },
     ];
 
-    public static BootTimeline BootTimeline() => new()
+    public static BootTimeline BootTimeline()
     {
-        LastBootWhen = DateTimeOffset.Now.AddHours(-6),
-        LastBootMs = 41_600,
-        MainPathMs = 28_400,
-        AverageBootMs = 34_900,
-        StartupAppCount = 11,
-        Degraded = true,
-    };
+        int[] recent = [41_600, 33_200, 35_800, 31_900, 34_100, 30_700, 36_400, 33_500, 32_800, 38_100, 34_900, 31_200];
+        var now = DateTimeOffset.Now;
+        return new()
+        {
+            LastBootWhen = now.AddHours(-6),
+            LastBootMs = recent[0],
+            MainPathMs = 28_400,
+            AverageBootMs = 34_900,
+            StartupAppCount = 11,
+            Degraded = true,
+            Recent = recent.Select((ms, i) => new BootRecord(now.AddDays(-i).AddHours(-6), ms, (int)(ms * 0.68))).ToList(),
+        };
+    }
 
     public static IReadOnlyList<BootItem> BootItems() =>
     [
@@ -464,6 +470,76 @@ internal static class DemoData
                 ],
                 Missing = [],
             },
+        ];
+    }
+
+    // ---- tools: pending reboot / component store / battery -----------
+
+    public static PendingRebootStatus PendingReboot() => new(true,
+    [
+        "Windows Update installed something that needs a restart.",
+        "3 file(s) are queued to be replaced or deleted on restart (usually a program that updated files still in use).",
+    ]);
+
+    public static ComponentStoreInfo ComponentStore() => new()
+    {
+        ActualSizeBytes = 8_150_000_000,
+        SharedWithWindowsBytes = 5_900_000_000,
+        BackupsAndDisabledBytes = 1_780_000_000,
+        CacheAndTempBytes = 470_000_000,
+        ReclaimablePackages = 12,
+        CleanupRecommended = true,
+        LastCleanup = DateTimeOffset.Now.AddDays(-34),
+    };
+
+    public static BatteryInfo Battery() => new()
+    {
+        HasBattery = true,
+        Manufacturer = "LGC",
+        Chemistry = "LiP",
+        DesignCapacityMwh = 60_000,
+        FullChargeCapacityMwh = 51_200,
+        CycleCount = 214,
+        ChargePercent = 74,
+        OnAcPower = false,
+        Charging = false,
+        EstimatedRuntime = TimeSpan.FromMinutes(212),
+    };
+
+    // ---- what changed ----------------------------------------------
+
+    public static SnapshotDiff SnapshotDiff()
+    {
+        var now = DateTimeOffset.Now;
+        return new SnapshotDiff(now.AddDays(-7), now,
+        [
+            new(SnapshotCategory.Startup, "Spotify", ChangeKind.Added, null, "enabled"),
+            new(SnapshotCategory.Startup, "EpicGamesLauncher", ChangeKind.Changed, "enabled", "disabled"),
+            new(SnapshotCategory.ScheduledTask, "\\GoogleUpdateTaskMachineUA", ChangeKind.Added, null, "enabled"),
+            new(SnapshotCategory.Service, "Razer Chroma SDK Service", ChangeKind.Added, null, "Automatic"),
+            new(SnapshotCategory.Program, "Discord", ChangeKind.Changed, "1.0.9038", "1.0.9041"),
+            new(SnapshotCategory.Program, "Steam", ChangeKind.Added, null, "installed"),
+            new(SnapshotCategory.Program, "CCleaner", ChangeKind.Removed, "6.21", null),
+            new(SnapshotCategory.Driver, "NVIDIA GeForce RTX 4070 (NVIDIA)", ChangeKind.Changed, "32.0.15.5599", "32.0.15.6094"),
+            new(SnapshotCategory.Tweak, "Show file extensions", ChangeKind.Added, null, "applied"),
+        ]);
+    }
+
+    // ---- storage explorer -----------------------------------------
+
+    public static IReadOnlyList<FolderEntry> FolderEntries(string path)
+    {
+        string P(string name) => System.IO.Path.Combine(path, name);
+        return
+        [
+            new(P("Windows"), "Windows", true, 32_400_000_000, 210_000),
+            new(P("Program Files"), "Program Files", true, 24_800_000_000, 95_000),
+            new(P("Users"), "Users", true, 61_300_000_000, 480_000),
+            new(P("Program Files (x86)"), "Program Files (x86)", true, 9_100_000_000, 61_000),
+            new(P("ProgramData"), "ProgramData", true, 6_700_000_000, 42_000),
+            new(P("hiberfil.sys"), "hiberfil.sys", false, 13_600_000_000, 1),
+            new(P("pagefile.sys"), "pagefile.sys", false, 9_800_000_000, 1),
+            new(P("$Recycle.Bin"), "$Recycle.Bin", true, 2_100_000_000, 3_400),
         ];
     }
 }

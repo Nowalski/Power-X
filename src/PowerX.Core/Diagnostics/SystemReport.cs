@@ -242,20 +242,27 @@ public static class SystemReport
     {
         string user = Environment.UserName;
         string machine = Environment.MachineName;
+
+        // Path forms first — these are exact and must always be scrubbed, whatever the name is.
+        text = text.Replace($@"\{user}\", @"\<user>\", StringComparison.OrdinalIgnoreCase)
+                   .Replace($"/{user}/", "/<user>/", StringComparison.OrdinalIgnoreCase);
+
         try
         {
+            // Whole-word only, so a short login name ("sam", "admin") does not eat a substring
+            // of an unrelated word ("Samsung", "administrator") in an event-log message.
             if (user.Length >= 2)
-                text = Regex.Replace(text, Regex.Escape(user), "<user>", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+                text = Regex.Replace(text, $@"\b{Regex.Escape(user)}\b", "<user>",
+                    RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
             if (machine.Length >= 2)
-                text = Regex.Replace(text, Regex.Escape(machine), "<machine>", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+                text = Regex.Replace(text, $@"\b{Regex.Escape(machine)}\b", "<machine>",
+                    RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
             text = MacRx.Replace(text, "<mac>");
         }
         catch (RegexMatchTimeoutException)
         {
             // pathological input; the user/machine/MAC that got through is on the user's own report
         }
-        // C:\Users\<name>\... paths anywhere the user name did not already catch (localised "Users").
-        text = text.Replace($@"\{user}\", @"\<user>\", StringComparison.OrdinalIgnoreCase);
         return text;
     }
 
