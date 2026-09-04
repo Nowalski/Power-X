@@ -1,6 +1,7 @@
 using PowerX.Core.Diagnostics;
 using PowerX.Core.Diagnostics.Crash;
 using PowerX.Core.Processes;
+using PowerX.Core.Startup;
 using PowerX.Core.Telemetry;
 
 namespace PowerX.App.Services;
@@ -309,6 +310,41 @@ internal static class DemoData
             RemoteAddress = null, RemotePort = 0,
             State = "", IsListening = true, Exposed = true,
         },
+    ];
+
+    // ---- startup / boot ----------------------------------------------
+
+    public static IReadOnlyList<StartupEntry> StartupEntries() =>
+    [
+        new() { Name = "OneDrive", Command = "\"C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe\" /background", Source = StartupSource.RunUser, Enabled = true, Publisher = "Microsoft Corporation", ExecutablePath = @"C:\Program Files\Microsoft OneDrive\OneDrive.exe" },
+        new() { Name = "Discord", Command = "C:\\Users\\user\\AppData\\Local\\Discord\\Update.exe --processStart Discord.exe", Source = StartupSource.RunUser, Enabled = true, Publisher = "Discord Inc.", ExecutablePath = @"C:\Users\user\AppData\Local\Discord\app-1.0.9\Discord.exe" },
+        new() { Name = "Spotify", Command = "C:\\Users\\user\\AppData\\Roaming\\Spotify\\Spotify.exe --autostart --minimized", Source = StartupSource.RunUser, Enabled = true, Publisher = "Spotify AB", ExecutablePath = @"C:\Users\user\AppData\Roaming\Spotify\Spotify.exe" },
+        new() { Name = "Steam", Command = "\"C:\\Program Files (x86)\\Steam\\steam.exe\" -silent", Source = StartupSource.RunUser, Enabled = true, Publisher = "Valve Corporation", ExecutablePath = @"C:\Program Files (x86)\Steam\steam.exe" },
+        new() { Name = "EpicGamesLauncher", Command = "\"C:\\Program Files (x86)\\Epic Games\\Launcher\\Portal\\Binaries\\Win64\\EpicGamesLauncher.exe\" -silent", Source = StartupSource.RunUser, Enabled = false, Publisher = "Epic Games, Inc.", ExecutablePath = @"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe" },
+        new() { Name = "SecurityHealth", Command = "C:\\WINDOWS\\system32\\SecurityHealthSystray.exe", Source = StartupSource.RunMachine, Enabled = true, Publisher = "Microsoft Corporation", ExecutablePath = @"C:\WINDOWS\system32\SecurityHealthSystray.exe" },
+        new() { Name = "RtkAudUService", Command = "\"C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\realtekservice\\RtkAudUService64.exe\" -background", Source = StartupSource.RunMachine, Enabled = true, Publisher = "Realtek Semiconductor", ExecutablePath = @"C:\WINDOWS\System32\RtkAudUService64.exe" },
+        new() { Name = "NVIDIA App", Command = "\"C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\CEF\\NVIDIA app.exe\" --start-minimized", Source = StartupSource.RunMachine, Enabled = true, Publisher = "NVIDIA Corporation", ExecutablePath = @"C:\Program Files\NVIDIA Corporation\NVIDIA App\CEF\NVIDIA app.exe" },
+        new() { Name = "Adobe GC Invoker Utility", Command = "\"C:\\Program Files (x86)\\Common Files\\Adobe\\AdobeGCClient\\AGCInvokerUtility.exe\"", Source = StartupSource.RunMachine, Enabled = false, Publisher = "Adobe Inc.", ExecutablePath = @"C:\Program Files (x86)\Common Files\Adobe\AdobeGCClient\AGCInvokerUtility.exe" },
+        new() { Name = "Backup and Sync", Command = "\"C:\\Program Files\\Google\\Drive File Stream\\launch.bat\"", Source = StartupSource.StartupFolderUser, Enabled = true, Publisher = "Google LLC", ExecutablePath = @"C:\Program Files\Google\Drive File Stream\GoogleDriveFS.exe" },
+        new() { Name = "OneDrive per-machine standalone updater", Command = "\"C:\\Program Files (x86)\\Microsoft OneDrive\\StandaloneUpdater\\OneDriveSetup.exe\" /update", Source = StartupSource.ScheduledTask, Enabled = true, Publisher = "Microsoft Corporation", TaskPath = @"\Microsoft\OneDrive\Standalone Update Task-S-1-5-21" },
+    ];
+
+    public static BootTimeline BootTimeline() => new()
+    {
+        LastBootWhen = DateTimeOffset.Now.AddHours(-6),
+        LastBootMs = 41_600,
+        MainPathMs = 28_400,
+        AverageBootMs = 34_900,
+        StartupAppCount = 11,
+        Degraded = true,
+    };
+
+    public static IReadOnlyList<BootItem> BootItems() =>
+    [
+        new() { Name = "EpicGamesLauncher", Path = @"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe", Kind = BootItemKind.App, TotalMs = 4200, DegradationMs = 2600, When = DateTimeOffset.Now.AddHours(-6) },
+        new() { Name = "Discord", Path = @"C:\Users\user\AppData\Local\Discord\app-1.0.9\Discord.exe", Kind = BootItemKind.App, TotalMs = 2900, DegradationMs = 1400, When = DateTimeOffset.Now.AddHours(-6) },
+        new() { Name = "Spotify", Path = @"C:\Users\user\AppData\Roaming\Spotify\Spotify.exe", Kind = BootItemKind.App, TotalMs = 1600, DegradationMs = 600, When = DateTimeOffset.Now.AddHours(-6) },
+        new() { Name = "OneDrive", Path = @"C:\Program Files\Microsoft OneDrive\OneDrive.exe", Kind = BootItemKind.App, TotalMs = 900, DegradationMs = 240, When = DateTimeOffset.Now.AddHours(-6) },
     ];
 
     // ---- security ------------------------------------------------------

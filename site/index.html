@@ -280,7 +280,7 @@
 <main id="main">
 
   <section class="hero shell">
-    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.3, an early milestone build</p>
+    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.4, an early milestone build</p>
     <h1 class="r r2">The Windows control center <span class="em">that respects your machine</span></h1>
     <p class="lead r r3">
       Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one
@@ -423,6 +423,29 @@
 
     <div class="feature flip">
       <div class="copy">
+        <p class="eyebrow reveal">Startup</p>
+        <h2 class="reveal">Know what is slowing your boot</h2>
+        <p class="reveal">
+          Every autostart location in one list, toggled the safe way Task Manager does it. On top
+          of that, PowerX reads the boot-performance data Windows already records and shows how
+          long the last boot took, how that compares to your recent average, and a High, Medium or
+          Low impact tag on the entries Windows measured as slow. It shows the real numbers, and
+          says nothing where there is nothing to show.
+        </p>
+        <div class="tags reveal">
+          <span class="tag">Measured boot time</span>
+          <span class="tag">Per-entry impact</span>
+          <span class="tag">Reversible disable</span>
+        </div>
+      </div>
+      <figure class="shot reveal">
+        <img src="assets/shot-startup.png" width="1600" height="1000"
+             alt="The PowerX Startup page: a card showing the last boot took 41.6 seconds, 6.7 seconds slower than the recent average, above a list of startup entries with High and Medium impact tags." />
+      </figure>
+    </div>
+
+    <div class="feature">
+      <div class="copy">
         <p class="eyebrow reveal">Network</p>
         <h2 class="reveal">See what your machine is talking to</h2>
         <p class="reveal">
@@ -443,7 +466,7 @@
       </figure>
     </div>
 
-    <div class="feature">
+    <div class="feature flip">
       <div class="copy">
         <p class="eyebrow reveal">Security</p>
         <h2 class="reveal">Not an antivirus. A window onto the one you have.</h2>
@@ -510,7 +533,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\Sy
   <section id="download" class="download">
     <div class="shell">
       <p class="eyebrow reveal">Download</p>
-      <h2 class="reveal">Get PowerX 0.1.3</h2>
+      <h2 class="reveal">Get PowerX 0.1.4</h2>
       <p class="lead prose reveal" style="margin-top:var(--s3)">
         64-bit Windows 10 (build 19041) or Windows 11. PowerX runs as administrator because it
         manages system state. It is not code-signed yet, so Windows SmartScreen will show an
@@ -532,7 +555,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">hash</span> C:\Windows\Sy
 
       <p class="dl-note reveal">
         Every release lists a SHA-256 for each file. To check the installer:
-        <code>Get-FileHash .\PowerX-Setup-0.1.3-win-x64.msi</code> in PowerShell, and compare it to
+        <code>Get-FileHash .\PowerX-Setup-0.1.4-win-x64.msi</code> in PowerShell, and compare it to
         the value on the <a href="https://github.com/Nowalski/Power-X/releases" style="color:var(--accent-2)">releases page</a>.
       </p>
     </div>

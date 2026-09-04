@@ -59,6 +59,16 @@ public class NetworkTests
         ports[1].Exposed.Should().BeFalse();   // loopback
     }
 
+    [Fact]
+    public async Task ReverseDns_marks_an_address_attempted_so_it_is_not_retried()
+    {
+        const string ip = "203.0.113.7";   // TEST-NET-3, will never resolve
+        ReverseDns.Attempted(ip).Should().BeFalse();
+        await ReverseDns.ResolveAsync(ip);
+        ReverseDns.Attempted(ip).Should().BeTrue("a finished lookup, even a failed one, must not be repeated");
+        ReverseDns.Cached(ip).Should().BeNull();
+    }
+
     [Theory]
     [InlineData("93.184.216.34", true)]     // public
     [InlineData("8.8.8.8", true)]

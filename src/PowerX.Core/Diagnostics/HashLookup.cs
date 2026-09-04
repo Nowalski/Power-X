@@ -109,11 +109,6 @@ public static class HashLookup
                 : km.ValueKind == JsonValueKind.Array ? string.Join(", ", km.EnumerateArray().Select(e => e.GetString()))
                 : "listed on a blocklist";
         }
-        if (root.TryGetProperty("hashlookup:trust", out var tr) && tr.TryGetInt32(out var trv) && trv <= 20)
-        {
-            // very low trust on its own is not "malicious", but say so
-        }
-
         string summary = malicious
             ? $"Flagged as malicious ({malDetail}). Treat this file as dangerous, and run a full antivirus scan."
             : trust is >= 50

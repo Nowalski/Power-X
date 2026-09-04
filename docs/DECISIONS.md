@@ -4,6 +4,12 @@ Running record of significant choices. Newest first. Each entry: context, decisi
 
 ---
 
+## D-026. Startup impact from the Diagnostics-Performance log; an audit pass
+**Date** 2026-09-04
+**Decision** 0.1.4. `BootPerformance` (Core) reads the `Microsoft-Windows-Diagnostics-Performance/Operational` event log: event 100 (boot total, time to the desktop, and Windows' own slow-boot flag) and events 101/102/103 (a slow app, driver or service, with the milliseconds it added). That log needs administrator rights to read; without them the result is empty, never an error. The Startup page shows a boot-time card and a High, Medium or Low impact tag on the entries it can match. This is the same data source as Task Manager's "Startup impact": PowerX shows the real numbers where Windows recorded them and says nothing where it did not, rather than inventing a per-app score.
+**Audit pass, same release** Reverse DNS now records that an address was tried, so a name with no record is not looked up again on every refresh. The system report dropped a lookahead-heavy regular expression (a denial-of-service risk that scrubbed nothing the report actually emits) and put a timeout on the rest. Clipboard copies go through one shared helper that retries and never lets a transient failure surface. The Security page guards every screen update that runs after an await against the user having already left the page. Small dead-code and cleanup fixes in the hash lookup, Defender and network code.
+**Status** Active (0.1.4).
+
 ## D-025. Security page: surface Defender, never be the antivirus
 **Date** 2026-09-03
 **Decision** A "Security" page (under Optimize and fix) plus `powerx security` and `powerx hash`. It does four things and refuses to do more:

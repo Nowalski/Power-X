@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using PowerX.App.Services;
 using PowerX.Core.Processes;
-using Windows.ApplicationModel.DataTransfer;
 
 namespace PowerX.App.Views;
 
@@ -405,12 +404,7 @@ public sealed partial class ProcessesPage : Page
 
     // ---------------------------------------------------------------- helpers
 
-    private static void Copy(string text)
-    {
-        var dp = new DataPackage();
-        dp.SetText(text);
-        Clipboard.SetContent(dp);
-    }
+    private static void Copy(string text) => Services.Clip.SetText(text);
 
     private async Task<bool> Confirm(string title, string body, string primary)
     {

@@ -11,7 +11,7 @@ namespace PowerX.Core.Diagnostics;
 
 public sealed record ReportOptions
 {
-    /// <summary>Replace the user name, machine name, MAC and serial-looking strings with placeholders.</summary>
+    /// <summary>Replace the user name, machine name and MAC addresses with placeholders.</summary>
     public bool Redact { get; init; } = true;
     public int ChangeHistoryCount { get; init; } = 25;
     public TimeSpan EventWindow { get; init; } = TimeSpan.FromDays(7);
@@ -21,7 +21,7 @@ public sealed record ReportOptions
 /// <summary>
 /// Builds a plain-text system report for support and bug reports: hardware, OS, storage,
 /// the tweaks PowerX has applied, recent change history, an event-log error summary and a
-/// crash summary. By default it scrubs the user name, machine name and hardware identifiers.
+/// crash summary. By default it scrubs the user name, machine name and MAC addresses.
 /// Read-only. Every section is best-effort: a section that cannot be collected says so rather
 /// than failing the whole report.
 /// </summary>
@@ -38,7 +38,7 @@ public static class SystemReport
         sb.AppendLine($"Generated {DateTimeOffset.Now:yyyy-MM-dd HH:mm} by PowerX "
                     + $"{typeof(SystemReport).Assembly.GetName().Version?.ToString(3)}.");
         if (opt.Redact)
-            sb.AppendLine("User name, machine name and hardware identifiers are redacted.");
+            sb.AppendLine("User name, machine name and MAC addresses are redacted.");
         sb.AppendLine();
 
         Section(sb, "System", () => System(opt));
@@ -175,6 +175,7 @@ public static class SystemReport
         var since = DateTimeOffset.UtcNow - window;
         string iso = since.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         var counts = new Dictionary<string, (int n, DateTimeOffset last)>();
+        var problems = new List<string>();
 
         foreach (var logName in (string[])["Application", "System"])
         {
@@ -198,14 +199,21 @@ public static class SystemReport
                     }
                 }
             }
-            catch (Exception ex) { return $"Could not read the {logName} log: {ex.Message}"; }
+            catch (Exception ex) { problems.Add($"Could not read the {logName} log: {ex.Message}"); }
         }
 
-        if (counts.Count == 0) return $"No errors in the Application or System log in the last {window.TotalDays:0} days.";
         var sb = new StringBuilder();
-        sb.AppendLine($"Top error sources in the last {window.TotalDays:0} days:");
-        foreach (var kv in counts.OrderByDescending(k => k.Value.n).Take(12))
-            sb.AppendLine($"- {kv.Value.n,4}x  {kv.Key}  (last {kv.Value.last.LocalDateTime:yyyy-MM-dd HH:mm})");
+        if (counts.Count == 0)
+        {
+            sb.AppendLine($"No errors in the Application or System log in the last {window.TotalDays:0} days.");
+        }
+        else
+        {
+            sb.AppendLine($"Top error sources in the last {window.TotalDays:0} days:");
+            foreach (var kv in counts.OrderByDescending(k => k.Value.n).Take(12))
+                sb.AppendLine($"- {kv.Value.n,4}x  {kv.Key}  (last {kv.Value.last.LocalDateTime:yyyy-MM-dd HH:mm})");
+        }
+        foreach (var p in problems) sb.AppendLine($"- _{p}_");
         return sb.ToString();
     }
 
@@ -227,19 +235,27 @@ public static class SystemReport
 
     // -------------------------------------------------------------- helpers
 
-    private static readonly Regex MacRx = new(@"\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b", RegexOptions.Compiled);
-    private static readonly Regex SerialRx = new(@"\b(?=[A-Z0-9-]{10,}\b)(?=[A-Z0-9-]*\d)(?=[A-Z0-9-]*[A-Z])[A-Z0-9-]{10,}\b", RegexOptions.Compiled);
+    private static readonly Regex MacRx =
+        new(@"\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b", RegexOptions.Compiled, TimeSpan.FromMilliseconds(250));
 
     private static string Scrub(string text)
     {
         string user = Environment.UserName;
         string machine = Environment.MachineName;
-        if (user.Length >= 2)
-            text = Regex.Replace(text, Regex.Escape(user), "<user>", RegexOptions.IgnoreCase);
-        if (machine.Length >= 2)
-            text = Regex.Replace(text, Regex.Escape(machine), "<machine>", RegexOptions.IgnoreCase);
-        text = MacRx.Replace(text, "<mac>");
-        text = SerialRx.Replace(text, m => m.Value.Length >= 12 ? "<serial>" : m.Value);
+        try
+        {
+            if (user.Length >= 2)
+                text = Regex.Replace(text, Regex.Escape(user), "<user>", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+            if (machine.Length >= 2)
+                text = Regex.Replace(text, Regex.Escape(machine), "<machine>", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+            text = MacRx.Replace(text, "<mac>");
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // pathological input; the user/machine/MAC that got through is on the user's own report
+        }
+        // C:\Users\<name>\... paths anywhere the user name did not already catch (localised "Users").
+        text = text.Replace($@"\{user}\", @"\<user>\", StringComparison.OrdinalIgnoreCase);
         return text;
     }
 

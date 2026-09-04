@@ -113,7 +113,6 @@ public static class Defender
         {
             return new DefenderStatus { Detail = $"Could not read Defender status: {ex.Message}" };
         }
-        finally { }
     }
 
     public static IReadOnlyList<DefenderThreat> ThreatHistory(int max = 100)
@@ -203,7 +202,13 @@ public static class Defender
         catch (OperationCanceledException)
         {
             try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch { /* ignore */ }
-            try { Process.Start(new ProcessStartInfo(exe, "-Scan -CancelScan") { UseShellExecute = false, CreateNoWindow = true }); } catch { /* ignore */ }
+            try
+            {
+                using var cancel = Process.Start(new ProcessStartInfo(exe, "-Scan -CancelScan")
+                { UseShellExecute = false, CreateNoWindow = true });
+                cancel?.WaitForExit(5000);
+            }
+            catch { /* ignore */ }
             onLine("Scan cancelled.");
             return -1;
         }

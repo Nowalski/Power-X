@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using PowerX.App.Services;
 using PowerX.Core.Telemetry;
-using Windows.ApplicationModel.DataTransfer;
 
 namespace PowerX.App.Views;
 
@@ -184,16 +183,18 @@ public sealed partial class NetworkPage : Page
 
     private void StartResolving()
     {
-        _resolveCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _resolveCts = cts;
         var targets = _connections
-            .Where(c => c.RemoteAddress is { } ip && ReverseDns.IsResolvable(ip) && ReverseDns.Cached(ip) is null)
+            .Where(c => c.RemoteAddress is { } ip && ReverseDns.IsResolvable(ip) && !ReverseDns.Attempted(ip))
             .Select(c => c.RemoteAddress!)
             .Distinct()
             .Take(60)
             .ToList();
         if (targets.Count == 0) return;
+
+        // A superseded resolve loop just stops; the CTS carries no timer so GC handles it.
+        _resolveCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _resolveCts = cts;
 
         _ = Task.Run(async () =>
         {
@@ -238,10 +239,7 @@ public sealed partial class NetworkPage : Page
         foreach (var c in rows)
             sb.Append(c.ProcessName).Append('\t').Append(c.Protocol).Append('\t')
               .Append(c.LocalEndpoint).Append('\t').Append(RemoteText(c)).Append('\t').Append(c.State).Append('\n');
-        var pkg = new DataPackage();
-        pkg.SetText(sb.ToString());
-        Clipboard.SetContent(pkg);
-        CopyConnButton.Content = "Copied";
+        CopyConnButton.Content = Services.Clip.SetText(sb.ToString()) ? "Copied" : "Copy failed";
         _ = ResetCopyLabel();
     }
 

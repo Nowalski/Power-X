@@ -10,18 +10,19 @@ public sealed partial class SecurityPage : Page
 {
     private CancellationTokenSource? _scanCts;
     private CancellationTokenSource? _hashCts;
-    private bool _loaded;
+    private bool _onPage;
 
     public SecurityPage()
     {
         InitializeComponent();
         PageLayout.CenterCap(this, Root, 1000);
-        _loaded = true;
+        _onPage = true;
         _ = LoadAsync();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
+        _onPage = false;
         _scanCts?.Cancel();
         _hashCts?.Cancel();
     }
@@ -39,10 +40,10 @@ public sealed partial class SecurityPage : Page
         catch (Exception ex)
         {
             App.Log("Defender.Load", ex);
-            Summary.Text = "Could not read Defender status: " + ex.Message;
+            if (_onPage) Summary.Text = "Could not read Defender status: " + ex.Message;
             return;
         }
-        if (!_loaded) return;
+        if (!_onPage) return;
 
         Summary.Text = status.Detail
             ?? (status.Unprotected ? "No active real-time antivirus." : "Defender's own status and history. PowerX is not an antivirus.");
@@ -170,9 +171,12 @@ public sealed partial class SecurityPage : Page
         {
             cts.Dispose();
             _scanCts = null;
-            QuickScanButton.IsEnabled = FullScanButton.IsEnabled = true;
-            StopScanButton.IsEnabled = false;
-            _ = LoadAsync();   // refresh "last scan" and threat history
+            if (_onPage)
+            {
+                QuickScanButton.IsEnabled = FullScanButton.IsEnabled = true;
+                StopScanButton.IsEnabled = false;
+                _ = LoadAsync();   // refresh "last scan" and threat history
+            }
         }
     }
 
@@ -214,9 +218,10 @@ public sealed partial class SecurityPage : Page
             }
             else if (File.Exists(input))
             {
+                HashText.Text = "Hashing the file…";
+                HashText.Visibility = Visibility.Visible;
                 sha256 = await HashLookup.Sha256FileAsync(input, cts.Token);
                 HashText.Text = "SHA-256  " + sha256;
-                HashText.Visibility = Visibility.Visible;
             }
             else
             {

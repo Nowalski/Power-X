@@ -23,7 +23,7 @@
 
 **PowerX** is a native Windows control center: Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one WinUI 3 app. It treats deep system monitoring, *safe* configuration, and premium Windows-native design as equally important, and stays useful even if you never remove a single app.
 
-> **Status: 0.1.3, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
+> **Status: 0.1.4, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
 
 <p align="center">
   <img src="site/assets/shot-home.png" width="49%" alt="Overview: live CPU, memory and GPU with a top-processes list and recommendations" />
@@ -52,11 +52,12 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 | **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree), disks (SMART, temperature, endurance). |
 | **Configure** | A **declarative, evidence-backed tweak engine** (35 tweaks). Every tweak states what it does, why you might want it, the downside, restart needs, whether it is reversible, and whether it is recommended. Curated **profiles** (Recommended, Privacy, Potato mode, Gaming, Restore defaults) apply a visible set in one click with a preview diff. No folklore gamer tweaks ([why](docs/research/TWEAK_RESEARCH.md)). |
 | **Debloat** | About ninety curated entries, Store and consumer apps only, no shell components, nothing pre-selected. Each entry states its removal class and how hard it is to reinstall. |
+| **Startup** | Every autostart entry in one list, toggled the reversible way Task Manager does it, plus the boot-performance data Windows already records: how long the last boot took, how it compares to your recent average, and a High / Medium / Low impact tag on the entries Windows measured as slow. |
 | **Clean and repair** | Size-first disk cleanup with a per-category breakdown, and a runner for SFC, DISM, chkdsk, network reset and Windows Update repair with streamed output. |
 | **Crash insights** | Reads what Windows already recorded (WER, event logs, and only on request the metadata inside a crash dump) and separates observed facts from likely cause, with a confidence level. Never downloads symbols, never opens a dump in a debugger, never uploads anything. |
 | **Network** | Live up and down rate, per-process connections with remote address and state, a listening-ports view that flags what is reachable from the network, opt-in reverse DNS for public addresses, and built-in ping / traceroute / DNS. |
 | **Security check** | PowerX is not an antivirus. This shows Microsoft Defender's real status and the threats it has caught, starts a Defender scan, and checks a file's SHA-256 against the open CIRCL hash database. |
-| **System report** | `powerx report` or a Settings button writes hardware, OS, storage, applied tweaks, recent changes and an event-log and crash summary to one file for support. The user name, machine name and hardware identifiers are redacted, and you see the full text first. |
+| **System report** | `powerx report` or a Settings button writes hardware, OS, storage, applied tweaks, recent changes and an event-log and crash summary to one file for support. The user name, machine name and MAC addresses are redacted, and you see the full text first. |
 | **Safety** | Detect, record, plan, show, apply, **verify**, log, undo. An append-only change history. Per-tweak revert. Honest about what cannot be undone. |
 
 ## Try the CLI

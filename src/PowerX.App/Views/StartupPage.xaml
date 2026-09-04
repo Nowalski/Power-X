@@ -7,6 +7,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -15,12 +16,19 @@
             <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
         </StackPanel>
 
-        <InfoBar Grid.Row="1" IsOpen="True" Severity="Informational" IsClosable="False"
+        <Border x:Name="BootCard" Grid.Row="1" Style="{StaticResource CardStyle}" Visibility="Collapsed">
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="BootHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Name="BootDetail" Style="{StaticResource MutedStyle}" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <InfoBar Grid.Row="2" IsOpen="True" Severity="Informational" IsClosable="False"
                  Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the RunOnce value." />
 
-        <TextBox x:Name="Filter" Grid.Row="2" PlaceholderText="Search startup entries…" TextChanged="Filter_Changed" />
+        <TextBox x:Name="Filter" Grid.Row="3" PlaceholderText="Search startup entries…" TextChanged="Filter_Changed" />
 
-        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="4" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="6" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>

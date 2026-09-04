@@ -15,6 +15,10 @@ public static class ReverseDns
     /// <summary>The cached hostname, or null if not resolved yet or the lookup failed / was skipped.</summary>
     public static string? Cached(string ip) => Cache.GetValueOrDefault(ip);
 
+    /// <summary>True once a lookup for this address has finished (successfully or not), so callers
+    /// do not retry an address that has no PTR record on every refresh.</summary>
+    public static bool Attempted(string ip) => Cache.ContainsKey(ip);
+
     public static bool IsResolvable(string ip) =>
         IPAddress.TryParse(ip, out var a) &&
         !IPAddress.IsLoopback(a) && !a.Equals(IPAddress.Any) && !a.Equals(IPAddress.IPv6Any) &&

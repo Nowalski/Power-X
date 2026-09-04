@@ -8,6 +8,7 @@ namespace PowerX.App.Views;
 public sealed partial class StartupPage : Page
 {
     private List<StartupEntry> _entries = [];
+    private IReadOnlyList<BootItem> _bootItems = [];
     private string _filter = "";
     private bool _loaded;
 
@@ -20,9 +21,20 @@ public sealed partial class StartupPage : Page
     private async Task LoadAsync()
     {
         _loaded = false;
+        BootTimeline? boot;
         try
         {
-            _entries = (await Task.Run(() => StartupProvider.Enumerate())).ToList();
+            if (Services.DemoData.Active)
+            {
+                _entries = Services.DemoData.StartupEntries().ToList();
+                boot = Services.DemoData.BootTimeline();
+                _bootItems = Services.DemoData.BootItems();
+            }
+            else
+            {
+                (_entries, (boot, _bootItems)) = await Task.Run(() =>
+                    (StartupProvider.Enumerate().ToList(), BootPerformance.Read()));
+            }
         }
         catch (Exception ex)
         {
@@ -31,8 +43,44 @@ public sealed partial class StartupPage : Page
             return;
         }
         Summary.Text = $"{_entries.Count} startup entries · {_entries.Count(e => e.Enabled)} enabled";
+        ShowBootCard(boot);
         _loaded = true;
         Render();
+    }
+
+    private void ShowBootCard(BootTimeline? b)
+    {
+        if (b is null || b.LastBootMs <= 0) { BootCard.Visibility = Visibility.Collapsed; return; }
+        BootCard.Visibility = Visibility.Visible;
+
+        double lastS = b.LastBootMs / 1000.0;
+        BootHeadline.Text = $"Last boot took {lastS:0.0} s";
+        if (b.MainPathMs > 0)
+            BootHeadline.Text += $"  ({b.MainPathMs / 1000.0:0.0} s to the desktop)";
+
+        var parts = new List<string>();
+        if (b.AverageBootMs > 0)
+        {
+            double avgS = b.AverageBootMs / 1000.0;
+            double delta = lastS - avgS;
+            parts.Add(Math.Abs(delta) < 1.5
+                ? $"about the same as your recent average ({avgS:0.0} s)"
+                : delta > 0 ? $"{delta:0.0} s slower than your recent average" : $"{-delta:0.0} s faster than your recent average");
+        }
+        if (b.StartupAppCount > 0) parts.Add($"{b.StartupAppCount} startup apps");
+        if (b.Degraded) parts.Add("Windows flagged this boot as slower than usual");
+        BootDetail.Text = string.Join(".   ", parts) + (parts.Count > 0 ? "." : "")
+                        + "   From the same data as Task Manager's Startup impact.";
+    }
+
+    private BootItem? BootFor(StartupEntry e)
+    {
+        if (_bootItems.Count == 0) return null;
+        string? exe = e.ExecutablePath is { } p ? System.IO.Path.GetFileName(p) : null;
+        return _bootItems.FirstOrDefault(b =>
+            (exe is not null && b.Path is { } bp && string.Equals(System.IO.Path.GetFileName(bp), exe, StringComparison.OrdinalIgnoreCase)) ||
+            b.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase) ||
+            (e.Publisher is not null && b.Name.Equals(e.Publisher, StringComparison.OrdinalIgnoreCase)));
     }
 
     private void Filter_Changed(object sender, TextChangedEventArgs e)
@@ -76,6 +124,16 @@ public sealed partial class StartupPage : Page
             titleRow.Children.Add(Chip(entry.Publisher, (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
         if (entry.RequiresAdmin)
             titleRow.Children.Add(Chip("all users", (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
+        if (BootFor(entry) is { Impact: not StartupImpact.NotMeasured } b)
+        {
+            var brush = b.Impact switch
+            {
+                StartupImpact.High => (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
+                StartupImpact.Medium => (Brush)Application.Current.Resources["SystemFillColorCautionBrush"],
+                _ => (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            };
+            titleRow.Children.Add(Chip($"{b.Impact} impact · +{b.DegradationMs / 1000.0:0.0}s at boot", brush));
+        }
         text.Children.Add(titleRow);
         text.Children.Add(new TextBlock
         {

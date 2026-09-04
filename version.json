@@ -1,10 +1,10 @@
 {
-  "version": "0.1.3",
-  "published": "2026-09-03",
-  "notes": "Fix: the Security page \"Check a file\" Browse button did nothing (WinUI FileOpenPicker fails in an elevated unpackaged app). It now uses the classic Windows file dialog.",
+  "version": "0.1.4",
+  "published": "2026-09-04",
+  "notes": "Startup impact: the Startup page now shows how long your last boot took (and how long to the desktop), how that compares to your recent average, and a per-entry impact chip for the apps Windows measured as slow to start — read from the same data as Task Manager's Startup impact. Plus an audit pass: steadier reverse-DNS refresh, crash-safe clipboard copy, a tighter system-report redaction, and small fixes on the Security page.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.3/PowerX-Setup-0.1.3-win-x64.msi",
-  "installerSha256": "fee3de182ef750f272118b890302ee0e842c37a6ad66207791c6a587d2e8f80b",
-  "installerBytes": 56192053
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.4/PowerX-Setup-0.1.4-win-x64.msi",
+  "installerSha256": "1eb7059f855bfaf1f3ca65e930eafa5e93be5548c0a940c45db5d5604f3a06ff",
+  "installerBytes": 56204341
 }

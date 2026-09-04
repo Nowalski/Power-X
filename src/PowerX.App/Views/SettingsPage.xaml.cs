@@ -226,9 +226,7 @@ public sealed partial class SettingsPage : Page
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Secondary)
             {
-                var pkg = new Windows.ApplicationModel.DataTransfer.DataPackage();
-                pkg.SetText(md);
-                Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(pkg);
+                Services.Clip.SetText(md);
                 continue;   // keep the dialog open so they can also save
             }
             if (result == ContentDialogResult.Primary)

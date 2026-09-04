@@ -42,7 +42,7 @@ internal static class ReportCommand
 
         AnsiConsole.MarkupLineInterpolated($"[green]Report written:[/] {outPath}");
         if (opt.Redact)
-            AnsiConsole.MarkupLine("[grey]User name, machine name and hardware identifiers are redacted. Use --no-redact for the full report.[/]");
+            AnsiConsole.MarkupLine("[grey]User name, machine name and MAC addresses are redacted. Use --no-redact for the full report.[/]");
         return 0;
     }
 }

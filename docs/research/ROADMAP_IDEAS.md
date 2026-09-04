@@ -10,15 +10,15 @@ Legend: **effort** S/M/L, **risk** = how easily it violates a principle or desta
 
 ## Tier 1, high value, fits the model, do next
 
-### 1. Startup / autostart impact + full location coverage
+### 1. Startup / autostart impact  [PARTLY SHIPPED 0.1.4]
 - **Value** High. Startup delay is the single most defensible "make my PC faster" win.
-- Current: `StartupProvider` covers Run keys + Startup folder. Missing: scheduled-task logon
- triggers, `HKLM...\Run`, per-user `RunOnce`, shell extensions, services set to Automatic
- (delayed vs not), Winlogon `Userinit`/`Shell`.
-- Add a **measured impact** column: last-boot cost from `Microsoft-Windows-Diagnostics-Performance/Operational`
- event 100-110 (the same data Task Manager's "Startup impact" uses).
-- **Effort** M, **Risk** low (read-only + disable is reversible), **Prior art** Autoruns, Task Manager.
-- **Verdict** Yes next. Extends an existing page, strong user value.
+- **Shipped in 0.1.4**: `BootPerformance` reads `Microsoft-Windows-Diagnostics-Performance/Operational`
+ (events 100/101/102/103, the same source Task Manager's "Startup impact" uses). The Startup page
+ now shows a boot-time card ("Last boot took 41.6 s, 6.7 s slower than your recent average") and a
+ "High / Medium / Low impact, +Xs at boot" tag on any entry Windows measured as slow.
+- **Still to do**: fuller location coverage. Scheduled-task logon triggers already surface through
+ the Scheduled Tasks list, but `HKLM...\Run`, Winlogon `Userinit`/`Shell` and shell extensions do not.
+- **Effort** S remaining, **Risk** low (read-only), **Prior art** Autoruns, Task Manager.
 
 ### 2. Network activity page, per-process connections + rate  [SHIPPED 0.1.1]
 - **Value** High. "What is this program talking to?" is a top support question.
