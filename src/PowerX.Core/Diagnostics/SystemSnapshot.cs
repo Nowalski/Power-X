@@ -60,7 +60,8 @@ public static class SystemSnapshot
         var items = new Dictionary<SnapshotCategory, List<SnapshotItem>>();
 
         items[SnapshotCategory.Startup] = Safe(() => StartupProvider.Enumerate()
-            .Where(e => e.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine))
+            .Where(e => e.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine
+                        or StartupSource.ScheduledTask))   // tasks have their own category
             .Select(e => new SnapshotItem(
                 $"{e.Source}:{e.Name}".ToLowerInvariant(),
                 e.Name,
