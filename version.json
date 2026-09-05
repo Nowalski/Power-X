@@ -1,10 +1,10 @@
 {
-  "version": "0.1.13",
+  "version": "0.1.14",
   "published": "2026-09-05",
-  "notes": "The system report and event log now read their independent sections concurrently instead of one after another (about 2x faster). Fixed a real bug where two identically-modeled disks reported the same temperature instead of their own. Added a second fallback source for CPU/system temperature on machines whose firmware supports it.",
+  "notes": "Disk cleanup now scans its 13 cache/temp targets in parallel instead of one after another (about 1.85x faster). An audit also found two Task Scheduler reads (Startup and Scheduled tasks) each doing their own full scan of the same tasks; documented in the decision log as a follow-up rather than rushed.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.13/PowerX-Setup-0.1.13-win-x64.msi",
-  "installerSha256": "9a726bda3478175c31d6a3bb32609bbefe040569391d4683266b4ad488ce1e4e",
-  "installerBytes": 56537322
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.14/PowerX-Setup-0.1.14-win-x64.msi",
+  "installerSha256": "d674819a4bc53693efdbdf42bbc64e2f20e6e7b4f7efaab38c43b37d689ad15d",
+  "installerBytes": 56525034
 }
