@@ -191,7 +191,7 @@ public sealed partial class DebloatPage : Page
     private async Task<bool> Confirm(IReadOnlyList<AppVm> apps)
     {
         string body = apps.Count == 1
-            ? $"Remove “{apps[0].DisplayName}” for your user account?\n\n{apps[0].RestoreLabel}."
+            ? $"Remove {apps[0].DisplayName} for your user account?\n\n{apps[0].RestoreLabel}."
             : $"Remove these {apps.Count} apps for your user account?\n\n" +
               string.Join('\n', apps.Select(a => $"• {a.DisplayName}"));
         return await new ContentDialog

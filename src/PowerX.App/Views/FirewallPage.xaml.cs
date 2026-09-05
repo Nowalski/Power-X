@@ -92,7 +92,7 @@ public sealed partial class FirewallPage : Page
     {
         int review = _all.Count(r => r.WorthReviewing);
         Summary.Text = $"{_all.Count} rules, {_all.Count(r => r.Enabled)} enabled."
-                     + (review > 0 ? $"  {review} broad inbound-allow rule(s) worth a look." : "")
+                     + (review > 0 ? $"  {review} broad inbound-allow rule{Fmt.S(review)} worth a look." : "")
                      + "  Read-only; PowerX does not change firewall rules.";
 
         var caution = (Brush)Application.Current.Resources["SystemFillColorCautionBrush"];

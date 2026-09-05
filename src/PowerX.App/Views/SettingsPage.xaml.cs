@@ -277,7 +277,7 @@ public sealed partial class SettingsPage : Page
         var confirm = await new ContentDialog
         {
             Title = "Restore Windows defaults",
-            Content = $"Revert {applied.Count} applied tweak(s) back to the Windows default?",
+            Content = $"Revert {applied.Count} applied tweak{Fmt.S(applied.Count)} back to the Windows default?",
             PrimaryButtonText = "Restore", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
         }.ShowAsync();
@@ -313,7 +313,7 @@ public sealed partial class SettingsPage : Page
             if (string.IsNullOrEmpty(path)) return;
 
             await File.WriteAllTextAsync(path, ConfigBundleService.ToJson(bundle));
-            await Info("Exported", $"Saved {bundle.AppliedTweaks.Count} tweak(s) to\n{path}");
+            await Info("Exported", $"Saved {bundle.AppliedTweaks.Count} tweak{Fmt.S(bundle.AppliedTweaks.Count)} to\n{path}");
         }
         catch (Exception ex)
         {
@@ -355,9 +355,9 @@ public sealed partial class SettingsPage : Page
                     body.Children.Add(new TextBlock { Text = "  " + it.Label, FontSize = 12, TextWrapping = TextWrapping.Wrap });
                 if (items.Count > 20) body.Children.Add(new TextBlock { Text = $"  and {items.Count - 20} more", FontSize = 12 });
             }
-            Section($"Apply {plan.TweaksToApply.Count} tweak(s)", plan.TweaksToApply);
+            Section($"Apply {plan.TweaksToApply.Count} tweak{Fmt.S(plan.TweaksToApply.Count)}", plan.TweaksToApply);
             Section($"Already applied ({plan.TweaksAlreadyApplied.Count})", plan.TweaksAlreadyApplied);
-            Section($"Remove {plan.AppsToRemove.Count} app(s) — use the Debloat page", plan.AppsToRemove);
+            Section($"Remove {plan.AppsToRemove.Count} app{Fmt.S(plan.AppsToRemove.Count)}, using the Debloat page", plan.AppsToRemove);
             foreach (var w in plan.Warnings)
                 body.Children.Add(new TextBlock { Text = w, FontSize = 12, TextWrapping = TextWrapping.Wrap,
                     Foreground = (Brush)Application.Current.Resources["SystemFillColorCautionBrush"] });
@@ -366,7 +366,7 @@ public sealed partial class SettingsPage : Page
             {
                 Title = "Import setup",
                 Content = new ScrollViewer { Content = body, MaxHeight = 380 },
-                PrimaryButtonText = plan.TweaksToApply.Count > 0 ? $"Apply {plan.TweaksToApply.Count} tweak(s)" : "Close",
+                PrimaryButtonText = plan.TweaksToApply.Count > 0 ? $"Apply {plan.TweaksToApply.Count} tweak{Fmt.S(plan.TweaksToApply.Count)}" : "Close",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
             };
@@ -376,7 +376,7 @@ public sealed partial class SettingsPage : Page
             await Info("Import complete",
                 $"{result.Succeeded} applied, {result.AlreadyConfigured} already set, {result.Failed} failed."
                 + (result.Restart.Any ? "\n\nSome changes need Explorer or a sign-out to take effect." : "")
-                + (plan.AppsToRemove.Count > 0 ? $"\n\n{plan.AppsToRemove.Count} app(s) can be removed on the Debloat page." : ""));
+                + (plan.AppsToRemove.Count > 0 ? $"\n\n{plan.AppsToRemove.Count} app{Fmt.S(plan.AppsToRemove.Count)} can be removed on the Debloat page." : ""));
         }
         catch (Exception ex)
         {

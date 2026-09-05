@@ -50,9 +50,16 @@ public sealed partial class EventLogPage : Page
     {
         int crit = _all.Count(g => g.Level == EventLevel2.Critical);
         int err = _all.Count(g => g.Level == EventLevel2.Error);
+        // Only name the levels that actually occurred, and pluralise properly, the way the other
+        // summary lines in the app do. "0 critical, 12 error source(s)" read like a template.
+        var parts = new List<string>();
+        if (crit > 0) parts.Add($"{crit} critical");
+        if (err > 0) parts.Add($"{err} {(err == 1 ? "error" : "errors")}");
         Summary.Text = _all.Count == 0
             ? "Nothing logged in this window. That is a good sign."
-            : $"{_all.Count} distinct entries: {crit} critical, {err} error source(s). Grouped by source and id, most frequent first.";
+            : $"{_all.Count} distinct {(_all.Count == 1 ? "entry" : "entries")}"
+              + (parts.Count > 0 ? $": {string.Join(", ", parts)}" : "")
+              + ". Grouped by source and id, most frequent first.";
 
         IEnumerable<EventGroup> shown = _all;
         if (_filter.Length > 0)

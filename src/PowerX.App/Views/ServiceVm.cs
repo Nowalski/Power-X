@@ -17,6 +17,14 @@ public sealed class ServiceVm : INotifyPropertyChanged
         ? Entry.ImagePath : Entry.Description;
     public string StatusText => Entry.StatusText;
     public string StartModeText => Entry.StartModeText;
+
+    /// <summary>The metadata line under the description. Plenty of services have a short name
+    /// identical to their display name, and repeating it directly under the heading reads like a
+    /// rendering fault, so it is only shown when it actually adds something.</summary>
+    public string NameAndStartMode =>
+        string.Equals(Entry.Name, Entry.DisplayName, StringComparison.OrdinalIgnoreCase)
+            ? $"start: {Entry.StartModeText}"
+            : $"{Entry.Name}  ·  start: {Entry.StartModeText}";
     public bool IsRunning => Entry.Status == ServiceControllerStatus.Running;
     public bool IsCritical => Entry.IsCritical;
     public Visibility CriticalVisibility => Entry.IsCritical ? Visibility.Visible : Visibility.Collapsed;
@@ -41,7 +49,7 @@ public sealed class ServiceVm : INotifyPropertyChanged
 
     private void RaiseAll()
     {
-        foreach (var p in new[] { nameof(StatusText), nameof(StartModeText), nameof(IsRunning), nameof(StartStopLabel), nameof(Description) })
+        foreach (var p in new[] { nameof(StatusText), nameof(StartModeText), nameof(NameAndStartMode), nameof(IsRunning), nameof(StartStopLabel), nameof(Description) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));
     }
 }

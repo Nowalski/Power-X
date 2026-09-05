@@ -63,7 +63,7 @@ internal static class CrashCommand
         AnsiConsole.MarkupLine($"[grey]source:[/] {Markup.Escape(i.Source)}   [grey]confidence:[/] {ConfColor(i.Confidence)}");
 
         Section("Observed facts", i.Facts);
-        Section("Likely cause(s)", i.LikelyCauses);
+        Section(i.LikelyCauses.Count == 1 ? "Likely cause" : "Likely causes", i.LikelyCauses);
         Section("What you can try", i.Remediation);
         Section("Still missing", i.Missing);
 

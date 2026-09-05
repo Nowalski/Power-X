@@ -32,7 +32,7 @@ internal static class SecurityCommand
         Row("PUA protection", s.PuaProtection);
         Row("Definitions", string.IsNullOrEmpty(s.SignatureVersion)
             ? "unknown"
-            : $"{s.SignatureVersion}  ({s.SignatureAgeDays} day(s) old" + (s.SignatureUpdated is { } su ? $", {su.LocalDateTime:g})" : ")"));
+            : $"{s.SignatureVersion}  ({s.SignatureAgeDays} day{(s.SignatureAgeDays == 1 ? "" : "s")} old" + (s.SignatureUpdated is { } su ? $", {su.LocalDateTime:g})" : ")"));
         if (s.LastQuickScan is { } q) Row("Last quick scan", q.LocalDateTime.ToString("g"));
         if (s.LastFullScan is { } f) Row("Last full scan", f.LocalDateTime.ToString("g"));
         if (s.ExclusionCount > 0) Row("Exclusions", $"{s.ExclusionCount} configured");

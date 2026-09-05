@@ -48,7 +48,7 @@ public sealed partial class TasksPage : Page
     {
         int telemetry = _all.Count(t => t.Stance == TaskStance.Telemetry && t.Enabled);
         Summary.Text = $"{_all.Count} tasks, {_all.Count(t => t.Enabled)} enabled."
-                     + (telemetry > 0 ? $"  {telemetry} enabled telemetry task(s) you can turn off." : "");
+                     + (telemetry > 0 ? $"  {telemetry} enabled telemetry task{Fmt.S(telemetry)} you can turn off." : "");
 
         IEnumerable<ScheduledTaskInfo> shown = _all;
         if (_reviewedOnly) shown = shown.Where(t => t.Stance != TaskStance.Unreviewed);
@@ -106,8 +106,10 @@ public sealed partial class TasksPage : Page
 
         var meta = new List<string>();
         if (!string.IsNullOrWhiteSpace(t.Triggers)) meta.Add(t.Triggers);
-        if (t.LastRun is { } lr) meta.Add($"last ran {lr.LocalDateTime:d}"
-            + (t.LastResult != 0 ? $" (result 0x{t.LastResult:X})" : ""));
+        // The SCHED_S_* codes are successes, not failures. Printing a bare "0x41301" next to a
+        // run time reads like an error when it only means the task is still running, so the
+        // documented informational ones are spelled out and only a real failure keeps its code.
+        if (t.LastRun is { } lr) meta.Add($"last ran {lr.LocalDateTime:d}{ResultNote(t.LastResult)}");
         text.Children.Add(new TextBlock
         {
             Text = string.Join("   ", meta.Prepend(t.Action.Length > 0 ? t.Action : "(no exec action)")),
@@ -169,6 +171,24 @@ public sealed partial class TasksPage : Page
         }
         catch (Exception ex) { App.Log("Tasks.Export", ex); }
     }
+
+    /// <summary>The documented SCHED_S_* results are informational successes, so they are spelled
+    /// out; 0 is a clean run and needs no note at all; anything else really is a failure and keeps
+    /// its code so it can be looked up.</summary>
+    private static string ResultNote(int lastResult) => lastResult switch
+    {
+        0 => "",
+        0x00041300 => " (ready)",
+        0x00041301 => " (still running)",
+        0x00041302 => " (task disabled)",
+        0x00041303 => "",                       // has not run: no run time is shown anyway
+        0x00041304 => " (no more runs scheduled)",
+        0x00041305 => " (not scheduled)",
+        0x00041306 => " (was ended)",
+        0x00041307 => " (no valid triggers)",
+        0x00041308 => " (waiting on an event)",
+        _ => $" (failed, 0x{lastResult:X8})",
+    };
 
     private static string StanceHeading(TaskStance s) => s switch
     {

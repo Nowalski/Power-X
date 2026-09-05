@@ -67,7 +67,7 @@ public sealed partial class RepairPage : Page
 
         MemResult.Text = result.Passed
             ? $"✔ No errors. Tested {Fmt.Bytes((ulong)result.BytesTested)} over {result.Passes} passes in {result.Elapsed:mm\\:ss} at {result.AverageMBps / 1024:0.0} GB/s."
-            : $"x {result.Errors.Count} error(s) found. This RAM, or its overclock, is not stable. First at byte offset 0x{result.Errors[0].ByteOffset:X}.";
+            : $"x {result.Errors.Count} error{Fmt.S(result.Errors.Count)} found. This RAM, or its overclock, is not stable. First at byte offset 0x{result.Errors[0].ByteOffset:X}.";
     }
 
     private void BuildJobs()

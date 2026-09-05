@@ -83,7 +83,9 @@ public sealed partial class TweaksPage : Page
             : $"{profile.TweakIds.Count} tweaks · all reversible";
 
         var desc = Muted(profile.Description, 12);
-        desc.MaxLines = 5;
+        // Kept as a backstop so an over-long future description degrades to an ellipsis instead of
+        // spilling out of the fixed-height card; the card is sized to fit today's longest one.
+        desc.MaxLines = 8;
         desc.TextTrimming = TextTrimming.CharacterEllipsis;
         desc.VerticalAlignment = VerticalAlignment.Top;
 
@@ -176,8 +178,8 @@ public sealed partial class TweaksPage : Page
         list.Children.Add(new TextBlock
         {
             Text = restore
-                ? $"{willChange.Count} tweak(s) will be reverted to Windows defaults:"
-                : $"{willChange.Count} tweak(s) will be turned on:",
+                ? $"{willChange.Count} tweak{Fmt.S(willChange.Count)} will be reverted to Windows defaults:"
+                : $"{willChange.Count} tweak{Fmt.S(willChange.Count)} will be turned on:",
             TextWrapping = TextWrapping.Wrap,
         });
         foreach (var name in willChange)
@@ -196,7 +198,7 @@ public sealed partial class TweaksPage : Page
         var scroll = new ScrollViewer { Content = list, MaxHeight = 360 };
         var confirm = await new ContentDialog
         {
-            Title = restore ? "Restore Windows defaults" : $"Apply “{profile.Name}”",
+            Title = restore ? "Restore Windows defaults" : $"Apply {profile.Name}",
             Content = scroll,
             PrimaryButtonText = restore ? "Restore" : "Apply",
             CloseButtonText = "Cancel",

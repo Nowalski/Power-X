@@ -88,7 +88,7 @@ public sealed partial class ServicesPage : Page
         bool starting = !vm.IsRunning;
 
         if (!starting && vm.IsCritical &&
-            !await Confirm($"Stop “{vm.DisplayName}”?", "This is a core Windows service. Stopping it can make the system unstable until you restart."))
+            !await Confirm($"Stop {vm.DisplayName}?", "This is a core Windows service. Stopping it can make the system unstable until you restart."))
             return;
 
         await Run(vm, () => starting ? CoreServices.Start(vm.Name) : CoreServices.Stop(vm.Name), starting ? "start" : "stop");
@@ -97,7 +97,7 @@ public sealed partial class ServicesPage : Page
     private async void Restart_Click(object sender, RoutedEventArgs e)
     {
         if (Vm(sender) is not { } vm) return;
-        if (vm.IsCritical && !await Confirm($"Restart “{vm.DisplayName}”?", "This is a core Windows service.")) return;
+        if (vm.IsCritical && !await Confirm($"Restart {vm.DisplayName}?", "This is a core Windows service.")) return;
         await Run(vm, () => CoreServices.Restart(vm.Name), "restart");
     }
 
@@ -110,7 +110,7 @@ public sealed partial class ServicesPage : Page
     {
         if (Vm(sender) is not { } vm) return;
         if (mode == ServiceStartMode2.Disabled && vm.IsCritical &&
-            !await Confirm($"Disable “{vm.DisplayName}”?", "This is a core Windows service. Disabling it may break boot or sign-in."))
+            !await Confirm($"Disable {vm.DisplayName}?", "This is a core Windows service. Disabling it may break boot or sign-in."))
             return;
 
         await Run(vm, () => CoreServices.SetStartMode(vm.Name, mode), "change start type");

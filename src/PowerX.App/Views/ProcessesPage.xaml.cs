@@ -350,7 +350,7 @@ public sealed partial class ProcessesPage : Page
     private async void End_Click(object sender, RoutedEventArgs e)
     {
         if (RowOf(sender) is not { } row) return;
-        if (!await Confirm($"End “{row.Name}”?", "Unsaved work in this program will be lost.", "End task")) return;
+        if (!await Confirm($"End {row.Name}?", "Unsaved work in this program will be lost.", "End task")) return;
         Report(ProcessActions.EndTask(row.Pid), "End task");
     }
 
@@ -358,7 +358,7 @@ public sealed partial class ProcessesPage : Page
     {
         if (RowOf(sender) is not { } row) return;
         if (TelemetryHub.Instance.LastProcesses is not { } snap) return;
-        if (!await Confirm($"End “{row.Name}” and its child processes?", "Unsaved work will be lost.", "End tree")) return;
+        if (!await Confirm($"End {row.Name} and its child processes?", "Unsaved work will be lost.", "End tree")) return;
         Report(ProcessActions.EndTaskTree(row.Pid, snap), "End process tree");
     }
 

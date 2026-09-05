@@ -79,7 +79,7 @@ public sealed partial class StoragePage : Page
         foreach (var d in childDirs)
             _entries[d] = new FolderEntry(d, System.IO.Path.GetFileName(d), true, -1, 0);
         RenderNow();
-        Summary.Text = _dirsTotal == 0 ? "Measuring..." : $"Measuring {_dirsTotal} folder(s)...";
+        Summary.Text = _dirsTotal == 0 ? "Measuring..." : $"Measuring {_dirsTotal} folder{Fmt.S(_dirsTotal)}...";
 
         bool cancelled = false;
         try
@@ -101,7 +101,7 @@ public sealed partial class StoragePage : Page
                 var onProgress = new Progress<(int Done, int Total)>(p =>
                 {
                     _dirsDone = p.Done; _dirsTotal = p.Total;
-                    Summary.Text = $"Measured {p.Done} of {p.Total} folder(s)...  {Fmt.Bytes((ulong)MeasuredTotal())} so far";
+                    Summary.Text = $"Measured {p.Done} of {p.Total} folder{Fmt.S(p.Total)}...  {Fmt.Bytes((ulong)MeasuredTotal())} so far";
                 });
                 await FolderSizer.ScanAsync(target, onEntry, onProgress, cts.Token);
             }
@@ -126,10 +126,10 @@ public sealed partial class StoragePage : Page
         long total = MeasuredTotal();
         int measured = _entries.Count(e => !e.Value.Pending);
         Summary.Text = cancelled
-            ? $"Stopped. Measured {measured} of {_entries.Count} item(s), {Fmt.Bytes((ulong)total)}."
+            ? $"Stopped. Measured {measured} of {_entries.Count} item{Fmt.S(_entries.Count)}, {Fmt.Bytes((ulong)total)}."
             : measured == 0
                 ? $"{target} has nothing readable in it."
-                : $"{Fmt.Bytes((ulong)total)} across {measured} item(s). Largest first. Click a folder to go deeper.";
+                : $"{Fmt.Bytes((ulong)total)} across {measured} item{Fmt.S(measured)}. Largest first. Click a folder to go deeper.";
     }
 
     private long MeasuredTotal() => _entries.Values.Where(e => !e.Pending).Sum(e => Math.Max(0, e.SizeBytes));

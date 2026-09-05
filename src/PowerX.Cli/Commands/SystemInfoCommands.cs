@@ -94,7 +94,7 @@ internal static class StorageCommand
         foreach (var e in entries.Take(30))
             table.AddRow(Markup.Escape(Bytes(e.SizeBytes)), (e.IsDirectory ? "[teal]" : "[grey]") + Markup.Escape(e.Name) + (e.IsDirectory ? "[/]" : "[/]"));
         AnsiConsole.Write(table);
-        AnsiConsole.MarkupLineInterpolated($"[grey]Total:[/] {Bytes(total)} across {entries.Count} item(s)");
+        AnsiConsole.MarkupLineInterpolated($"[grey]Total:[/] {Bytes(total)} across {entries.Count} item{(entries.Count == 1 ? "" : "s")}");
         return 0;
     }
 

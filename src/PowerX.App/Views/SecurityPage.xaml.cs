@@ -60,9 +60,9 @@ public sealed partial class SecurityPage : Page
 
         DefsText.Text = string.IsNullOrEmpty(status.SignatureVersion)
             ? "Definition version unknown."
-            : $"Definitions {status.SignatureVersion}, {status.SignatureAgeDays} day(s) old"
+            : $"Definitions {status.SignatureVersion}, {status.SignatureAgeDays} day{Fmt.S(status.SignatureAgeDays)} old"
               + (status.SignatureUpdated is { } su ? $" (updated {su.LocalDateTime:g})" : "")
-              + (status.ExclusionCount > 0 ? $".   {status.ExclusionCount} exclusion(s) configured." : ".");
+              + (status.ExclusionCount > 0 ? $".   {status.ExclusionCount} exclusion{Fmt.S(status.ExclusionCount)} configured." : ".");
 
         ScansText.Text = (status.LastQuickScan is { } q ? $"Last quick scan {q.LocalDateTime:g}." : "No quick scan recorded.")
                        + (status.LastFullScan is { } f ? $"   Last full scan {f.LocalDateTime:g}." : "");

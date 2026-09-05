@@ -11,7 +11,7 @@
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="Health check" Style="{StaticResource PageTitleStyle}" />
-            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Runs the checks PowerX already knows how to make and lists what is worth doing, most impactful first. Nothing here changes anything by itself — every item points at the page that does." />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Runs the checks PowerX already knows how to make and lists what is worth doing, most impactful first. Nothing here changes anything by itself; every item points at the page that does." />
         </StackPanel>
 
         <Border Grid.Row="1" Style="{StaticResource CardStyle}">

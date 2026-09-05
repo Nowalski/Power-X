@@ -478,7 +478,7 @@ internal static class DemoData
     public static PendingRebootStatus PendingReboot() => new(true,
     [
         "Windows Update installed something that needs a restart.",
-        "3 file(s) are queued to be replaced or deleted on restart (usually a program that updated files still in use).",
+        "3 files are queued to be replaced or deleted on restart (usually a program that updated files still in use).",
     ]);
 
     public static ComponentStoreInfo ComponentStore() => new()

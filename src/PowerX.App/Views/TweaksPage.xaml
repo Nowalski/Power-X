@@ -17,8 +17,11 @@
                     <TextBlock Text="One click applies a named set. You see exactly what changes and confirm first, and every item stays individually reversible."
                                Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="720" />
                 </StackPanel>
+                <!-- Fixed cell size keeps every card the same shape and its button on the same
+                     line. The height has to clear the longest profile description (Gaming) or the
+                     text is silently trimmed mid-sentence. -->
                 <ctl:WrapPanel x:Name="ProfileStrip" HorizontalSpacing="12" VerticalSpacing="12"
-                               ItemWidth="264" ItemHeight="204" />
+                               ItemWidth="264" ItemHeight="248" />
             </StackPanel>
 
             <InfoBar IsOpen="True" Severity="Informational" IsClosable="False"

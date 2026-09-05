@@ -79,7 +79,7 @@ public sealed partial class HealthCheckPage : Page
         {
             List.Children.Add(new TextBlock
             {
-                Text = "Nothing outstanding in any of PowerX's checks. That is a good sign — it does not mean the machine is perfect, only that nothing here needs attention right now.",
+                Text = "Nothing outstanding in any of PowerX's checks. That is a good sign, though it does not mean the machine is perfect, only that nothing here needs attention right now.",
                 Style = (Style)Application.Current.Resources["MutedStyle"],
                 TextWrapping = TextWrapping.Wrap,
             });

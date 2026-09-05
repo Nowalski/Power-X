@@ -80,7 +80,7 @@ internal static class FirewallCommand
         var review = rules.Where(r => r.WorthReviewing).ToList();
         if (review.Count > 0)
         {
-            AnsiConsole.MarkupLine($"\n[yellow]{review.Count} broad inbound-allow rule(s) worth a look:[/]");
+            AnsiConsole.MarkupLine($"\n[yellow]{review.Count} broad inbound-allow rule{(review.Count == 1 ? "" : "s")} worth a look:[/]");
             foreach (var r in review)
                 AnsiConsole.MarkupLine($"  [grey]-[/] {Markup.Escape(r.Name)}  ({Markup.Escape(r.Protocol)} {Markup.Escape(r.LocalPorts)})");
         }
@@ -145,7 +145,7 @@ internal static class ConfigCommand
             string path = args.ElementAtOrDefault(1) ?? $"powerx-setup-{DateTime.Now:yyyy-MM-dd}.json";
             var bundle = ConfigBundleService.Export();
             File.WriteAllText(path, ConfigBundleService.ToJson(bundle));
-            AnsiConsole.MarkupLine($"[green]Exported[/] {bundle.AppliedTweaks.Count} tweak(s) to {Markup.Escape(path)}");
+            AnsiConsole.MarkupLine($"[green]Exported[/] {bundle.AppliedTweaks.Count} tweak{(bundle.AppliedTweaks.Count == 1 ? "" : "s")} to {Markup.Escape(path)}");
             return 0;
         }
         if (args.Length >= 2 && args[0] is "import")
@@ -155,7 +155,7 @@ internal static class ConfigCommand
             if (bundle is null) { AnsiConsole.MarkupLine("[red]Not a PowerX setup file.[/]"); return 1; }
 
             var plan = ConfigBundleService.Plan(bundle, []);
-            AnsiConsole.MarkupLine($"[teal]Would apply[/] {plan.TweaksToApply.Count} tweak(s); {plan.TweaksAlreadyApplied.Count} already applied.");
+            AnsiConsole.MarkupLine($"[teal]Would apply[/] {plan.TweaksToApply.Count} tweak{(plan.TweaksToApply.Count == 1 ? "" : "s")}; {plan.TweaksAlreadyApplied.Count} already applied.");
             foreach (var t in plan.TweaksToApply) AnsiConsole.MarkupLine($"  [green]+[/] {Markup.Escape(t.Label)}");
             foreach (var w in plan.Warnings) AnsiConsole.MarkupLine($"  [yellow]{Markup.Escape(w)}[/]");
 

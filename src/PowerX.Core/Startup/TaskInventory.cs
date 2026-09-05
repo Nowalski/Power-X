@@ -104,82 +104,41 @@ public static class TaskInventory
 
     private static ScheduledTaskInfo Read(dynamic task, string folderPath)
     {
-        dynamic def = task.Definition;
-        try
+        // The definition (actions, triggers, author, description, hidden) comes back in a single
+        // COM call as XML rather than a dozen late-bound property reads each round-tripping to the
+        // scheduler service - see TaskXml. Everything below that is *runtime* state, which is not
+        // in the definition XML at all and still has to be read off the registered task itself.
+        var parsed = TaskXml.Parse((string)task.Xml);
+
+        // A task that has never run reports a sentinel timestamp rather than nothing (30/11/1999
+        // on this build of Windows, 30/12/1899 on others), which the old "year > 1900" guard let
+        // through, so the page showed "last ran 30.11.1999" beside result 0x41303, which is
+        // SCHED_S_TASK_HAS_NOT_RUN. Task Scheduler 2.0 did not exist before Vista, so no genuine
+        // run time can predate 2000 and anything earlier is the sentinel.
+        DateTimeOffset? Dt(object? v)
         {
-            string action = "";
-            try
-            {
-                foreach (dynamic act in def.Actions)
-                {
-                    try { action = $"{act.Path} {act.Arguments}".Trim(); } catch { }
-                    Release(act);
-                    break;
-                }
-            }
-            catch { }
-
-            string triggers = "";
-            try
-            {
-                var kinds = new List<string>();
-                foreach (dynamic trig in def.Triggers)
-                {
-                    kinds.Add(TriggerName((int)trig.Type));
-                    Release(trig);
-                }
-                triggers = string.Join(", ", kinds.Distinct());
-            }
-            catch { }
-
-            bool hidden = false;
-            string desc = "", author = "";
-            try { hidden = (bool)def.Settings.Hidden; } catch { }
-            try { desc = (string)def.RegistrationInfo.Description ?? ""; } catch { }
-            try { author = (string)def.RegistrationInfo.Author ?? ""; } catch { }
-
-            DateTimeOffset? Dt(object? v)
-            {
-                try { return v is DateTime d && d.Year > 1900 ? new DateTimeOffset(d) : null; }
-                catch { return null; }
-            }
-
-            return new ScheduledTaskInfo
-            {
-                Path = (string)task.Path,
-                Name = (string)task.Name,
-                Folder = folderPath,
-                Enabled = (bool)task.Enabled,
-                Hidden = hidden,
-                Action = action,
-                Author = author,
-                Description = desc,
-                Triggers = triggers,
-                LastRun = Dt(SafeGet(() => task.LastRunTime)),
-                NextRun = Dt(SafeGet(() => task.NextRunTime)),
-                LastResult = (int)(SafeGet(() => task.LastTaskResult) ?? 0),
-            };
+            try { return v is DateTime d && d.Year >= 2000 ? new DateTimeOffset(d) : null; }
+            catch { return null; }
         }
-        finally { Release(def); }
+
+        return new ScheduledTaskInfo
+        {
+            Path = (string)task.Path,
+            Name = (string)task.Name,
+            Folder = folderPath,
+            Enabled = (bool)task.Enabled,
+            Hidden = parsed?.Hidden ?? false,
+            Action = parsed?.Action ?? "",
+            Author = parsed?.Author ?? "",
+            Description = parsed?.Description ?? "",
+            Triggers = parsed?.Triggers ?? "",
+            LastRun = Dt(SafeGet(() => task.LastRunTime)),
+            NextRun = Dt(SafeGet(() => task.NextRunTime)),
+            LastResult = (int)(SafeGet(() => task.LastTaskResult) ?? 0),
+        };
     }
 
     private static object? SafeGet(Func<object?> f) { try { return f(); } catch { return null; } }
-
-    private static string TriggerName(int t) => t switch
-    {
-        0 => "on an event",
-        1 => "once",
-        2 => "daily",
-        3 => "weekly",
-        4 => "monthly",
-        5 => "monthly (day of week)",
-        6 => "on idle",
-        7 => "at registration",
-        8 => "at boot",
-        9 => "at logon",
-        11 => "on session change",
-        _ => "scheduled",
-    };
 
     private static void Release(object? com)
     {

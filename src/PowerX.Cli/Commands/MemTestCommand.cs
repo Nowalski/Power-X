@@ -48,7 +48,7 @@ internal static class MemTestCommand
         if (result.Passed)
             AnsiConsole.MarkupLineInterpolated($"[green]✔ No errors.[/] Tested {Format.Bytes((ulong)result.BytesTested)} · {result.Passes} passes · {result.Elapsed:mm\\:ss} · {result.AverageMBps / 1024:0.0} GB/s");
         else
-            AnsiConsole.MarkupLineInterpolated($"[red]✖ {result.Errors.Count} error(s).[/] This memory (or its overclock) is unstable. First at offset 0x{result.Errors[0].ByteOffset:X}.");
+            AnsiConsole.MarkupLineInterpolated($"[red]✖ {result.Errors.Count} error{(result.Errors.Count == 1 ? "" : "s")}.[/] This memory (or its overclock) is unstable. First at offset 0x{result.Errors[0].ByteOffset:X}.");
         return result.Passed ? 0 : 1;
     }
 }

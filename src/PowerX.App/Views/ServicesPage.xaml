@@ -57,9 +57,8 @@
                                 </StackPanel>
                                 <TextBlock Text="{x:Bind Description, Mode=OneWay}" FontSize="12" MaxLines="2" TextTrimming="CharacterEllipsis"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}">
-                                    <Run Text="{x:Bind Name}" /><Run Text="  ·  start: " /><Run Text="{x:Bind StartModeText, Mode=OneWay}" />
-                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                           Text="{x:Bind NameAndStartMode, Mode=OneWay}" />
                             </StackPanel>
 
                             <Button Grid.Column="1" VerticalAlignment="Center" IsEnabled="{x:Bind RowEnabled, Mode=OneWay}"

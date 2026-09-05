@@ -34,7 +34,7 @@
         </Border>
 
         <InfoBar Grid.Row="2" IsOpen="True" Severity="Informational" IsClosable="False"
-                 Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the registry value — offered for RunOnce entries and for entries whose program no longer exists." />
+                 Message="Disabling keeps the entry and you can turn it back on any time. This is the same mechanism Task Manager uses. Remove deletes the registry value, and is offered for RunOnce entries and for entries whose program no longer exists." />
 
         <Grid Grid.Row="3" ColumnSpacing="10">
             <Grid.ColumnDefinitions>

@@ -14,9 +14,6 @@ public sealed record ScheduledStartupTask(string Path, string Name, bool Enabled
 [SupportedOSPlatform("windows")]
 public static class ScheduledTasks
 {
-    private const int TASK_TRIGGER_BOOT = 8;
-    private const int TASK_TRIGGER_LOGON = 9;
-
     public static IReadOnlyList<ScheduledStartupTask> Enumerate()
     {
         var result = new List<ScheduledStartupTask>();
@@ -128,30 +125,18 @@ public static class ScheduledTasks
             {
                 try
                 {
-                    dynamic def = task.Definition;
-                    bool startup = false;
-                    foreach (dynamic trig in def.Triggers)
-                    {
-                        int t = (int)trig.Type;
-                        if (t is TASK_TRIGGER_LOGON or TASK_TRIGGER_BOOT) { startup = true; break; }
-                    }
-                    if (startup)
-                    {
-                        string action = "";
-                        foreach (dynamic act in def.Actions)
-                        {
-                            try { action = $"{act.Path} {act.Arguments}".Trim(); } catch { }
-                            break;
-                        }
+                    // One COM call for the whole definition (see TaskXml for why): walking
+                    // Definition/Triggers/Actions/RegistrationInfo per task instead cost ~860 ms
+                    // across this machine's 262 tasks, against ~110 ms for the XML.
+                    var parsed = TaskXml.Parse((string)task.Xml);
+                    if (parsed is null || !parsed.IsLogonOrBoot) continue;
 
-                        into.Add(new ScheduledStartupTask(
-                            Path: (string)task.Path,
-                            Name: (string)task.Name,
-                            Enabled: (bool)task.Enabled,
-                            Action: action,
-                            Author: SafeAuthor(def)));
-                    }
-                    Release(def);
+                    into.Add(new ScheduledStartupTask(
+                        Path: (string)task.Path,
+                        Name: (string)task.Name,
+                        Enabled: (bool)task.Enabled,   // the live state, not the definition's copy
+                        Action: parsed.Action,
+                        Author: parsed.Author));
                 }
                 catch (Exception) { /* skip this task */ }
                 finally { Release(task); }
@@ -164,11 +149,5 @@ public static class ScheduledTasks
             }
         }
         catch (Exception) { /* folder not accessible */ }
-    }
-
-    private static string SafeAuthor(dynamic def)
-    {
-        try { return (string)def.RegistrationInfo.Author ?? ""; }
-        catch { return ""; }
     }
 }
