@@ -1,10 +1,10 @@
 {
-  "version": "0.1.15",
+  "version": "0.1.16",
   "published": "2026-09-05",
-  "notes": "The Startup and Scheduled tasks pages load about twice as fast: both now read each task's definition in one call instead of a dozen round trips to the Task Scheduler service. Tasks that have never run no longer show a 1999 date and a raw result code. Also a text and layout pass: the two longest tweak profile descriptions were being cut off mid-sentence, byte sizes now line up in a column, and dialog wording was tidied.",
+  "notes": "The background configuration snapshot behind the What changed page now collects its six categories at once instead of one after another, cutting it from about 1.9 seconds to about 1.1. Also a measurement pass over every provider: the slow driver query was traced to the WMI class itself rather than anything PowerX does, and two suspected bugs (missing boot timing, the process row accent bar) were checked and confirmed correct.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.15/PowerX-Setup-0.1.15-win-x64.msi",
-  "installerSha256": "7844acce1361014e96164731fb1087569597ee341b3273dd42811300130ba10e",
-  "installerBytes": 56533226
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.16/PowerX-Setup-0.1.16-win-x64.msi",
+  "installerSha256": "9e4bab38e9118a5bdf269a924c3c6fb598868c1a255018888a6ca090d8e501d0",
+  "installerBytes": 56520938
 }
