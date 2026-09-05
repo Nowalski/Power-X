@@ -1,10 +1,10 @@
 {
-  "version": "0.1.16",
+  "version": "0.1.17",
   "published": "2026-09-05",
-  "notes": "The background configuration snapshot behind the What changed page now collects its six categories at once instead of one after another, cutting it from about 1.9 seconds to about 1.1. Also a measurement pass over every provider: the slow driver query was traced to the WMI class itself rather than anything PowerX does, and two suspected bugs (missing boot timing, the process row accent bar) were checked and confirmed correct.",
+  "notes": "Fixed the process inspector cutting off text on the right: it was asking for more width than the dialog allows, so long values were clipped mid-word. Live sampling now costs about half what it did (the network sample was re-enumerating every adapter every second just to read byte counters), and the default sampling interval moves from 1s to 2s, taking idle CPU from roughly 2% of one core to roughly half a percent.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.16/PowerX-Setup-0.1.16-win-x64.msi",
-  "installerSha256": "9e4bab38e9118a5bdf269a924c3c6fb598868c1a255018888a6ca090d8e501d0",
-  "installerBytes": 56520938
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.17/PowerX-Setup-0.1.17-win-x64.msi",
+  "installerSha256": "9d24876425248cc358eeb099931568e0673bec08ca52cbb75cad306a0911fa17",
+  "installerBytes": 56533226
 }
