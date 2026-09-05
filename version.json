@@ -1,10 +1,10 @@
 {
-  "version": "0.1.17",
+  "version": "0.1.18",
   "published": "2026-09-05",
-  "notes": "Fixed the process inspector cutting off text on the right: it was asking for more width than the dialog allows, so long values were clipped mid-word. Live sampling now costs about half what it did (the network sample was re-enumerating every adapter every second just to read byte counters), and the default sampling interval moves from 1s to 2s, taking idle CPU from roughly 2% of one core to roughly half a percent.",
+  "notes": "Fixed the system diagnostics report in Repair. It used to open the Resource and Performance Monitor window, collect for a minute, and leave the PowerX console empty with no report to show, because the tool it ran is a GUI program that writes nothing back. PowerX now drives the same Windows collector directly: no window opens, the console counts down while it collects, and the finished HTML report opens on its own. Each run writes about 50 MB under C:\\PerfLogs.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.17/PowerX-Setup-0.1.17-win-x64.msi",
-  "installerSha256": "9d24876425248cc358eeb099931568e0673bec08ca52cbb75cad306a0911fa17",
-  "installerBytes": 56533226
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.18/PowerX-Setup-0.1.18-win-x64.msi",
+  "installerSha256": "4ddc13ddca5f6eca1c794be6ec97eb6b1fc1d80054712724a814aff74392cc14",
+  "installerBytes": 56545514
 }
