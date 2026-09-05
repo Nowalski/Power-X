@@ -54,13 +54,15 @@ public static class StorageInfo
         {
             var scope = new ManagementScope(@"\\.\root\Microsoft\Windows\Storage");
             scope.Connect();
+            // ObjectId must be in the SELECT list even though it is never read directly below:
+            // GetRelated() needs the key property populated on the object to resolve the
+            // association, and dropping it makes GetRelated throw.
             using var s = new ManagementObjectSearcher(scope,
-                new ObjectQuery("SELECT FriendlyName, MediaType, BusType, Size, HealthStatus FROM MSFT_PhysicalDisk"));
-            var reliability = ReliabilityByName(scope);
-            foreach (var o in s.Get())
+                new ObjectQuery("SELECT ObjectId, FriendlyName, MediaType, BusType, Size, HealthStatus FROM MSFT_PhysicalDisk"));
+            foreach (ManagementObject o in s.Get())
             {
                 string name = o["FriendlyName"]?.ToString()?.Trim() ?? "Disk";
-                reliability.TryGetValue(name, out var rel);
+                var rel = ReadReliability(o);
                 list.Add(new PhysicalDiskInfo
                 {
                     Name = name,
@@ -78,30 +80,25 @@ public static class StorageInfo
         return list;
     }
 
-    private static Dictionary<string, (int Temp, int Wear)> ReliabilityByName(ManagementScope scope)
+    // Reads this exact disk's own reliability counters via its live WMI association. Matching
+    // this way (instead of joining a separate query back by FriendlyName) matters because two
+    // drives can share an identical FriendlyName -- e.g. two of the same NVMe model in one
+    // machine -- in which case a name-keyed lookup silently collapses them onto one reading.
+    // Confirmed on a dev machine with 2x identical Samsung 990 PRO 4TB: the old FriendlyName-keyed
+    // version reported the same temperature for both drives; this reports each drive's own.
+    private static (int Temp, int Wear) ReadReliability(ManagementObject disk)
     {
-        var map = new Dictionary<string, (int, int)>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            using var disks = new ManagementObjectSearcher(scope,
-                new ObjectQuery("SELECT ObjectId, FriendlyName FROM MSFT_PhysicalDisk"));
-            foreach (ManagementObject disk in disks.Get())
+            foreach (ManagementObject rc in disk.GetRelated("MSFT_StorageReliabilityCounter"))
             {
-                string name = disk["FriendlyName"]?.ToString()?.Trim() ?? "";
-                try
-                {
-                    foreach (ManagementObject rc in disk.GetRelated("MSFT_StorageReliabilityCounter"))
-                    {
-                        int temp = ToInt(rc["Temperature"]);
-                        int wear = rc["Wear"] is not null ? ToInt(rc["Wear"]) : -1;
-                        map[name] = (temp, wear);
-                    }
-                }
-                catch (ManagementException) { }
+                int temp = ToInt(rc["Temperature"]);
+                int wear = rc["Wear"] is not null ? ToInt(rc["Wear"]) : -1;
+                return (temp, wear);
             }
         }
         catch (ManagementException) { }
-        return map;
+        return (0, -1);
     }
 
     private static string BusName(int b) => b switch

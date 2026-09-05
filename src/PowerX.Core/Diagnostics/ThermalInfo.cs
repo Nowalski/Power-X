@@ -27,8 +27,10 @@ public sealed record ThermalReport
 
 /// <summary>
 /// Every temperature reading PowerX can get from a public, in-box Windows API: ACPI thermal
-/// zones (<c>MSAcpi_ThermalZoneTemperature</c>, <c>root\WMI</c> — mainly laptops; most desktop
-/// motherboards do not populate this) and per-disk temperature (already read by
+/// zones (<c>MSAcpi_ThermalZoneTemperature</c>, <c>root\WMI</c>, with
+/// <c>Win32_PerfFormattedData_Counters_ThermalZoneInformation</c> tried as a second, best-effort
+/// source over the same underlying data if the first comes back empty — mainly laptops; most
+/// desktop motherboards do not populate either) and per-disk temperature (already read by
 /// <see cref="StorageInfo.PhysicalDisks"/> from the storage reliability counters). CPU package and
 /// GPU temperature are not exposed by any in-box Windows API — reading them needs a vendor SDK
 /// (NVAPI, ADL, a CPU vendor tool) or a kernel driver, neither of which PowerX uses, so they are
@@ -41,6 +43,13 @@ public static class ThermalInfo
     {
         var readings = new List<ThermalReading>();
         bool acpiSupported = TryReadAcpiThermalZones(readings);
+        // MSAcpi_ThermalZoneTemperature reports zero instances on most desktops (this dev machine
+        // included). Win32_PerfFormattedData_Counters_ThermalZoneInformation is a second, separate
+        // WMI provider over the same underlying ACPI thermal-zone data; whether a given machine's
+        // firmware/driver stack populates one, both, or neither is not consistent, so only try this
+        // once the primary class came back empty. Cheap and harmless when it is also empty.
+        if (!acpiSupported)
+            acpiSupported = TryReadPerfCounterThermalZones(readings);
 
         try
         {
@@ -73,6 +82,38 @@ public static class ThermalInfo
                 if (celsius is < -50 or > 150) continue;   // implausible — a broken/placeholder sensor
                 string name = o["InstanceName"]?.ToString() ?? "Thermal zone";
                 readings.Add(new ThermalReading { Name = CleanZoneName(name), Category = ThermalCategory.System, TemperatureC = celsius });
+            }
+            return any;
+        }
+        catch (ManagementException) { return false; }
+        catch (Exception) { return false; }
+    }
+
+    // Second-attempt source: the ThermalZoneInformation perf-counter set, another WMI view over
+    // the same ACPI thermal zone data (root\cimv2, no special scope needed). Its Temperature is
+    // whole Kelvin (not tenths, unlike MSAcpi_ThermalZoneTemperature) per Microsoft's published
+    // counter description. Only reached when the primary class returned no instances.
+    private static bool TryReadPerfCounterThermalZones(List<ThermalReading> readings)
+    {
+        try
+        {
+            using var s = new ManagementObjectSearcher(
+                "SELECT Name, Temperature FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation");
+            using var results = s.Get();
+            bool any = false;
+            foreach (var o in results)
+            {
+                if (o["Temperature"] is not { } raw) continue;
+                double celsius = Convert.ToDouble(raw) - 273.15;
+                if (celsius is < -50 or > 150) continue;   // implausible — a broken/placeholder sensor
+                any = true;
+                string? name = o["Name"]?.ToString()?.Trim();
+                readings.Add(new ThermalReading
+                {
+                    Name = string.IsNullOrEmpty(name) ? "Thermal zone" : name,
+                    Category = ThermalCategory.System,
+                    TemperatureC = celsius,
+                });
             }
             return any;
         }

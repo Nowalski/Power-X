@@ -42,6 +42,11 @@ public static class CrashScanner
         var opt = options ?? new ScanOptions();
         var since = DateTimeOffset.UtcNow - opt.Window;
 
+        // WER and the crash-related event log entries were tried as concurrent Task.Run calls (they
+        // are independent sources with no shared state), but measured slower end to end: WER is
+        // near-free here (a handful of report folders, ~0ms to read) while the event-log read
+        // (~60-65ms) already dominates, so the extra thread-pool hop only added overhead with
+        // nothing to overlap against. Left sequential.
         IReadOnlyList<WerReport> wer;
         IReadOnlyList<EventCrashRecord> events;
         try { wer = WerReportReader.Read(since, opt.IncludeMachineStore, opt.Max * 2); }
