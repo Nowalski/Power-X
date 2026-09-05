@@ -1,10 +1,10 @@
 {
-  "version": "0.1.19",
+  "version": "0.1.20",
   "published": "2026-09-05",
-  "notes": "An audit pass on the report jobs in Repair. The tools behind them do not always fail when they fail: powercfg can report success while writing nothing, which meant PowerX could open the previous run's report as if it were new. A report is now only offered if it was actually written by the run you just started, and PowerX says so plainly when nothing was written. Also fixes a latent memory bug in process enumeration, and a case where the Recommended repair button could silently do nothing.",
+  "notes": "Importing a PowerX setup file written by a newer version now says so, instead of quietly showing a plan with the parts it did not understand left out. The updater also holds the installer open while it checks it, so the verified file is the one that actually runs. Plus a repaired README: some characters had been mangled by an old bad text conversion.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.19/PowerX-Setup-0.1.19-win-x64.msi",
-  "installerSha256": "a176d6161baf885486c5a042800cb2cc5d7ce488d0feced7b7a6014282b56c98",
-  "installerBytes": 56529130
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.20/PowerX-Setup-0.1.20-win-x64.msi",
+  "installerSha256": "6c9496a4a15a22eba36abd665de2c2019dd891b7d5bc1d87c1d9b13654f5fd49",
+  "installerBytes": 56537322
 }
