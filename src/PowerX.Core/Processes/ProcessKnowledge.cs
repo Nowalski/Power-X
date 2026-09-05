@@ -48,7 +48,7 @@ public static class ProcessKnowledge
         ["TextInputHost.exe"] = "Supports the touch keyboard and emoji panel.",
         ["igfxEM.exe"] = "Intel integrated-graphics tray/helper process.",
         ["nvcontainer.exe"] = "NVIDIA's background service container (telemetry, driver helpers, overlay).",
-        ["chrome.exe"] = "Google Chrome. Normal to see several copies — one per tab/extension process, by design.",
+        ["chrome.exe"] = "Google Chrome. Normal to see several copies, one per tab or extension process, by design.",
         ["msedge.exe"] = "Microsoft Edge. Same multi-process design as Chrome.",
         ["firefox.exe"] = "Mozilla Firefox.",
         ["Discord.exe"] = "Discord chat client.",
@@ -79,7 +79,7 @@ public static class ProcessKnowledge
 
         return new ProcessExplanation(
             "Not in PowerX's list, and its file has no publisher information. That alone does not mean " +
-            "anything is wrong — plenty of legitimate small tools are unsigned — but if you do not recognise " +
+            "anything is wrong, since plenty of legitimate small tools are unsigned, but if you do not recognise " +
             "it, checking its hash on the Security page is the honest next step.",
             false, null);
     }

@@ -36,7 +36,7 @@ public static class ScheduledTaskCatalog
 
         // ---- Windows components that must stay (KeepSystem) ----
         new(@"\Microsoft\Windows\UpdateOrchestrator", TaskStance.KeepSystem,
-            "Drives Windows Update. Disabling here does not stop updates cleanly — use the Windows Update card instead."),
+            "Drives Windows Update. Disabling here does not stop updates cleanly; use the Windows Update card instead."),
         new(@"\Microsoft\Windows\WindowsUpdate", TaskStance.KeepSystem, "Windows Update scheduling."),
         new(@"\Microsoft\Windows\SystemRestore\SR", TaskStance.KeepSystem, "Creates automatic restore points."),
         new(@"\Microsoft\Windows\Defrag\ScheduledDefrag", TaskStance.KeepSystem,

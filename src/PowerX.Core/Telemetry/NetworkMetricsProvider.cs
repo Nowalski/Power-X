@@ -13,8 +13,30 @@ public sealed class NetworkMetricsProvider
     private readonly ILogger _log;
     private Dictionary<string, (long Rx, long Tx, DateTimeOffset At)> _prev = new();
 
+    // GetAllNetworkInterfaces() rebuilds an object for every adapter on the machine, which on a
+    // box with a lot of virtual and filter adapters is most of a sampling tick all by itself
+    // (measured: 10-12 ms for 55 adapters, against 0.7 ms to read the counters afterwards).
+    // The byte counters on an already-enumerated interface stay live - GetIPStatistics() queries
+    // the adapter each time it is called - so the enumeration is kept and only refreshed
+    // periodically, while the counters behind the rates are still read every single tick.
+    // The trade is that a change in the adapter *set* or in link state can be up to this old.
+    private static readonly TimeSpan TopologyMaxAge = TimeSpan.FromSeconds(5);
+    private NetworkInterface[] _nics = [];
+    private DateTimeOffset _nicsAt = DateTimeOffset.MinValue;
+
     public NetworkMetricsProvider(ILogger<NetworkMetricsProvider>? log = null)
         => _log = log ?? NullLogger<NetworkMetricsProvider>.Instance;
+
+    private NetworkInterface[] Interfaces(DateTimeOffset now)
+    {
+        if (_nics.Length > 0 && now - _nicsAt < TopologyMaxAge) return _nics;
+        _nics = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.NetworkInterfaceType is not (NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel))
+            .Where(n => !IsPseudoInterface(n))
+            .ToArray();
+        _nicsAt = now;
+        return _nics;
+    }
 
     public ProviderResult<NetworkMetrics> Sample()
     {
@@ -24,13 +46,8 @@ public sealed class NetworkMetricsProvider
             var list = new List<NetworkInterfaceMetrics>();
             var next = new Dictionary<string, (long, long, DateTimeOffset)>();
 
-            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            foreach (var nic in Interfaces(now))
             {
-                if (nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
-                    continue;
-                if (IsPseudoInterface(nic))
-                    continue;
-
                 IPInterfaceStatistics stats;
                 try { stats = nic.GetIPStatistics(); }
                 catch (NetworkInformationException) { continue; }

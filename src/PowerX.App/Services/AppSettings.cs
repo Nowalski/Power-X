@@ -11,7 +11,11 @@ public sealed class AppSettings
     public string Theme { get; set; } = "System";           // System | Light | Dark
     public string Backdrop { get; set; } = "Mica";          // Mica | Acrylic | None
     public string Accent { get; set; } = "System";          // System | #RRGGBB
-    public int SamplingMs { get; set; } = 1000;
+    /// <summary>How often the live dashboards sample. Two seconds by default: a tick costs about
+    /// 10 ms of work, so this keeps PowerX to roughly half a percent of one core while idling in
+    /// the background, and the charts still move often enough to watch. Settings offers 0.5 s
+    /// through 5 s for anyone who wants it livelier or cheaper.</summary>
+    public int SamplingMs { get; set; } = 2000;
     public int ReorderSeconds { get; set; } = 3;
     public string ProcessColumnWidths { get; set; } = "";
     public bool ConfirmProcessActions { get; set; } = true;

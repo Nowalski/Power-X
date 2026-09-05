@@ -446,6 +446,12 @@ public sealed partial class ProcessesPage : Page
             CloseButtonText = "Close",
             XamlRoot = XamlRoot,
         };
+        // A ContentDialog clamps its content to ContentDialogMaxWidth, which is 548 by default.
+        // The inspector used to declare a fixed 700 width, so every value column was laid out at
+        // 700 and then clipped at the dialog edge, cutting long text ("About", the image path)
+        // mid-word with no scrollbar to reveal it. The inspector now stretches instead of forcing
+        // a width, and the dialog is allowed to be wide enough to be worth reading.
+        dialog.Resources["ContentDialogMaxWidth"] = 760.0;
         try { await dialog.ShowAsync(); }
         finally { inspector.Dispose(); }
     }
