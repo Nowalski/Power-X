@@ -1,10 +1,10 @@
 {
-  "version": "0.1.12",
+  "version": "0.1.13",
   "published": "2026-09-05",
-  "notes": "GPU page now shows every real adapter instead of blending them into one reading, with a picker to choose Combined or a specific GPU. Network page can enable or disable an adapter. New Temperatures page (ACPI thermal zones plus per-disk sensors; CPU/GPU temperature is not exposed by any built-in Windows API on most machines, so it is honestly left out). The health check now runs its checks concurrently instead of one after another, about 2.8x faster for the same result.",
+  "notes": "The system report and event log now read their independent sections concurrently instead of one after another (about 2x faster). Fixed a real bug where two identically-modeled disks reported the same temperature instead of their own. Added a second fallback source for CPU/system temperature on machines whose firmware supports it.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.12/PowerX-Setup-0.1.12-win-x64.msi",
-  "installerSha256": "f904b2774a7afa1072e7c37ecbcf773122881f6b6a109c58eeec88cbc742f171",
-  "installerBytes": 56520938
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.13/PowerX-Setup-0.1.13-win-x64.msi",
+  "installerSha256": "9a726bda3478175c31d6a3bb32609bbefe040569391d4683266b4ad488ce1e4e",
+  "installerBytes": 56537322
 }
