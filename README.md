@@ -23,7 +23,7 @@
 
 **PowerX** is a native Windows control center: Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one WinUI 3 app. It treats deep system monitoring, *safe* configuration, and premium Windows-native design as equally important, and stays useful even if you never remove a single app.
 
-> **Status: 0.1.18, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
+> **Status: 0.1.19, an early milestone build.** Working today on real Windows data: `PowerX.Core` (telemetry, a declarative tweak engine, debloat / startup / services inventories, cleanup and repair engines, crash insights, a system report, an append-only change history), the `powerx` CLI, and a WinUI 3 desktop app with live dashboards, one-click **profiles**, a network view with listening ports, a Security page and a diagnostics runner.
 
 <p align="center">
   <img src="site/assets/shot-home.png" width="49%" alt="Overview: live CPU, memory and GPU with a top-processes list and recommendations" />
