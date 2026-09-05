@@ -1,10 +1,10 @@
 {
-  "version": "0.1.14",
+  "version": "0.1.15",
   "published": "2026-09-05",
-  "notes": "Disk cleanup now scans its 13 cache/temp targets in parallel instead of one after another (about 1.85x faster). An audit also found two Task Scheduler reads (Startup and Scheduled tasks) each doing their own full scan of the same tasks; documented in the decision log as a follow-up rather than rushed.",
+  "notes": "The Startup and Scheduled tasks pages load about twice as fast: both now read each task's definition in one call instead of a dozen round trips to the Task Scheduler service. Tasks that have never run no longer show a 1999 date and a raw result code. Also a text and layout pass: the two longest tweak profile descriptions were being cut off mid-sentence, byte sizes now line up in a column, and dialog wording was tidied.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.14/PowerX-Setup-0.1.14-win-x64.msi",
-  "installerSha256": "d674819a4bc53693efdbdf42bbc64e2f20e6e7b4f7efaab38c43b37d689ad15d",
-  "installerBytes": 56525034
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.15/PowerX-Setup-0.1.15-win-x64.msi",
+  "installerSha256": "7844acce1361014e96164731fb1087569597ee341b3273dd42811300130ba10e",
+  "installerBytes": 56533226
 }
