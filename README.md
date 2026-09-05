@@ -1,5 +1,5 @@
 ﻿<p align="center">
-  <img src=".github/banner.png" alt="PowerX â€” Windows Control Center" width="100%" />
+  <img src=".github/banner.png" alt="PowerX - Windows Control Center" width="100%" />
 </p>
 
 <p align="center">
@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a></b> &nbsp;Â·&nbsp;
-  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;Â·&nbsp;
-  <a href="https://github.com/Nowalski/Power-X/releases">What's new</a> &nbsp;Â·&nbsp;
-  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;Â·&nbsp;
+  <b><a href="https://github.com/Nowalski/Power-X/releases/latest">Download</a></b> &nbsp;&middot;&nbsp;
+  <a href="https://nowalski.github.io/Power-X/">Website</a> &nbsp;&middot;&nbsp;
+  <a href="https://github.com/Nowalski/Power-X/releases">What's new</a> &nbsp;&middot;&nbsp;
+  <a href="docs/PRODUCT_SPEC.md">Product spec</a> &nbsp;&middot;&nbsp;
   <a href="docs/DECISIONS.md">Decisions</a>
 </p>
 
@@ -49,8 +49,8 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 
 | Area | |
 |---|---|
-| **Health check** | Scans everything below and lists what's worth doing, most impactful first â€” pending restart, no active antivirus, firewall holes, disk space and health, broken startup entries, boot slowdown, driver age, battery wear, event-log criticals, recent crashes, unapplied recommended tweaks. Every item just points at the page that fixes it; nothing here changes anything by itself. |
-| **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH, with a real per-adapter breakdown on a multi-GPU machine instead of one blended number), temperatures (ACPI thermal zones plus per-disk sensors â€” Windows exposes no CPU or GPU sensor without a vendor SDK, so those are left out rather than faked), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree, and a plain-language "what is this" note), disks (SMART, temperature, endurance). |
+| **Health check** | Scans everything below and lists what's worth doing, most impactful first: pending restart, no active antivirus, firewall holes, disk space and health, broken startup entries, boot slowdown, driver age, battery wear, event-log criticals, recent crashes, unapplied recommended tweaks. Every item just points at the page that fixes it; nothing here changes anything by itself. |
+| **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH, with a real per-adapter breakdown on a multi-GPU machine instead of one blended number), temperatures (ACPI thermal zones plus per-disk sensors; Windows exposes no CPU or GPU sensor without a vendor SDK, so those are left out rather than faked), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree, and a plain-language "what is this" note), disks (SMART, temperature, endurance). |
 | **Configure** | A **declarative, evidence-backed tweak engine** (35 tweaks). Every tweak states what it does, why you might want it, the downside, restart needs, whether it is reversible, and whether it is recommended. Curated **profiles** (Recommended, Privacy, Potato mode, Gaming, Restore defaults) apply a visible set in one click with a preview diff. No folklore gamer tweaks ([why](docs/research/TWEAK_RESEARCH.md)). |
 | **Debloat** | About ninety curated entries, Store and consumer apps only, no shell components, nothing pre-selected. Each entry states its removal class and how hard it is to reinstall. |
 | **Startup & tasks** | Every autostart entry in one list with reversible toggles, a flag on entries whose program no longer exists (removable in one click), boot-performance data (last-boot duration, versus your average, per-entry impact from the same source Task Manager uses), a "delay after sign-in" option for a slow entry, and a curated Scheduled Tasks view with a stance on the well-known telemetry and updater tasks. |

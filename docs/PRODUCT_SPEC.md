@@ -40,4 +40,8 @@ Recommended, Privacy, Potato mode (low-spec), Gaming (evidence-backed only), and
 Piracy, activation bypass, licence circumvention. Detection-evasion tooling. "Disable Defender for FPS" as a recommendation.
 
 ## Status
-Version 0.1.0 is out: `PowerX.Core`, the `powerx` CLI, and the WinUI app with live dashboards, the tweak catalog and profiles, debloat, startup, services, cleanup, repair and crash insights. Next up: a config import and export format, a per-process network page, and an elevated broker so the GUI can run without a full-time admin token.
+Version 0.1.19 is out: `PowerX.Core`, the `powerx` CLI, and the WinUI app with live dashboards, the tweak catalog and profiles, debloat, startup, services, cleanup, repair and crash insights.
+
+Added since 0.1.0: a health check that ranks what is worth doing most impactful first; per-adapter GPU metrics on multi-GPU machines; a temperatures page (ACPI thermal zones and per-disk sensors); a network view with listening ports and per-process connections; scheduled tasks, drivers and firewall rules; an event log browser; a Security page; a storage explorer; a system report; and an append-only change history.
+
+Next up: a config import and export format, and an elevated broker so the GUI can run without a full-time admin token.
