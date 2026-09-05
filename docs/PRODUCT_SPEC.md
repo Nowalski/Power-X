@@ -42,6 +42,6 @@ Piracy, activation bypass, licence circumvention. Detection-evasion tooling. "Di
 ## Status
 Version 0.1.19 is out: `PowerX.Core`, the `powerx` CLI, and the WinUI app with live dashboards, the tweak catalog and profiles, debloat, startup, services, cleanup, repair and crash insights.
 
-Added since 0.1.0: a health check that ranks what is worth doing most impactful first; per-adapter GPU metrics on multi-GPU machines; a temperatures page (ACPI thermal zones and per-disk sensors); a network view with listening ports and per-process connections; scheduled tasks, drivers and firewall rules; an event log browser; a Security page; a storage explorer; a system report; and an append-only change history.
+Added since 0.1.0: a health check that ranks what is worth doing most impactful first; per-adapter GPU metrics on multi-GPU machines; a temperatures page (ACPI thermal zones and per-disk sensors); a network view with listening ports and per-process connections; scheduled tasks, drivers and firewall rules; an event log browser; a Security page; a storage explorer; a system report; an append-only change history; and a config import and export format (`powerx.config/1`, via Settings or `powerx config export|import`) that lists which tweaks are applied and which curated apps were removed, carries no machine or user detail, and shows the full plan before it applies anything.
 
-Next up: a config import and export format, and an elevated broker so the GUI can run without a full-time admin token.
+Next up: an elevated broker so the GUI can run without a full-time admin token.
