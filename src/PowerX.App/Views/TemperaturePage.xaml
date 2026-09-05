@@ -1,0 +1,59 @@
+<Page NavigationCacheMode="Enabled"
+    x:Class="PowerX.App.Views.TemperaturePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PowerX.App.Views">
+    <ScrollViewer Style="{StaticResource PageScrollStyle}">
+        <StackPanel Spacing="16" Padding="0,0,0,24" x:Name="Root">
+
+            <StackPanel Spacing="2">
+                <TextBlock Text="Temperatures" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Reading..." TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border x:Name="UnsupportedCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
+                <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Windows does not expose a CPU or system temperature sensor on this machine. That depends entirely on what the motherboard firmware chooses to report (mainly a laptop thing), and there is no built-in API PowerX can fall back to. Vendor tools can read a GPU or CPU temperature through their own driver interface (NVAPI, ADL, and similar); PowerX intentionally does not reach for those or for a kernel driver, so only what Windows itself reports is shown here." />
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Readings" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
+                        <Button x:Name="RefreshButton" Grid.Column="1" Content="Refresh" Click="Refresh_Click" />
+                    </Grid>
+                    <ItemsControl x:Name="List">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:TempVm">
+                                <Grid Padding="0,6" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" MinWidth="140" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" MinWidth="70" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="1">
+                                        <TextBlock Text="{x:Bind Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind Detail}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                   Visibility="{x:Bind DetailVisible}" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="7,1,7,2"
+                                            Background="{ThemeResource LayerFillColorDefaultBrush}">
+                                        <TextBlock Text="{x:Bind Category}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Value}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Style="{StaticResource MonoStyle}" FontSize="15" Foreground="{x:Bind ValueBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

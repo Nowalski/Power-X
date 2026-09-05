@@ -59,6 +59,9 @@
                 <muxc:NavigationViewItem Content="GPU" Tag="gpu">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xF211;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Temperatures" Tag="temps">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE9CA;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Network" Tag="network">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE968;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>

@@ -33,6 +33,7 @@ internal static class Help
         Row("powerx changes", "What changed since the last snapshot  [--snapshot to take one now]");
         Row("powerx reboot", "Whether a restart is pending, and why");
         Row("powerx battery", "Battery wear, cycle count and runtime");
+        Row("powerx temps", "Every temperature reading Windows exposes (ACPI thermal zones, disk sensors)");
         Row("powerx storage <path>", "Size the folders under a path, largest first");
         Row("powerx drivers", "Driver inventory with an age flag  [--old]");
         Row("powerx tasks", "Scheduled tasks with a curated stance  [--telemetry] [--reviewed]");

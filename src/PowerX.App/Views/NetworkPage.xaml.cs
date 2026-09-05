@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using PowerX.App.Services;
+using PowerX.Core.Processes;
 using PowerX.Core.Telemetry;
 
 namespace PowerX.App.Views;
@@ -39,6 +40,7 @@ public sealed partial class NetworkPage : Page
     {
         _onPage = true;
         _subscription = TelemetryHub.Instance.Subscribe(OnTick);
+        _ = LoadAdaptersAsync();
 
         if (!Services.DemoData.Active)
         {
@@ -315,6 +317,113 @@ public sealed partial class NetworkPage : Page
     {
         await Task.Delay(1400);
         if (_onPage) CopyConnButton.Content = "Copy";
+    }
+
+    // ---------------------------------------------------------------- adapters (enable/disable)
+
+    private bool _adaptersBusy;
+
+    private async void AdaptersRefresh_Click(object sender, RoutedEventArgs e) => await LoadAdaptersAsync();
+
+    private async Task LoadAdaptersAsync()
+    {
+        if (_adaptersBusy) return;
+        _adaptersBusy = true;
+        AdaptersRefresh.IsEnabled = false;
+        try
+        {
+            var adapters = DemoData.Active
+                ? [new NetworkAdapterState { Id = "demo", Name = "Ethernet", Description = "Demo adapter", Enabled = true }]
+                : await Task.Run(NetworkAdapterControl.List);
+            if (!_onPage) return;
+            RenderAdapters(adapters);
+        }
+        finally
+        {
+            _adaptersBusy = false;
+            if (_onPage) AdaptersRefresh.IsEnabled = true;
+        }
+    }
+
+    private void RenderAdapters(IReadOnlyList<NetworkAdapterState> adapters)
+    {
+        AdapterRows.Children.Clear();
+        int disabled = adapters.Count(a => !a.Enabled);
+        AdaptersSummary.Text = adapters.Count == 0
+            ? "No adapters found."
+            : disabled == 0 ? $"{adapters.Count} adapters, all enabled." : $"{adapters.Count} adapters, {disabled} disabled.";
+
+        foreach (var a in adapters.OrderByDescending(a => a.Enabled).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            text.Children.Add(new TextBlock { Text = a.Name, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis });
+            if (!string.IsNullOrEmpty(a.Description) && !string.Equals(a.Description, a.Name, StringComparison.OrdinalIgnoreCase))
+                text.Children.Add(new TextBlock
+                {
+                    Text = a.Description, FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis,
+                    Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+                });
+
+            var toggle = new ToggleSwitch
+            {
+                IsOn = a.Enabled, OnContent = "Enabled", OffContent = "Disabled",
+                VerticalAlignment = VerticalAlignment.Center, Tag = a,
+            };
+            toggle.Toggled += AdapterToggle_Toggled;
+
+            var grid = new Grid { ColumnSpacing = 10 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(toggle, 1);
+            grid.Children.Add(text);
+            grid.Children.Add(toggle);
+
+            AdapterRows.Children.Add(new Border
+            {
+                Style = (Style)Application.Current.Resources["CardStyle"], Padding = new Thickness(12, 8, 12, 8), Child = grid,
+            });
+        }
+    }
+
+    private async void AdapterToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleSwitch { Tag: NetworkAdapterState a } sw) return;
+        if (sw.IsOn == a.Enabled) return;
+
+        if (!sw.IsOn)
+        {
+            var confirm = new ContentDialog
+            {
+                Title = $"Disable {a.Name}?",
+                Content = $"\"{a.Name}\" will stop passing any network traffic until you turn it back on here or in "
+                          + "Network Connections. If this is the adapter carrying your only connection to this PC "
+                          + "(a remote session, for example), you could lose that connection.",
+                PrimaryButtonText = "Disable", CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
+            };
+            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+            {
+                sw.Toggled -= AdapterToggle_Toggled; sw.IsOn = true; sw.Toggled += AdapterToggle_Toggled;
+                return;
+            }
+        }
+
+        sw.IsEnabled = false;
+        var result = DemoData.Active
+            ? ActionResult.Ok
+            : await Task.Run(() => NetworkAdapterControl.SetEnabled(a.Id, sw.IsOn));
+        sw.IsEnabled = true;
+        if (!result.Success)
+        {
+            sw.Toggled -= AdapterToggle_Toggled; sw.IsOn = a.Enabled; sw.Toggled += AdapterToggle_Toggled;
+            await new ContentDialog
+            {
+                Title = "Could not change this adapter", Content = result.Message ?? "Unknown error.",
+                CloseButtonText = "Close", XamlRoot = XamlRoot,
+            }.ShowAsync();
+            return;
+        }
+        await LoadAdaptersAsync();
     }
 
     // ---------------------------------------------------------------- interfaces

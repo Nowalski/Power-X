@@ -45,6 +45,11 @@ public sealed class TelemetryHub
     public MetricRing NetDownHistory { get; } = new(HistoryCapacity);
     public MetricRing NetUpHistory { get; } = new(HistoryCapacity);
 
+    // One history ring per GPU (keyed by LUID) for the GPU page's per-adapter view — the single
+    // GpuHistory above only ever tracked the blended-across-every-GPU number.
+    private readonly Dictionary<long, MetricRing> _gpuAdapterHistory = [];
+    public IReadOnlyDictionary<long, MetricRing> GpuAdapterHistory => _gpuAdapterHistory;
+
     private IReadOnlyList<GpuAdapter>? _gpuAdapters;
     public IReadOnlyList<GpuAdapter> GpuAdapters => _gpuAdapters ??= GpuMetricsProvider.QueryAdapters();
 
@@ -195,7 +200,15 @@ public sealed class TelemetryHub
         // Seed on the first sample so every chart opens already full instead of crawling in.
         if (cpu.Value is { } c) { CpuHistory.Seed(c.TotalUsagePercent); CpuHistory.Add(c.TotalUsagePercent); }
         if (mem.Value is { } m) { MemHistory.Seed(m.UsedPercent); MemHistory.Add(m.UsedPercent); }
-        if (gpu.Value is { } g) { GpuHistory.Seed(g.UtilizationPercent); GpuHistory.Add(g.UtilizationPercent); }
+        if (gpu.Value is { } g)
+        {
+            GpuHistory.Seed(g.UtilizationPercent); GpuHistory.Add(g.UtilizationPercent);
+            foreach (var au in g.Adapters)
+            {
+                var ring = _gpuAdapterHistory.TryGetValue(au.Luid, out var r) ? r : _gpuAdapterHistory[au.Luid] = new MetricRing(HistoryCapacity);
+                ring.Seed(au.UtilizationPercent); ring.Add(au.UtilizationPercent);
+            }
+        }
 
         Updated?.Invoke(this, EventArgs.Empty);
     }

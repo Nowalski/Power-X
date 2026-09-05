@@ -48,6 +48,30 @@ internal static class BatteryCommand
     }
 }
 
+internal static class TempsCommand
+{
+    public static int Run(string[] args)
+    {
+        var report = ThermalInfo.Read();
+        if (report.Readings.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]Nothing readable on this machine.[/]");
+        }
+        else
+        {
+            foreach (var r in report.Readings)
+            {
+                string colour = r.TemperatureC switch { >= 75 => "red", >= 55 => "yellow", _ => "teal" };
+                string detail = string.IsNullOrEmpty(r.Detail) ? "" : $" [grey]({Markup.Escape(r.Detail)})[/]";
+                AnsiConsole.MarkupLine($"[{colour}]{r.TemperatureC,5:0.0} C[/]  {Markup.Escape(r.Name)}{detail}");
+            }
+        }
+        if (!report.AcpiThermalZoneSupported)
+            AnsiConsole.MarkupLine("[grey]No CPU/system sensor on this machine. Windows exposes that only when the motherboard firmware reports it (mainly laptops).[/]");
+        return 0;
+    }
+}
+
 internal static class StorageCommand
 {
     public static int Run(string[] args)

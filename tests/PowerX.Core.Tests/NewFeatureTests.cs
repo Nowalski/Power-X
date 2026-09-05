@@ -1,6 +1,7 @@
 using FluentAssertions;
 using PowerX.Core.Diagnostics;
 using PowerX.Core.Processes;
+using PowerX.Core.Telemetry;
 using Xunit;
 
 namespace PowerX.Core.Tests;
@@ -54,5 +55,28 @@ public class HealthCheckTests
         bad.Score.Should().BeLessThan(clean.Score);
         bad.High.Should().Be(2);
         bad.Medium.Should().Be(1);
+    }
+}
+
+public class GpuAdapterLuidTests
+{
+    // Real instance names captured from a live multi-GPU machine (\GPU Engine and
+    // \GPU Adapter Memory counters) — see D-031.
+    [Theory]
+    [InlineData("pid_11360_luid_0x00000000_0x0001E92C_phys_0_eng_0_engtype_3D", 0x0001E92CL)]
+    [InlineData("luid_0x00000002_0xBEB2AD3D_phys_0", 0x2BEB2AD3DL)]
+    [InlineData("pid_4_luid_0x00000000_0x0001E97A_phys_0_eng_5_engtype_Copy", 0x0001E97AL)]
+    public void ParseLuid_extracts_the_luid_from_a_real_pdh_instance_name(string instance, long expected)
+    {
+        GpuMetricsProvider.ParseLuid(instance).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("no luid here")]
+    [InlineData("luid_0xZZZZZZZZ_0x00000001_phys_0")]
+    public void ParseLuid_returns_zero_for_anything_unparseable(string instance)
+    {
+        GpuMetricsProvider.ParseLuid(instance).Should().Be(0);
     }
 }

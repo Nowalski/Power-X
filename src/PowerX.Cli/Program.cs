@@ -34,6 +34,7 @@ try
         "changes" or "changed" => ChangesCommand.Run(rest),
         "reboot" or "pending-reboot" => RebootCommand.Run(rest),
         "battery" => BatteryCommand.Run(rest),
+        "temps" => TempsCommand.Run(rest),
         "storage" or "du" => StorageCommand.Run(rest),
         "drivers" => DriversCommand.Run(rest),
         "tasks" => TasksCommand.Run(rest),

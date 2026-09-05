@@ -223,6 +223,7 @@ public sealed partial class MainWindow : Window
             "cpu" => typeof(CpuPage),
             "memory" => typeof(MemoryPage),
             "gpu" => typeof(GpuPage),
+            "temps" => typeof(TemperaturePage),
             "network" => typeof(NetworkPage),
             "firewall" => typeof(FirewallPage),
             "startup" => typeof(StartupPage),

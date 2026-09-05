@@ -547,6 +547,24 @@ internal static class DemoData
         return new PowerX.Core.Diagnostics.HealthReport { When = DateTimeOffset.Now, Items = items, Deep = false };
     }
 
+    // ---- temperatures ---------------------------------------------
+
+    public static PowerX.Core.Diagnostics.ThermalReport ThermalReport()
+    {
+        PowerX.Core.Diagnostics.ThermalReading R(string name, PowerX.Core.Diagnostics.ThermalCategory cat, double c, string detail = "") =>
+            new() { Name = name, Category = cat, TemperatureC = c, Detail = detail };
+        return new PowerX.Core.Diagnostics.ThermalReport
+        {
+            AcpiThermalZoneSupported = true,
+            Readings =
+            [
+                R("Thermal zone TZ00", PowerX.Core.Diagnostics.ThermalCategory.System, 58.0),
+                R("Samsung 990 Pro 2TB", PowerX.Core.Diagnostics.ThermalCategory.Disk, 47.0, "NVMe"),
+                R("WD Blue 4TB", PowerX.Core.Diagnostics.ThermalCategory.Disk, 34.0, "SATA"),
+            ],
+        };
+    }
+
     // ---- per-process network -----------------------------------
 
     public static IReadOnlyList<PowerX.App.Views.ProcNetVm> ProcNet() =>

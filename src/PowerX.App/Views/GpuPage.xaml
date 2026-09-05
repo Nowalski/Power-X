@@ -7,11 +7,20 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
-                <TextBlock Text="GPU" Style="{StaticResource PageTitleStyle}" />
-                <TextBlock x:Name="AdapterName" Style="{StaticResource SectionHeaderStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="GPU" Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock x:Name="AdapterName" Style="{StaticResource SectionHeaderStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox x:Name="AdapterPicker" Grid.Column="1" VerticalAlignment="Bottom"
+                          Visibility="Collapsed" MinWidth="200"
+                          SelectionChanged="AdapterPicker_SelectionChanged" />
+            </Grid>
 
             <Border x:Name="UnavailableCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                 <TextBlock x:Name="UnavailableText" TextWrapping="Wrap"
@@ -139,6 +148,11 @@
                 </Border>
 
             </Grid>
+
+            <StackPanel x:Name="AdaptersSection" Spacing="10" Visibility="Collapsed">
+                <TextBlock Text="Per GPU" Style="{StaticResource SectionHeaderStyle}" />
+                <StackPanel x:Name="AdapterCards" Spacing="10" />
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

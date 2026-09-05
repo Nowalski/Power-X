@@ -50,7 +50,7 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 | Area | |
 |---|---|
 | **Health check** | Scans everything below and lists what's worth doing, most impactful first — pending restart, no active antivirus, firewall holes, disk space and health, broken startup entries, boot slowdown, driver age, battery wear, event-log criticals, recent crashes, unapplied recommended tweaks. Every item just points at the page that fixes it; nothing here changes anything by itself. |
-| **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree, and a plain-language "what is this" note), disks (SMART, temperature, endurance). |
+| **Monitor** | Real-time CPU (total, per-core, kernel time), memory (physical, commit, pools, cache), GPU (engine and VRAM via PDH, with a real per-adapter breakdown on a multi-GPU machine instead of one blended number), temperatures (ACPI thermal zones plus per-disk sensors — Windows exposes no CPU or GPU sensor without a vendor SDK, so those are left out rather than faked), network throughput and connections, processes (single-syscall enumeration, per-process CPU, I/O, memory, handles, threads, a real tree, and a plain-language "what is this" note), disks (SMART, temperature, endurance). |
 | **Configure** | A **declarative, evidence-backed tweak engine** (35 tweaks). Every tweak states what it does, why you might want it, the downside, restart needs, whether it is reversible, and whether it is recommended. Curated **profiles** (Recommended, Privacy, Potato mode, Gaming, Restore defaults) apply a visible set in one click with a preview diff. No folklore gamer tweaks ([why](docs/research/TWEAK_RESEARCH.md)). |
 | **Debloat** | About ninety curated entries, Store and consumer apps only, no shell components, nothing pre-selected. Each entry states its removal class and how hard it is to reinstall. |
 | **Startup & tasks** | Every autostart entry in one list with reversible toggles, a flag on entries whose program no longer exists (removable in one click), boot-performance data (last-boot duration, versus your average, per-entry impact from the same source Task Manager uses), a "delay after sign-in" option for a slow entry, and a curated Scheduled Tasks view with a stance on the well-known telemetry and updater tasks. |
@@ -61,7 +61,7 @@ Requirements: 64-bit Windows 10 build 19041 or Windows 11. PowerX runs as admini
 | **What changed** | A daily background snapshot of your configuration (startup entries, scheduled tasks, services, programs, drivers, tweaks) with an added / removed / changed diff between any two. Local-only JSON. |
 | **Share this setup** | Export the tweaks you have applied to a small file, apply them on another PC behind a preview. |
 | **Crash insights** | Reads what Windows already recorded (WER, event logs, and only on request the metadata inside a crash dump) and separates observed facts from likely cause, with a confidence level. Never downloads symbols, never opens a dump in a debugger, never uploads anything. |
-| **Network** | Live up and down rate, per-process connections with remote address and state, a listening-ports view that flags what is reachable from the network, opt-in reverse DNS for public addresses, built-in ping / traceroute / DNS, and (elevated) which process is using the bandwidth right now. |
+| **Network** | Live up and down rate, per-process connections with remote address and state, a listening-ports view that flags what is reachable from the network, opt-in reverse DNS for public addresses, built-in ping / traceroute / DNS, (elevated) which process is using the bandwidth right now, and enabling or disabling an adapter. |
 | **Security check** | PowerX is not an antivirus. This shows Microsoft Defender's real status and the threats it has caught, starts a Defender scan, and checks a file's SHA-256 against the open CIRCL hash database. |
 | **System report** | `powerx report` or a Settings button writes hardware, OS, storage, applied tweaks, recent changes and an event-log and crash summary to one file for support. The user name, machine name and MAC addresses are redacted, and you see the full text first. Plus battery health and a pending-restart check. |
 | **Safety** | Detect, record, plan, show, apply, **verify**, log, undo. An append-only change history. Per-tweak revert. Honest about what cannot be undone. |
@@ -84,6 +84,7 @@ dotnet run --project src/PowerX.Cli -- changes
 dotnet run --project src/PowerX.Cli -- storage C:\Users
 dotnet run --project src/PowerX.Cli -- reboot
 dotnet run --project src/PowerX.Cli -- battery
+dotnet run --project src/PowerX.Cli -- temps
 dotnet run --project src/PowerX.Cli -- tasks --telemetry
 dotnet run --project src/PowerX.Cli -- drivers --old
 dotnet run --project src/PowerX.Cli -- firewall

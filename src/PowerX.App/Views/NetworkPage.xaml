@@ -63,6 +63,21 @@
                 </StackPanel>
             </Border>
 
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Network adapters" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
+                        <Button x:Name="AdaptersRefresh" Grid.Column="1" Content="Refresh" Click="AdaptersRefresh_Click" />
+                    </Grid>
+                    <TextBlock x:Name="AdaptersSummary" Style="{StaticResource MutedStyle}" Text="Loading…" />
+                    <StackPanel x:Name="AdapterRows" Spacing="6" />
+                </StackPanel>
+            </Border>
+
             <StackPanel x:Name="Interfaces" Spacing="10" />
 
             <Border Style="{StaticResource CardStyle}">
