@@ -1,10 +1,10 @@
 {
-  "version": "0.1.11",
-  "published": "2026-09-04",
-  "notes": "Audit fix: the Network page's rate used to stick for a full extra second between updates and read blank for up to 2 seconds after the app opened, because network was sampled at half the rate of CPU/memory/GPU for no real benefit. It now samples every tick. Also fixed: opening the Health check page could freeze the whole app for a second or more, because its checks (including a powercfg process spawn) ran fully on the calling thread instead of in the background.",
+  "version": "0.1.12",
+  "published": "2026-09-05",
+  "notes": "GPU page now shows every real adapter instead of blending them into one reading, with a picker to choose Combined or a specific GPU. Network page can enable or disable an adapter. New Temperatures page (ACPI thermal zones plus per-disk sensors; CPU/GPU temperature is not exposed by any built-in Windows API on most machines, so it is honestly left out). The health check now runs its checks concurrently instead of one after another, about 2.8x faster for the same result.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.11/PowerX-Setup-0.1.11-win-x64.msi",
-  "installerSha256": "bc4efef51a6c053d37fb0f519d135b691a232ce01a72b3877ed20cf2e57500ac",
-  "installerBytes": 56418124
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.12/PowerX-Setup-0.1.12-win-x64.msi",
+  "installerSha256": "f904b2774a7afa1072e7c37ecbcf773122881f6b6a109c58eeec88cbc742f171",
+  "installerBytes": 56520938
 }
