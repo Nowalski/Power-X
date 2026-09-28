@@ -1,10 +1,10 @@
 {
-  "version": "0.1.20",
-  "published": "2026-09-05",
-  "notes": "Importing a PowerX setup file written by a newer version now says so, instead of quietly showing a plan with the parts it did not understand left out. The updater also holds the installer open while it checks it, so the verified file is the one that actually runs. Plus a repaired README: some characters had been mangled by an old bad text conversion.",
+  "version": "0.1.21",
+  "published": "2026-09-29",
+  "notes": "Profile changes now show a preview and require confirmation in the CLI. Failed multi-value registry writes attempt best-effort compensation, and PowerX reports the state it can actually observe after an operation. Concurrent change-history access is coordinated across processes, and background telemetry sampling follows its own elapsed-time cadence.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.20/PowerX-Setup-0.1.20-win-x64.msi",
-  "installerSha256": "6c9496a4a15a22eba36abd665de2c2019dd891b7d5bc1d87c1d9b13654f5fd49",
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.21/PowerX-Setup-0.1.21-win-x64.msi",
+  "installerSha256": "5f1fbe67a2f6b8dfecf3c1199f57c8d632d44499e314377acaa7339c366b21e8",
   "installerBytes": 56537322
 }

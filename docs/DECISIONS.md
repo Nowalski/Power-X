@@ -18,6 +18,7 @@ Running record of significant choices. Newest first. Each entry: context → dec
 **Status** Active (0.1.21).
 
 ---
+
 ## D-036 — Inspector clipping fixed, sampling tick halved, CPU temperature answered properly
 **Date** 2026-09-05
 **Decision** Driven by a user report ("in Processes right click About it's cut off") plus a question about CPU temperature and a request to spend less background CPU.
