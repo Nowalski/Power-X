@@ -18,9 +18,14 @@ $app  = Join-Path $repo "src\PowerX.App\PowerX.App.csproj"
 if (-not $OutDir) { $OutDir = Join-Path $repo "publish" }
 $publishDir = Join-Path $OutDir "app"
 
+$versionProps = Join-Path $repo "Directory.Build.props"
+$m = Select-String -Path $versionProps -Pattern '<VersionPrefix>([^<]+)</VersionPrefix>' -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $m) { throw "Could not find VersionPrefix in Directory.Build.props." }
+$projectVersion = $m.Matches.Groups[1].Value
 if (-not $Version) {
-    $m = Select-String -Path $app -Pattern '<Version>([^<]+)</Version>' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($m) { $Version = $m.Matches.Groups[1].Value } else { $Version = "0.1.0" }
+    $Version = $projectVersion
+} elseif ($Version -ne $projectVersion) {
+    throw "Installer version $Version does not match the app VersionPrefix $projectVersion."
 }
 Write-Host "PowerX installer  version $Version  ($Rid $Configuration)" -ForegroundColor Cyan
 

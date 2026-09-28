@@ -284,11 +284,17 @@ public sealed partial class SettingsPage : Page
         if (confirm != ContentDialogResult.Primary) return;
 
         var result = await Task.Run(() => engine.ApplyMany(applied, ChangeAction.Revert));
+        string failureDetails = result.Failed > 0
+            ? "\n\n" + string.Join("\n", result.Records
+                .Where(r => !r.Success)
+                .Select(r => $"{r.TweakName}: {r.Message ?? "Unknown error."}"))
+            : "";
         await new ContentDialog
         {
-            Title = "Restore complete",
+            Title = result.Failed > 0 ? "Restore finished with failures" : "Restore complete",
             Content = $"{result.Succeeded} reverted, {result.AlreadyConfigured} already default, {result.Failed} failed."
-                      + (result.Restart.Any ? "\n\nSome changes need Explorer or a sign-out to take effect." : ""),
+                      + (result.Restart.Any ? "\n\nSome changes need Explorer or a sign-out to take effect." : "")
+                      + failureDetails,
             CloseButtonText = "OK", XamlRoot = XamlRoot,
         }.ShowAsync();
     }

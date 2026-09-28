@@ -235,11 +235,17 @@ public sealed partial class TweaksPage : Page
             restartMsg = "\n\nTo take full effect: " + string.Join(", ", scopes) + ".";
         }
 
+        string failureDetails = result.Failed > 0
+            ? "\n\n" + string.Join("\n", result.Records
+                .Where(r => !r.Success)
+                .Select(r => $"{r.TweakName}: {r.Message ?? "Unknown error."}"))
+            : "";
+
         await new ContentDialog
         {
-            Title = restore ? "Restore complete" : $"{profile.Name} applied",
+            Title = result.Failed > 0 ? "Profile finished with failures" : restore ? "Restore complete" : $"{profile.Name} applied",
             Content = (rpNote ?? "") + summary + restartMsg
-                      + (result.Failed > 0 ? "\n\nSee Change history for details on what failed." : ""),
+                      + failureDetails,
             CloseButtonText = "OK",
             XamlRoot = XamlRoot,
         }.ShowAsync();
@@ -384,15 +390,20 @@ public sealed partial class TweaksPage : Page
         var rec = _engine.Execute(id, action);
         if (!rec.Success)
         {
-            sw.Toggled -= Toggle_Toggled; sw.IsOn = currentlyOn; sw.Toggled += Toggle_Toggled;
+            bool? observedOn = rec.ResultingState switch
+            {
+                nameof(TweakState.Applied) => true,
+                nameof(TweakState.Default) => false,
+                _ => null,
+            };
+            sw.Toggled -= Toggle_Toggled; sw.IsOn = observedOn ?? currentlyOn; sw.Toggled += Toggle_Toggled;
             await new ContentDialog
             {
-                Title = "Could not apply this change",
+                Title = "Change finished with an issue",
                 Content = rec.Message ?? "Unknown error.",
                 CloseButtonText = "Close",
                 XamlRoot = XamlRoot,
             }.ShowAsync();
-            return;
         }
 
         Summary.Text = $"{_engine.Catalog.Count} tweaks · {_engine.GetAllStatus().Count(s => s.State == TweakState.Applied)} applied";

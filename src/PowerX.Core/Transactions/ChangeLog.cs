@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PowerX.Core.Transactions;
 
@@ -11,13 +13,16 @@ public sealed class ChangeLog
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
     private readonly string _path;
+    private readonly string _mutexName;
     private readonly Lock _gate = new();
 
     public ChangeLog(string? path = null)
     {
-        _path = path ?? Path.Combine(
+        _path = Path.GetFullPath(path ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PowerX", "change-history.jsonl");
+            "PowerX", "change-history.jsonl"));
+        string pathHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(_path.ToUpperInvariant())));
+        _mutexName = $"Local\\PowerX.ChangeLog.{pathHash}";
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
     }
 
@@ -25,8 +30,11 @@ public sealed class ChangeLog
     {
         lock (_gate)
         {
-            File.AppendAllText(_path, JsonSerializer.Serialize(record, Json) + Environment.NewLine);
-            RotateIfLarge();
+            WithCrossProcessLock(() =>
+            {
+                File.AppendAllText(_path, JsonSerializer.Serialize(record, Json) + Environment.NewLine);
+                RotateIfLarge();
+            });
         }
     }
 
@@ -39,31 +47,62 @@ public sealed class ChangeLog
         {
             var info = new FileInfo(_path);
             if (!info.Exists || info.Length < 2_097_152) return;
-            var keep = File.ReadLines(_path).TakeLast(2000).ToArray();
             string tmp = _path + ".tmp";
+            using var source = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+            using var reader = new StreamReader(source, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+            var keep = new Queue<string>(2000);
+            while (reader.ReadLine() is { } line)
+            {
+                if (keep.Count == 2000) keep.Dequeue();
+                keep.Enqueue(line);
+            }
             File.WriteAllLines(tmp, keep);
             File.Replace(tmp, _path, null, ignoreMetadataErrors: true);
         }
-        catch (IOException) { /* another writer has it — try again next append */ }
+        catch (IOException) { /* append succeeded; retry rotation on a later append */ }
+        catch (UnauthorizedAccessException) { /* append succeeded; retry rotation on a later append */ }
     }
 
     public IReadOnlyList<ChangeRecord> ReadAll()
     {
         lock (_gate)
         {
-            if (!File.Exists(_path)) return [];
-            var result = new List<ChangeRecord>();
-            foreach (var line in File.ReadLines(_path))
+            return WithCrossProcessLock(() =>
             {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                try
+                if (!File.Exists(_path)) return (IReadOnlyList<ChangeRecord>)[];
+                var result = new List<ChangeRecord>();
+                foreach (var line in File.ReadLines(_path))
                 {
-                    if (JsonSerializer.Deserialize<ChangeRecord>(line, Json) is { } r) result.Add(r);
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    try
+                    {
+                        if (JsonSerializer.Deserialize<ChangeRecord>(line, Json) is { } r) result.Add(r);
+                    }
+                    catch (JsonException) { /* skip corrupt line, keep history readable */ }
                 }
-                catch (JsonException) { /* skip corrupt line, keep history readable */ }
-            }
-            return result;
+                return (IReadOnlyList<ChangeRecord>)result;
+            });
         }
+    }
+
+    private void WithCrossProcessLock(Action action) => WithCrossProcessLock(() =>
+    {
+        action();
+        return true;
+    });
+
+    private T WithCrossProcessLock<T>(Func<T> action)
+    {
+        using var mutex = new Mutex(initiallyOwned: false, _mutexName);
+        bool acquired;
+        try { acquired = mutex.WaitOne(TimeSpan.FromSeconds(10)); }
+        catch (AbandonedMutexException) { acquired = true; }
+
+        if (!acquired)
+            throw new IOException("Timed out waiting for the shared PowerX change history.");
+
+        try { return action(); }
+        finally { mutex.ReleaseMutex(); }
     }
 
     /// <summary>
@@ -74,12 +113,13 @@ public sealed class ChangeLog
     public IReadOnlyList<ChangeRecord> RevertableChanges()
     {
         var latest = new Dictionary<string, ChangeRecord>();
-        foreach (var r in ReadAll().Where(r => r.Success))
+        foreach (var r in ReadAll())
         {
             latest[r.TweakId] = r;
         }
         return latest.Values
-            .Where(r => r.Action == ChangeAction.Apply
+            .Where(r => r.Success
+                     && r.Action == ChangeAction.Apply
                      && r.ResultingState == nameof(Tweaks.TweakState.Applied))
             .ToList();
     }

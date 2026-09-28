@@ -68,18 +68,19 @@ internal static class ProfileCommand
 
     private static int Apply(string[] args)
     {
-        if (args.Length < 2) { AnsiConsole.MarkupLine("usage: powerx profile apply <id> [[--dry-run]] [[--restore-point]]"); return 1; }
+        if (args.Length < 2) { AnsiConsole.MarkupLine("usage: powerx profile apply <id> [--dry-run] [--yes] [--restore-point]"); return 1; }
         var p = Profiles.Get(args[1]);
         if (p is null) { AnsiConsole.MarkupLineInterpolated($"[red]no such profile:[/] {args[1]}"); return 1; }
 
         bool dryRun = args.Contains("--dry-run");
+        bool assumeYes = args.Contains("--yes");
         bool restore = p.Tone == ProfileTone.Restore;
-        var ctx = TweakContext.Detect() with { DryRun = dryRun };
+        var detected = TweakContext.Detect();
         var engine = BuildEngine();
         var action = restore ? ChangeAction.Revert : ChangeAction.Apply;
 
         IReadOnlyList<string> ids = restore
-            ? engine.GetAllStatus(ctx).Where(s => s.State == TweakState.Applied).Select(s => s.Definition.Id).ToList()
+            ? engine.GetAllStatus(detected).Where(s => s.State == TweakState.Applied).Select(s => s.Definition.Id).ToList()
             : p.TweakIds;
 
         if (ids.Count == 0)
@@ -88,7 +89,44 @@ internal static class ProfileCommand
             return 0;
         }
 
-        if (!dryRun && args.Contains("--restore-point"))
+        AnsiConsole.MarkupLine($"[bold]Preview: {Markup.Escape(p.Name)}[/]");
+        var preview = engine.ApplyMany(ids, action, detected with { DryRun = true });
+        foreach (var r in preview.Records)
+        {
+            var change = r.PreviousState == r.ResultingState
+                ? $"[yellow]already configured[/] ({r.ResultingState})"
+                : $"[green]{r.PreviousState} -> {r.ResultingState}[/]";
+            var mark = r.Success ? change : $"[red]failed:[/] {Markup.Escape(r.Message ?? "")}";
+            AnsiConsole.MarkupLine($"  {Markup.Escape(r.TweakName)}: {mark}");
+        }
+        AnsiConsole.MarkupLine($"\n[teal]{preview.Succeeded} would change[/], {preview.AlreadyConfigured} already set, " +
+                               (preview.Failed > 0 ? $"[red]{preview.Failed} failed[/]" : "0 failed"));
+        if (preview.Failed > 0)
+        {
+            AnsiConsole.MarkupLine("[red]The preview could not be completed, so nothing was changed.[/]");
+            return 1;
+        }
+        if (dryRun)
+        {
+            AnsiConsole.MarkupLine("[grey](dry-run; no changes made)[/]");
+            return 0;
+        }
+
+        if (!assumeYes)
+        {
+            if (Console.IsInputRedirected || Console.IsOutputRedirected)
+            {
+                AnsiConsole.MarkupLine("[yellow]This command needs confirmation. In scripts, review the plan and pass --yes to apply it.[/]");
+                return 1;
+            }
+            if (!AnsiConsole.Confirm($"Apply the {p.Name} profile?", defaultValue: false))
+            {
+                AnsiConsole.MarkupLine("[grey]Cancelled. Nothing was changed.[/]");
+                return 0;
+            }
+        }
+
+        if (args.Contains("--restore-point"))
         {
             var rp = SystemRestore.Create($"PowerX before {p.Name}");
             AnsiConsole.MarkupLine(rp.Success
@@ -96,7 +134,7 @@ internal static class ProfileCommand
                 : $"[yellow]restore point skipped:[/] {Markup.Escape(rp.Message ?? "")}");
         }
 
-        var result = engine.ApplyMany(ids, action, ctx);
+        var result = engine.ApplyMany(ids, action, detected);
         foreach (var r in result.Records)
         {
             var change = r.PreviousState == r.ResultingState

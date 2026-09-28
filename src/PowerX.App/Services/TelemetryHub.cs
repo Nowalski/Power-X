@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using PowerX.Core.Diagnostics;
 using PowerX.Core.Processes;
@@ -123,21 +124,30 @@ public sealed class TelemetryHub
             _cpu.Sample();       // prime the CPU delta
             _proc.Enumerate();   // prime per-process CPU/IO deltas
 
-            // When the window is hidden the loop still wakes each second (a bool check + a
-            // delay — negligible) but only samples every Nth wake, so a background cadence of
-            // ~BackgroundInterval is kept while an alt-tab back resumes fast sampling within 1 s.
-            int idleWakes = 0;
+            // Track real elapsed time for the hidden cadence. Counting one-second wakes against
+            // Interval made the background rate depend on the foreground setting (for example,
+            // 2 s foreground / 5 s background sampled every 3 s).
+            long lastSampleTimestamp = 0;
 
             while (!ct.IsCancellationRequested)
             {
                 bool active = _active;
-                int idleEvery = Math.Max(1, (int)Math.Round(BackgroundInterval / Interval));
-                if (active || ++idleWakes >= idleEvery)
+                TimeSpan backgroundInterval = BackgroundInterval > TimeSpan.Zero
+                    ? BackgroundInterval
+                    : TimeSpan.FromSeconds(1);
+                TimeSpan backgroundElapsed = lastSampleTimestamp == 0
+                    ? backgroundInterval
+                    : Stopwatch.GetElapsedTime(lastSampleTimestamp);
+                if (active || backgroundElapsed >= backgroundInterval)
                 {
+                    lastSampleTimestamp = Stopwatch.GetTimestamp();
                     SampleOnce();
-                    idleWakes = 0;
                 }
-                try { await Task.Delay(active ? Interval : TimeSpan.FromSeconds(1), ct).ConfigureAwait(false); }
+
+                TimeSpan delay = active
+                    ? Interval
+                    : Min(TimeSpan.FromSeconds(1), Max(TimeSpan.Zero, backgroundInterval - Stopwatch.GetElapsedTime(lastSampleTimestamp)));
+                try { await Task.Delay(delay, ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { return; }
             }
         }
@@ -146,6 +156,9 @@ public sealed class TelemetryHub
             PowerX.App.App.Log("TelemetryHub", ex);
         }
     }
+
+    private static TimeSpan Min(TimeSpan left, TimeSpan right) => left <= right ? left : right;
+    private static TimeSpan Max(TimeSpan left, TimeSpan right) => left >= right ? left : right;
 
     /// <summary>Runs on the background loop thread. Does the costly sampling, then hands the
     /// results to the UI thread to commit.</summary>

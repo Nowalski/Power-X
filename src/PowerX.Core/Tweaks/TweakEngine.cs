@@ -56,7 +56,7 @@ public sealed class TweakEngine
         return _catalog.Keys.Select(id => GetStatus(id, ctx)).ToList();
     }
 
-    /// <summary>Apply or revert one tweak. Detects → mutates → verifies → logs.</summary>
+    /// <summary>Apply or revert one tweak. Detects, mutates, verifies and records the observed state.</summary>
     public ChangeRecord Execute(string id, ChangeAction action, TweakContext? context = null)
     {
         var def = _catalog[id];
@@ -74,6 +74,7 @@ public sealed class TweakEngine
         }
 
         TweakOutcome outcome;
+        bool operationAttempted = false;
         if (!def.SupportsBuild(ctx.WindowsBuild))
         {
             outcome = TweakOutcome.Fail($"Not applicable to Windows build {ctx.WindowsBuild}");
@@ -86,6 +87,7 @@ public sealed class TweakEngine
         {
             try
             {
+                operationAttempted = true;
                 outcome = action == ChangeAction.Apply ? def.Operation.Apply(ctx) : def.Operation.Revert(ctx);
                 if (outcome.Success && !ctx.DryRun && !def.Operation.Verify(ctx))
                 {
@@ -99,24 +101,75 @@ public sealed class TweakEngine
             }
         }
 
+        TweakState resultingState = outcome.ResultingState;
+        if (!ctx.DryRun && operationAttempted)
+        {
+            try
+            {
+                resultingState = def.Operation.Detect(ctx);
+                if (outcome.Success && resultingState == TweakState.Unknown)
+                    outcome = TweakOutcome.Fail("The operation returned, but its live state could not be determined.");
+                else if (outcome.Success && resultingState !=
+                         (action == ChangeAction.Apply ? TweakState.Applied : TweakState.Default))
+                    outcome = TweakOutcome.Fail($"The live state is {resultingState}, which does not match the requested result.");
+                if (!outcome.Success)
+                    outcome = outcome with
+                    {
+                        Message = AppendDetail(outcome.Message, $"Live state after the attempt: {resultingState}.")
+                    };
+            }
+            catch (Exception ex)
+            {
+                resultingState = TweakState.Unknown;
+                _log.LogWarning(ex, "Post-change detect failed for {Id}", id);
+                if (outcome.Success)
+                    outcome = TweakOutcome.Fail("The operation returned, but live state after the attempt could not be read.");
+                else
+                    outcome = outcome with
+                    {
+                        Message = AppendDetail(outcome.Message, "Live state after the attempt could not be read.")
+                    };
+            }
+        }
+        else if (resultingState == TweakState.Unknown)
+        {
+            resultingState = before;
+        }
+
         var record = new ChangeRecord
         {
             TweakId = id,
             TweakName = def.Name,
             Action = action,
             PreviousState = before.ToString(),
-            ResultingState = outcome.ResultingState == TweakState.Unknown ? before.ToString() : outcome.ResultingState.ToString(),
+            ResultingState = resultingState.ToString(),
             Success = outcome.Success,
             Message = outcome.Message,
             Timestamp = DateTimeOffset.UtcNow,
             SessionId = _sessionId,
             WindowsBuild = ctx.WindowsBuild,
         };
-        if (!ctx.DryRun) _changeLog.Append(record);
+        if (!ctx.DryRun)
+        {
+            try { _changeLog.Append(record); }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Could not record {Action} for {Id}", action, id);
+                record = record with
+                {
+                    Success = false,
+                    Message = AppendDetail(record.Message,
+                        $"The live state is {record.ResultingState}, but change history could not be saved: {ex.Message}")
+                };
+            }
+        }
         return record;
     }
 
-    /// <summary>Apply a set of tweaks as one transaction, aggregating restart requirements.</summary>
+    private static string AppendDetail(string? message, string detail) =>
+        string.IsNullOrWhiteSpace(message) ? detail : message + " " + detail;
+
+    /// <summary>Apply a set of tweaks sequentially, continuing after individual failures.</summary>
     public TransactionResult ApplyMany(IEnumerable<string> ids, ChangeAction action = ChangeAction.Apply, TweakContext? context = null)
     {
         var ctx = context ?? TweakContext.Detect();
@@ -128,7 +181,8 @@ public sealed class TweakEngine
             if (!_catalog.TryGetValue(id, out var def)) continue;
             var rec = Execute(id, action, ctx);
             records.Add(rec);
-            if (rec.Success && rec.PreviousState != rec.ResultingState) restart |= def.Restart;
+            if (rec.PreviousState != rec.ResultingState && rec.ResultingState != nameof(TweakState.Unknown))
+                restart |= def.Restart;
         }
 
         return new TransactionResult(records, new RestartScopeSummary(

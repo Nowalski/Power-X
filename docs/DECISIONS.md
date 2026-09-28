@@ -4,6 +4,20 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-040 - Failure reporting, profile confirmation and process-wide history coordination
+**Date** 2026-09-29
+**Decision** Keep profile batches sequential and best-effort, but never describe them as atomic. Each failed registry batch attempts reverse-order compensation for values changed by that attempt, preserving original registry kinds and absent values. Compensation leaves values that no longer match the attempted write untouched and reports any incomplete recovery. After an attempted operation, the engine records the state it can actually observe; if history cannot be written, the returned result identifies the live state and the missing history entry.
+
+- The CLI now previews the live profile plan before applying. Interactive runs require confirmation; redirected runs require `--yes`, and `--dry-run` never writes. The GUI and CLI continue to use the shared `TweakEngine` operations.
+- Profile and restore dialogs show the returned failure details immediately; an individual tweak switch follows the state observed after an unsuccessful attempt.
+- Change-history append, read and rotation use a mutex named from the normalized log path, coordinating GUI and CLI processes. The log remains JSONL with its current retention policy.
+- Hidden telemetry samples against elapsed `BackgroundInterval`, independent of the foreground interval and loop wake count.
+- `TargetReleaseOperation` applies and reverts its three policy values with the same compensation and observed-state reporting.
+
+**Consequence** A failed batch can still leave a value changed if another process modified it during compensation or Windows denies the rollback; the result reports that state. This decision does not add persisted before-images or promise exact undo of older history records. Those recovery semantics remain a separate design item.
+**Status** Active (0.1.21).
+
+---
 ## D-036 — Inspector clipping fixed, sampling tick halved, CPU temperature answered properly
 **Date** 2026-09-05
 **Decision** Driven by a user report ("in Processes right click About it's cut off") plus a question about CPU temperature and a request to spend less background CPU.

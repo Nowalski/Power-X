@@ -96,6 +96,9 @@ dotnet run --project src/PowerX.Cli -- history
 
 The CLI and the GUI call the **same** `PowerX.Core`. Tweak logic is never duplicated.
 
+`powerx profile apply` prints the live plan and asks before changing Windows. Use `--dry-run` to print the plan without writing anything.
+For unattended scripts, pass `--yes` after reviewing the plan; redirected commands without `--yes` stop before applying.
+
 ## Build
 
 - 64-bit Windows 10 build 19041 or Windows 11
