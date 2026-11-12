@@ -133,7 +133,7 @@
                     <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
                                Text="PowerX is an open-source Windows control center. There is no telemetry. Everything stays on this machine, and every change is written to the local change history." />
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                        <HyperlinkButton Content="Project on GitHub" NavigateUri="https://github.com/Nowalski/Power-X" />
+                        <HyperlinkButton Content="Project on GitHub" Click="OpenProject_Click" />
                         <HyperlinkButton Content="Change history" Click="OpenHistory_Click" />
                         <HyperlinkButton Content="Third-party notices" Click="OpenNotices_Click" />
                     </StackPanel>

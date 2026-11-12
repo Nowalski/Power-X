@@ -28,10 +28,18 @@ public static partial class QuickActions
                     catch (Exception) { /* already gone */ }
                 }
             }
-            // Windows normally auto-restarts the shell; force it if it did not within a moment.
-            Thread.Sleep(400);
+            // Windows restarts the shell on its own (Winlogon's AutoRestartShell), usually within
+            // a second or two. Only start one ourselves if it has not come back: PowerX is
+            // elevated, so an Explorer it starts the plain way would be an elevated desktop, and
+            // everything opened from the taskbar afterwards would run as administrator too.
+            for (int waited = 0; waited < 6000 && !ShellRunningIn(session); waited += 250)
+                Thread.Sleep(250);
             if (!ShellRunningIn(session))
-                Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+            {
+                string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+                if (!ShellLauncher.StartUnelevated(explorer, "").Success)
+                    Process.Start(new ProcessStartInfo(explorer) { UseShellExecute = true });   // a desktop beats none
+            }
             return ActionResult.Ok;
         }
         catch (Exception ex)

@@ -130,19 +130,9 @@ public static class ProcessActions
         }
     }
 
-    public static ActionResult SearchOnline(string name)
-    {
-        try
-        {
-            Process.Start(new ProcessStartInfo($"https://www.google.com/search?q={Uri.EscapeDataString(name + " process")}")
-            { UseShellExecute = true });
-            return ActionResult.Ok;
-        }
-        catch (Exception ex)
-        {
-            return ActionResult.Fail(ex.Message);
-        }
-    }
+    /// <summary>Search the web for the process name, in an unelevated browser.</summary>
+    public static ActionResult SearchOnline(string name) =>
+        ShellLauncher.Open($"https://www.google.com/search?q={Uri.EscapeDataString(name + " process")}");
 
     private static ActionResult WithHandle(int pid, uint access, Func<nint, ActionResult> body)
     {

@@ -16,6 +16,12 @@ public sealed record InstalledProgram
     public string? QuietUninstallCommand { get; init; }
     public bool IsMsi { get; init; }
     public string Scope { get; init; } = "";   // "machine" / "machine (32-bit)" / "user"
+
+    /// <summary>
+    /// True for an entry under HKCU. Any program the user runs can write those, so its
+    /// uninstall command is not trusted with PowerX's administrator rights.
+    /// </summary>
+    public bool IsPerUser => Scope == "user";
 }
 
 /// <summary>
@@ -50,6 +56,11 @@ public static class InstalledPrograms
         try
         {
             var (file, args) = SplitCommand(command);
+
+            // A per-user entry runs with the user's own rights, like Settings does it. If the
+            // uninstaller needs elevation it asks through the normal UAC prompt.
+            if (program.IsPerUser) return ShellLauncher.StartUnelevated(file, args);
+
             Process.Start(new ProcessStartInfo(file, args) { UseShellExecute = true });
             return ActionResult.Ok;
         }

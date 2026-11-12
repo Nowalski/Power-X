@@ -106,8 +106,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateBar_Open(object sender, RoutedEventArgs e)
     {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
-            _updateUrl ?? "https://github.com/Nowalski/Power-X/releases") { UseShellExecute = true }); }
+        try { PowerX.Core.Processes.ShellLauncher.Open(_updateUrl ?? "https://github.com/Nowalski/Power-X/releases"); }
         catch (Exception ex) { App.Log("UpdateOpen", ex); }
     }
 

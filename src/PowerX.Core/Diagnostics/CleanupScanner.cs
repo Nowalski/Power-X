@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -70,8 +71,10 @@ public static partial class CleanupScanner
             },
             new CleanupTarget
             {
-                Id = "crash-dumps", Name = "Crash dumps & error reports", RecommendedDefault = true,
-                Description = "WER queued/archived reports and local minidumps.",
+                // Not ticked by default: these are the evidence Crash insights reads. Clearing
+                // them before a crash is understood leaves nothing to diagnose.
+                Id = "crash-dumps", Name = "Crash dumps & error reports", RecommendedDefault = false,
+                Description = "WER queued/archived reports and local minidumps. Crash insights reads these, so keep them until a crash is understood.",
                 Paths =
                 [
                     Path.Combine(local, "CrashDumps"),
@@ -104,8 +107,8 @@ public static partial class CleanupScanner
             },
             new CleanupTarget
             {
-                Id = "kernel-dumps", Name = "Kernel & live dumps", RecommendedDefault = true,
-                Description = "MEMORY.DMP and LiveKernelReports. Full and kernel crash dumps, often hundreds of MB each.",
+                Id = "kernel-dumps", Name = "Kernel & live dumps", RecommendedDefault = false,
+                Description = "MEMORY.DMP and LiveKernelReports. Full and kernel crash dumps, often hundreds of MB each. Crash insights reads these.",
                 Paths =
                 [
                     Path.Combine(win, "LiveKernelReports"),
@@ -288,6 +291,10 @@ public static partial class CleanupScanner
     private const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;   // required to open a directory
     private const uint FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
     private const int FileDispositionInfo = 4;
+    private const int FileDispositionInfoEx = 21;
+    private const uint FILE_DISPOSITION_FLAG_DELETE = 0x1;
+    private const uint FILE_DISPOSITION_FLAG_POSIX_SEMANTICS = 0x2;
+    private const uint FILE_DISPOSITION_FLAG_IGNORE_READONLY_ATTRIBUTE = 0x10;
 
     [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     private static partial SafeFileHandle CreateFile(string fileName, uint access, uint share, nint security,
@@ -351,6 +358,14 @@ public static partial class CleanupScanner
                     try { length = new FileInfo(path).Length; } catch (Exception) { length = 0; }
                 }
             }
+
+            // FILE_DISPOSITION_INFO_EX (Windows 10 1809+): delete even when the read-only
+            // attribute is set, which the plain call refuses, and unlink the name right away so
+            // the empty-folder pass below can remove its parent. Fall back on older builds.
+            uint dispositionEx = FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS |
+                                 FILE_DISPOSITION_FLAG_IGNORE_READONLY_ATTRIBUTE;
+            if (SetFileInformationByHandle(h, FileDispositionInfoEx, ref Unsafe.As<uint, byte>(ref dispositionEx), sizeof(uint)))
+                return true;
 
             byte deleteFile = 1;   // FILE_DISPOSITION_INFO { BOOLEAN DeleteFile }
             if (!SetFileInformationByHandle(h, FileDispositionInfo, ref deleteFile, 1))

@@ -49,13 +49,13 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="2">
                                 <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis">
                                     <Run Text="{x:Bind Publisher}" /><Run Text="   " /><Run Text="{x:Bind Meta}" />
                                 </TextBlock>
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{x:Bind Size}" VerticalAlignment="Center"
                                        Style="{StaticResource MonoStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <Button Grid.Column="2" Content="Uninstall" VerticalAlignment="Center" Tag="{x:Bind Name}" Click="Uninstall_Click" />
+                            <Button Grid.Column="2" Content="Uninstall" VerticalAlignment="Center" Click="Uninstall_Click" />
                         </Grid>
                     </Border>
                 </DataTemplate>

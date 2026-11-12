@@ -93,14 +93,16 @@ public sealed partial class ProgramsPage : Page
 
     private async void Uninstall_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not string name) return;
-        var vm = _all.FirstOrDefault(p => p.Name == name);
-        if (vm is null) return;
+        // The row's own item, not a lookup by name: two versions of one program (or a machine
+        // and a per-user install) share a name, and the name alone could pick the other one.
+        if ((sender as FrameworkElement)?.DataContext is not ProgramVm vm) return;
 
         var ok = await new ContentDialog
         {
             Title = $"Uninstall {vm.Name}?",
-            Content = "This launches the program's own uninstaller. Follow its prompts. PowerX doesn't delete anything itself.",
+            Content = vm.Program.IsPerUser
+                ? "This launches the program's own uninstaller with your normal rights, as Settings does for apps installed just for you. Follow its prompts. PowerX doesn't delete anything itself."
+                : "This launches the program's own uninstaller. Follow its prompts. PowerX doesn't delete anything itself.",
             PrimaryButtonText = "Uninstall",
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close,

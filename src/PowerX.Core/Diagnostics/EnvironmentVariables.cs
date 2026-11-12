@@ -65,6 +65,32 @@ public static partial class EnvironmentVariables
     public static ActionResult Delete(string name, bool machine) => Set(name, null, machine);
 
     /// <summary>
+    /// A list-style variable (Path, PATHEXT, PSModulePath, ...) is edited one entry per line,
+    /// like the Windows editor does it, instead of as one long line.
+    /// </summary>
+    public static bool IsListVariable(string name, string value) =>
+        name.EndsWith("PATH", StringComparison.OrdinalIgnoreCase) && value.Contains(';') ||
+        name.Equals("PATHEXT", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The text shown in the editor: one entry per line for a list-style variable.</summary>
+    public static string ToEditorText(string name, string value) =>
+        IsListVariable(name, value)
+            ? string.Join(Environment.NewLine, value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            : value;
+
+    /// <summary>
+    /// The value to store from the editor's text. A variable value cannot hold a line break
+    /// (Windows would keep it, and every program reading the variable would get a broken
+    /// value), so lines become <c>;</c>-separated entries and blank lines are dropped.
+    /// </summary>
+    public static string FromEditorText(string text)
+    {
+        if (text.IndexOfAny(['\r', '\n']) < 0) return text;
+        return string.Join(";", text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(l => l.Length > 0));
+    }
+
+    /// <summary>
     /// The registry type to write: keep an existing REG_EXPAND_SZ, and use it for any new value
     /// that references another variable, the way the Windows environment-variable editor does.
     /// </summary>

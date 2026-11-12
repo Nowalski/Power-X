@@ -41,13 +41,17 @@ public sealed partial class SettingsPage : Page
 
     private void OpenHistory_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) => App.Window?.Navigate("history");
 
+    // Opened through the shell so the browser runs with normal rights, not PowerX's elevated ones.
+    private void OpenProject_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) =>
+        PowerX.Core.Processes.ShellLauncher.Open("https://github.com/Nowalski/Power-X");
+
     private void OpenNotices_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         try
         {
             var path = Path.Combine(AppContext.BaseDirectory, "THIRD-PARTY-NOTICES.md");
             if (File.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
-            else Process.Start(new ProcessStartInfo("https://github.com/Nowalski/Power-X/blob/main/THIRD-PARTY-NOTICES.md") { UseShellExecute = true });
+            else PowerX.Core.Processes.ShellLauncher.Open("https://github.com/Nowalski/Power-X/blob/main/THIRD-PARTY-NOTICES.md");
         }
         catch (Exception ex) { App.Log("OpenNotices", ex); }
     }

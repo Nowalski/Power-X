@@ -37,7 +37,7 @@ public static class ComponentStore
         timeout.CancelAfter(TimeSpan.FromMinutes(4));
         try
         {
-            var (code, output) = await RunDismAsync("/Online /Cleanup-Image /AnalyzeComponentStore", null, timeout.Token);
+            var (code, output) = await RunDismAsync("/English /Online /Cleanup-Image /AnalyzeComponentStore", null, timeout.Token);
             var info = Parse(output);
             if (code != 0 && info.ActualSizeBytes == 0)
                 return new ComponentStoreInfo
@@ -75,7 +75,7 @@ public static class ComponentStore
     {
         try
         {
-            var (code, _) = await RunDismAsync("/Online /Cleanup-Image /StartComponentCleanup", onLine, ct);
+            var (code, _) = await RunDismAsync("/English /Online /Cleanup-Image /StartComponentCleanup", onLine, ct);
             onLine(code == 0 ? "Component cleanup finished." : $"DISM exited with code {code}.");
             return code;
         }
@@ -98,8 +98,7 @@ public static class ComponentStore
             var m = Regex.Match(text, Regex.Escape(label) + @"\s*:\s*([\d.,]+)\s*(KB|MB|GB|TB|B)",
                 RegexOptions.IgnoreCase);
             if (!m.Success) return 0;
-            if (!double.TryParse(m.Groups[1].Value.Replace(",", ""), NumberStyles.Float, CultureInfo.InvariantCulture, out var n))
-                return 0;
+            if (!TryParseSize(m.Groups[1].Value, out var n)) return 0;
             return (long)(n * m.Groups[2].Value.ToUpperInvariant() switch
             {
                 "TB" => 1024L * 1024 * 1024 * 1024,
@@ -130,6 +129,21 @@ public static class ComponentStore
             CleanupRecommended = recommended,
             LastCleanup = lastCleanup,
         };
+    }
+
+    /// <summary>
+    /// A DISM size such as "7.95", "7,95" or "1,234.5". /English makes the labels English but
+    /// the numbers can still follow the regional format, where the comma is the decimal mark.
+    /// </summary>
+    internal static bool TryParseSize(string raw, out double value)
+    {
+        string s = raw.Trim().TrimEnd('.', ',');
+        int dot = s.LastIndexOf('.'), comma = s.LastIndexOf(',');
+        if (dot >= 0 && comma >= 0)
+            s = dot > comma ? s.Replace(",", "") : s.Replace(".", "").Replace(',', '.');   // 1,234.5 | 1.234,5
+        else if (comma >= 0)
+            s = s.IndexOf(',') == comma ? s.Replace(',', '.') : s.Replace(",", "");   // 7,95 | 1,234,567
+        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
     private static async Task<(int Code, string Output)> RunDismAsync(string args, Action<string>? onLine, CancellationToken ct)

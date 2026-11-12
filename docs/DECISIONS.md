@@ -4,6 +4,24 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-042 - Second sweep: unelevated launches, other display languages, leftovers from D-041
+**Date** 2026-11-12
+**Decision** A second pass over the repo, plus the items D-041 left open. Fixed together:
+
+- **Things PowerX starts no longer inherit its administrator rights unless they need them.** New `ShellLauncher` starts a program with an unelevated process of the same user in the same session (normally Explorer) as its parent, so the program gets that process's normal token. A program whose manifest requires elevation still gets the usual UAC prompt (CreateProcess cannot show one, so it is handed to an unelevated `powershell Start-Process` with a base64-encoded script). Used for: uninstallers from per-user (HKCU) entries, which any program the user runs can write, so they were a silent route to administrator rights (D-041 left this open); web links (the process "search online" action, update and GitHub links), which opened an elevated browser; and the Explorer restart fallback.
+- **Restart Explorer could leave an elevated desktop.** It waited 400 ms for Windows to restart the shell, then started Explorer itself, elevated. Windows' own restart usually takes longer than that, so the user often got an administrator Explorer and every program opened from the taskbar afterwards ran elevated. It now waits up to 6 s, and only then starts Explorer unelevated.
+- **Uninstall could pick the wrong program.** The button looked the program up by name, so a second version or a per-user copy of the same program could get the other one's uninstaller. It now uses its own row.
+- **Power plans and the WinSxS analysis work on any display language.** `powercfg /list` was matched on the English label "Power Scheme GUID", so on other languages the page showed "unknown" and Ultimate Performance was created again on each click. Plans are now matched by GUID and name only, and PowerX creates Ultimate Performance with a fixed GUID it can find again. DISM runs with `/English`, and sizes with a decimal comma ("7,95 GB") are no longer read as 795 GB.
+- **Crash evidence is no longer ticked for cleanup by default** (crash dumps, kernel and live dumps). Crash insights reads them, and deleting them first leaves nothing to diagnose (D-041 left this open).
+- **Cleanup removes read-only files.** Deletion uses `FILE_DISPOSITION_INFO_EX` with "ignore read-only" and POSIX semantics where available, so read-only temp files no longer count as failures and their emptied folders are removed in the same pass. Older builds fall back to the previous call.
+- **Environment variables:** deleting one now asks for confirmation (D-041 left this open). List-style variables (`Path`, `PATHEXT`, `PSModulePath`) are edited one entry per line, and a line break can no longer end up inside a stored value.
+- **Packages:** servicing updates only. Microsoft.Extensions.Logging.Abstractions, System.Diagnostics.EventLog, System.Management and System.ServiceProcess.ServiceController 10.0.0 to 10.0.15; TraceEvent 3.1.16 to 3.1.30; Windows App SDK 1.8.250907003 to 1.8.260921001; Windows SDK build tools 10.0.26100.1742 to 10.0.26100.9457; Microsoft.NET.Test.Sdk 17.14.1 to 17.14.2. Major versions (TraceEvent 4, Extensions 11, Spectre.Console 0.57, xunit.runner 4, Windows App SDK 2) still wait for a dedicated release.
+
+**Still open:** the update MSI is still staged in `%LOCALAPPDATA%`; the hash check under a write-denying lock still protects the launch. Code signing remains the real fix.
+**Status** Active (0.1.23).
+
+---
+
 ## D-041 - Sweep: elevated cleanup, environment edits, import safety and update URLs
 **Date** 2026-11-12
 **Decision** A whole-repo audit found a handful of issues that matter because PowerX runs elevated. Fixed together:

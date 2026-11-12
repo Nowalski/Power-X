@@ -340,7 +340,16 @@ public sealed partial class ToolsPage : Page
     private async Task EditEnv(EnvVar? existing)
     {
         var name = new TextBox { Header = "Name", Text = existing?.Name ?? "", IsEnabled = existing is null };
-        var value = new TextBox { Header = "Value", Text = existing?.Value ?? "", AcceptsReturn = true, Height = 90, TextWrapping = TextWrapping.Wrap };
+        bool list = existing is not null && EnvironmentVariables.IsListVariable(existing.Name, existing.Value);
+        var value = new TextBox
+        {
+            Header = list ? "Value (one entry per line)" : "Value",
+            Text = existing is null ? "" : EnvironmentVariables.ToEditorText(existing.Name, existing.Value),
+            AcceptsReturn = true, TextWrapping = list ? TextWrapping.NoWrap : TextWrapping.Wrap,
+            Height = list ? 220 : 90,
+        };
+        if (list) value.FontFamily = new FontFamily("Consolas, Cascadia Mono, monospace");
+        ScrollViewer.SetHorizontalScrollBarVisibility(value, ScrollBarVisibility.Auto);
         var scope = new ComboBox { Header = "Scope", Items = { "User", "Machine (all users)" }, SelectedIndex = existing?.Machine == true ? 1 : 0, IsEnabled = existing is null };
         var panel = new StackPanel { Spacing = 10, Width = 460, Children = { name, value, scope } };
 
@@ -360,11 +369,18 @@ public sealed partial class ToolsPage : Page
 
         if (result == ContentDialogResult.Primary)
         {
-            var r = await Task.Run(() => EnvironmentVariables.Set(name.Text, value.Text, machine));
+            string text = EnvironmentVariables.FromEditorText(value.Text);
+            var r = await Task.Run(() => EnvironmentVariables.Set(name.Text, text, machine));
             if (!r.Success) await Info("Could not save", r.Message);
         }
         else if (result == ContentDialogResult.Secondary && existing is not null)
         {
+            // Delete takes effect at once and there is no undo, and losing Path breaks a lot,
+            // so it gets its own confirmation.
+            bool sure = await Confirm($"Delete {existing.Name}?",
+                (machine ? "This removes the variable for every user on this PC. " : "This removes the variable for your account. ") +
+                "Programs started afterwards no longer see it, and there is no undo.", "Delete");
+            if (!sure) return;
             var r = await Task.Run(() => EnvironmentVariables.Delete(existing.Name, machine));
             if (!r.Success) await Info("Could not delete", r.Message);
         }
@@ -689,10 +705,10 @@ public sealed partial class ToolsPage : Page
 
     // ---------------------------------------------------------------- helpers
 
-    private async Task<bool> Confirm(string title, string body) => await new ContentDialog
+    private async Task<bool> Confirm(string title, string body, string primary = "Continue") => await new ContentDialog
     {
         Title = title, Content = body,
-        PrimaryButtonText = "Continue", CloseButtonText = "Cancel",
+        PrimaryButtonText = primary, CloseButtonText = "Cancel",
         DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
     }.ShowAsync() == ContentDialogResult.Primary;
 
