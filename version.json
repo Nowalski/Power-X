@@ -1,10 +1,10 @@
 {
-  "version": "0.1.22",
+  "version": "0.1.23",
   "published": "2026-11-12",
-  "notes": "A safety sweep. Disk cleanup can no longer be redirected outside its folders, editing environment variables keeps %VAR% references working, imported setup files are treated as untrusted, and the updater keeps the installer locked from its final check until it runs.",
+  "notes": "Links and per-user uninstallers now open with your normal rights instead of PowerX's administrator rights, power plans and the WinSxS analysis work on any display language, crash evidence is no longer in the default cleanup, and two layout issues are fixed.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.22/PowerX-Setup-0.1.22-win-x64.msi",
-  "installerSha256": "1105eb751774cd9311500724821a79fe00186d94fcdbfe82aec4a8c24e8c83fc",
-  "installerBytes": 56438927
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.23/PowerX-Setup-0.1.23-win-x64.msi",
+  "installerSha256": "9adaa76bf62db19f93f973f412c1b456ed125a878fb24d11bcb65a4af2e6be52",
+  "installerBytes": 56455313
 }
