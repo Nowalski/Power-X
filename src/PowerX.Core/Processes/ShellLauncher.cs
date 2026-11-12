@@ -175,7 +175,7 @@ public static partial class ShellLauncher
                 // Only a full path goes in as the application name: that argument is not searched
                 // for on PATH, so "MsiExec.exe /X{...}" must be found through the command line.
                 string? application = Path.IsPathRooted(file) ? file : null;
-                if (!CreateProcessW(application, cmdPtr, 0, 0, false, EXTENDED_STARTUPINFO_PRESENT, 0, dir,
+                if (!CreateProcessW(application, cmdPtr, 0, 0, false, EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE, 0, dir,
                         ref si, out var pi))
                     return Marshal.GetLastPInvokeError();
                 pid = pi.dwProcessId;
@@ -199,6 +199,9 @@ public static partial class ShellLauncher
     private const uint TOKEN_QUERY = 0x0008;
     private const int TokenElevation = 20;
     private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+    // A console program started with a borrowed parent cannot attach to the caller's console
+    // (it fails with STATUS_DLL_INIT_FAILED), so it always gets its own. GUI programs ignore it.
+    private const uint CREATE_NEW_CONSOLE = 0x00000010;
     private const nint PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
     private const int ERROR_ELEVATION_REQUIRED = 740;
 
