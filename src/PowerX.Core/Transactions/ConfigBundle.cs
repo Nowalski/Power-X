@@ -90,6 +90,18 @@ public static class ConfigBundleService
         catch (Exception) { return null; }
     }
 
+    /// <summary>A reason the bundle comes from a newer PowerX than this one, or null.</summary>
+    internal static string? NewerThanThisBuild(ConfigBundle bundle, Version? current = null)
+    {
+        current ??= typeof(ConfigBundleService).Assembly.GetName().Version;
+        if (!string.Equals(bundle.Schema, ConfigBundle.CurrentSchema, StringComparison.Ordinal))
+            return $"This setup file uses format \"{bundle.Schema}\", newer than this PowerX understands ({ConfigBundle.CurrentSchema}).";
+        if (current is not null && Version.TryParse(bundle.PowerXVersion, out var from) &&
+            new Version(from.Major, from.Minor, Math.Max(0, from.Build)) > new Version(current.Major, current.Minor, Math.Max(0, current.Build)))
+            return $"This setup file was written by PowerX {bundle.PowerXVersion}, newer than this one ({current.ToString(3)}).";
+        return null;
+    }
+
     // ---------------------------------------------------------------- plan
 
     /// <summary>Work out what applying <paramref name="bundle"/> would change on this machine.</summary>
@@ -101,6 +113,11 @@ public static class ConfigBundleService
         var toApply = new List<BundlePlanItem>();
         var already = new List<BundlePlanItem>();
         var warnings = new List<string>();
+
+        // A file from a newer PowerX still opens, but anything this build does not understand is
+        // dropped by the JSON reader. Say so, so the plan never looks more complete than it is.
+        if (NewerThanThisBuild(bundle) is { } why)
+            warnings.Add(why + " Anything this version does not understand was left out of the plan.");
 
         foreach (var id in bundle.AppliedTweaks)
         {

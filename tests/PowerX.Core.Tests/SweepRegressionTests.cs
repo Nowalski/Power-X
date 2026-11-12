@@ -80,4 +80,26 @@ public class ConfigBundleImportSafetyTests
         plan.AppsToRemove.Select(a => a.Id).Should().Equal("Microsoft.BingNews_8wekyb3d8bbwe");
         plan.Warnings.Should().Contain(w => w.Contains("Microsoft.WindowsStore"));
     }
+
+    [Fact]
+    public void A_bundle_from_a_newer_PowerX_is_flagged()
+    {
+        var current = new Version(0, 1, 22, 0);
+        ConfigBundleService.NewerThanThisBuild(
+            new ConfigBundle { Schema = ConfigBundle.CurrentSchema, PowerXVersion = "0.2.0" }, current)
+            .Should().Contain("0.2.0");
+        ConfigBundleService.NewerThanThisBuild(
+            new ConfigBundle { Schema = "powerx.config/2", PowerXVersion = "0.1.0" }, current)
+            .Should().Contain("powerx.config/2");
+    }
+
+    [Fact]
+    public void A_bundle_from_this_or_an_older_PowerX_is_not_flagged()
+    {
+        var current = new Version(0, 1, 22, 0);
+        ConfigBundleService.NewerThanThisBuild(
+            new ConfigBundle { Schema = ConfigBundle.CurrentSchema, PowerXVersion = "0.1.22" }, current).Should().BeNull();
+        ConfigBundleService.NewerThanThisBuild(
+            new ConfigBundle { Schema = ConfigBundle.CurrentSchema, PowerXVersion = "" }, current).Should().BeNull();
+    }
 }

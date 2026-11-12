@@ -95,31 +95,51 @@ public static class UpdateInstaller
     /// right after — the running exe would otherwise block the file replace.
     ///
     /// The file's SHA-256 is checked again here, immediately before it runs: the download was
-    /// verified earlier, but it sits in a user-writable folder in between, so re-checking closes
-    /// the gap between "verified" and "executed" before we hand an installer elevation.
+    /// verified earlier, but it sits in a user-writable folder in between. The file stays locked
+    /// against writes from that check until Windows Installer has had time to open it.
     /// </summary>
     public static ActionResult Launch(string msiPath, string expectedSha256)
     {
         if (!File.Exists(msiPath)) return ActionResult.Fail("The installer file is missing.");
+
+        // Hold the file open for the whole check-and-launch, sharing it for reading only. While
+        // this handle is open nothing can write, rename or delete the MSI, so the bytes that were
+        // hashed are the bytes Windows Installer opens.
+        FileStream locked;
         try
         {
-            using var fs = File.OpenRead(msiPath);
-            string actual = Convert.ToHexString(SHA256.HashData(fs));
-            if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
-                return ActionResult.Fail("The installer on disk no longer matches the verified hash. It was NOT run.");
+            locked = new FileStream(msiPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
         catch (Exception ex)
         {
-            return ActionResult.Fail("Could not re-verify the installer: " + ex.Message);
+            return ActionResult.Fail("Could not open the installer to verify it: " + ex.Message);
         }
-        try
+
+        using (locked)
         {
-            Process.Start(new ProcessStartInfo("msiexec.exe", $"/i \"{msiPath}\"") { UseShellExecute = true });
-            return ActionResult.Ok;
-        }
-        catch (Exception ex)
-        {
-            return ActionResult.Fail(ex.Message);
+            try
+            {
+                string actual = Convert.ToHexString(SHA256.HashData(locked));
+                if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                    return ActionResult.Fail("The installer on disk no longer matches the verified hash. It was NOT run.");
+            }
+            catch (Exception ex)
+            {
+                return ActionResult.Fail("Could not re-verify the installer: " + ex.Message);
+            }
+
+            try
+            {
+                using var msi = Process.Start(new ProcessStartInfo("msiexec.exe", $"/i \"{msiPath}\"") { UseShellExecute = true });
+                // Give Windows Installer a moment to open (and cache) the package before the lock
+                // is released; the caller exits PowerX straight after this returns.
+                msi?.WaitForExit(4000);
+                return ActionResult.Ok;
+            }
+            catch (Exception ex)
+            {
+                return ActionResult.Fail(ex.Message);
+            }
         }
     }
 
