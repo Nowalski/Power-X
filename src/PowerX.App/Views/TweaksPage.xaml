@@ -15,7 +15,7 @@
                 <StackPanel Spacing="1">
                     <TextBlock Text="Profiles" Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock Text="One click applies a named set. You see exactly what changes and confirm first, and every item stays individually reversible."
-                               Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="720" />
+                               Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left" />
                 </StackPanel>
                 <!-- Fixed cell size keeps every card the same shape and its button on the same
                      line. The height has to clear the longest profile description (Gaming) or the

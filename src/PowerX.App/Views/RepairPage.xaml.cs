@@ -88,10 +88,20 @@ public sealed partial class RepairPage : Page
                 run.Click += async (_, _) => await RunJob(job, run);
 
                 var text = new StackPanel { Spacing = 2 };
-                var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                // A Grid, not a horizontal StackPanel: a StackPanel measures the title at infinite
+                // width, so in a narrow window the title never wraps and the whole card (description
+                // included) is laid out wider than its column and clipped.
+                var titleRow = new Grid { ColumnSpacing = 8 };
+                titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 titleRow.Children.Add(new TextBlock { Text = job.Title, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"], VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap });
                 if (job.Destructive)
-                    titleRow.Children.Add(Chip("changes system state", (Brush)Application.Current.Resources["SystemFillColorCautionBrush"]));
+                {
+                    var chip = Chip("changes system state", (Brush)Application.Current.Resources["SystemFillColorCautionBrush"]);
+                    chip.VerticalAlignment = VerticalAlignment.Top;
+                    Grid.SetColumn(chip, 1);
+                    titleRow.Children.Add(chip);
+                }
                 text.Children.Add(titleRow);
                 text.Children.Add(new TextBlock { Text = job.Explanation, FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
 
