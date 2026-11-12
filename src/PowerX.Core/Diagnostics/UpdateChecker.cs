@@ -31,15 +31,32 @@ public sealed record UpdateCheckResult(
 {
     public static UpdateCheckResult Failed(string message) => new(false, null, null, null, null, message);
 
-    /// <summary>A hash-pinned MSI on github.com/Nowalski/Power-X/releases is available for this update.</summary>
+    /// <summary>A hash-pinned MSI on github.com/Nowalski/Power-X/releases is available for this update.
+    /// The SHA-256 is what actually protects the download; the URL checks keep the manifest honest
+    /// about where it points.</summary>
     public bool HasVerifiedInstaller =>
         !string.IsNullOrWhiteSpace(InstallerUrl) &&
         InstallerSha256 is { Length: 64 } &&
         InstallerBytes > 0 &&
+        IsHex(InstallerSha256) &&
         Uri.TryCreate(InstallerUrl, UriKind.Absolute, out var u) &&
         u.Scheme == Uri.UriSchemeHttps &&
-        (u.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) ||
-         u.Host.Equals("objects.githubusercontent.com", StringComparison.OrdinalIgnoreCase));
+        u.IsDefaultPort &&
+        string.IsNullOrEmpty(u.UserInfo) &&
+        u.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) &&
+        // Only this project's own release assets, not any file anywhere on github.com.
+        u.AbsolutePath.StartsWith(ReleaseDownloadPath, StringComparison.OrdinalIgnoreCase) &&
+        u.AbsolutePath.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Path prefix of the project's GitHub release assets.</summary>
+    public const string ReleaseDownloadPath = "/Nowalski/Power-X/releases/download/";
+
+    private static bool IsHex(string s)
+    {
+        foreach (char c in s)
+            if (!Uri.IsHexDigit(c)) return false;
+        return true;
+    }
 }
 
 /// <summary>

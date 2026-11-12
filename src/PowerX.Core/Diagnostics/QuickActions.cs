@@ -13,13 +13,24 @@ public static partial class QuickActions
     {
         try
         {
+            // Only this session's shell. PowerX runs elevated, so GetProcessesByName also returns
+            // the Explorer of every other signed-in user, and killing those is not ours to do.
+            int session;
+            using (var self = Process.GetCurrentProcess()) session = self.SessionId;
             foreach (var p in Process.GetProcessesByName("explorer"))
             {
-                try { p.Kill(); } catch (Exception) { /* already gone */ }
+                using (p)
+                {
+                    try
+                    {
+                        if (p.SessionId == session) p.Kill();
+                    }
+                    catch (Exception) { /* already gone */ }
+                }
             }
             // Windows normally auto-restarts the shell; force it if it did not within a moment.
             Thread.Sleep(400);
-            if (Process.GetProcessesByName("explorer").Length == 0)
+            if (!ShellRunningIn(session))
                 Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
             return ActionResult.Ok;
         }
@@ -27,6 +38,19 @@ public static partial class QuickActions
         {
             return ActionResult.Fail(ex.Message);
         }
+    }
+
+    private static bool ShellRunningIn(int session)
+    {
+        bool found = false;
+        foreach (var p in Process.GetProcessesByName("explorer"))
+        {
+            using (p)
+            {
+                try { found |= p.SessionId == session; } catch (Exception) { /* exited */ }
+            }
+        }
+        return found;
     }
 
     public static ActionResult FlushDns() => RunHidden("ipconfig.exe", "/flushdns");

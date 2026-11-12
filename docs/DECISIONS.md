@@ -4,6 +4,22 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-041 - Sweep: elevated cleanup, environment edits, import safety and update URLs
+**Date** 2026-11-12
+**Decision** A whole-repo audit found a handful of issues that matter because PowerX runs elevated. Fixed together:
+
+- **Cleanup deletes by handle, inside the root only.** `CleanupScanner.Clean` used path-based `File.Delete`. `C:\Windows\Temp` and `%TEMP%` are writable by unprivileged processes, so a sub-folder swapped for a junction mid-walk could steer an elevated delete into System32. Each item is now opened with `FILE_FLAG_OPEN_REPARSE_POINT`, its final path checked against the resolved root, and deleted through that same handle. The "Kernel & live dumps" target pointed at `%LOCALAPPDATA%\..\SystemTemp` (a folder that does not exist) and never covered the `MEMORY.DMP` its description promised; it now covers `%WINDIR%\MEMORY.DMP`.
+- **Environment variables keep REG_EXPAND_SZ.** `Environment.SetEnvironmentVariable` reads values expanded and writes REG_SZ, so editing `Path` froze every `%SystemRoot%` reference. Reads and writes now go to the registry directly, unexpanded, preserving the value kind, then broadcast `WM_SETTINGCHANGE`.
+- **Imported setup files are treated as untrusted.** The plan warns about security-trade-off and destructive tweaks, and only offers removal for curated, removable debloat entries (an empty or arbitrary fragment used to match any package).
+- **Update installer URL** must be a `.msi` under `github.com/Nowalski/Power-X/releases/download/`, not any github.com file; the hash must be hex.
+- **Restart Explorer** only restarts this session's shell (elevated, it used to kill every signed-in user's Explorer). **End process tree** guards against PID-reuse cycles. **Disable Windows Update** continues past the protected WaaSMedicSvc key instead of stopping halfway with a misleading "administrator rights" message, and Restore does the same. chkdsk and System Restore use the real system drive instead of `C:`. DISM output capture is thread-safe. The system report also scrubs the profile folder name. `crash.log` is capped at 1 MB.
+- Unused `YamlDotNet` and dead central package versions removed; test packages bumped within their major versions (FluentAssertions stays on 6.x for licensing). CI runs with a read-only token and the audit job now fails on vulnerable packages.
+
+**Consequence** No behaviour change for normal use. Cleanup now reports an item as failed when it resolves outside its root.
+**Status** Active (0.1.22).
+
+---
+
 ## D-040 - Failure reporting, profile confirmation and process-wide history coordination
 **Date** 2026-09-29
 **Decision** Keep profile batches sequential and best-effort, but never describe them as atomic. Each failed registry batch attempts reverse-order compensation for values changed by that attempt, preserving original registry kinds and absent values. Compensation leaves values that no longer match the attempted write untouched and reports any incomplete recovery. After an attempted operation, the engine records the state it can actually observe; if history cannot be written, the returned result identifies the live state and the missing history entry.

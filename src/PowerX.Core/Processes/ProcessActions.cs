@@ -47,6 +47,7 @@ public static class ProcessActions
     public static ActionResult EndTaskTree(int pid, ProcessSnapshot snapshot)
     {
         var order = new List<int>();
+        var seen = new HashSet<int>();
         Collect(pid);
         order.Reverse();
         var failures = 0;
@@ -56,6 +57,8 @@ public static class ProcessActions
 
         void Collect(int parent)
         {
+            // PIDs are reused, so a stale parent PID can make the "tree" loop back on itself.
+            if (!seen.Add(parent)) return;
             order.Add(parent);
             foreach (var child in snapshot.Processes.Where(x => x.ParentPid == parent && x.Pid != parent))
                 Collect(child.Pid);

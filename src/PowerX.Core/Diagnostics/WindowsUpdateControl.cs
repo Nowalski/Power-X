@@ -160,7 +160,19 @@ public static class WindowsUpdateControl
                 SaveSnapshot(snap);
             }
 
-            foreach (var name in UpdateServices) SetServiceStart(name, 4);
+            // WaaSMedicSvc (and on some builds uhssvc) has a registry key that even administrators
+            // cannot write. Skip what Windows refuses instead of aborting halfway through, which
+            // used to leave the policy and task levers untouched and report a misleading
+            // "Administrator rights required".
+            var refused = new List<string>();
+            foreach (var name in UpdateServices)
+            {
+                try { SetServiceStart(name, 4); }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+                {
+                    refused.Add(name);
+                }
+            }
 
             using (var au = Registry.LocalMachine.CreateSubKey(AuPolicy, writable: true))
             {
@@ -171,7 +183,10 @@ public static class WindowsUpdateControl
                 wu.SetValue(DoNotConnect, 1, RegistryValueKind.DWord);
 
             ScheduledTasks.SetEnabledMany(UpdateTasks, false);
-            return ActionResult.Ok;
+            return refused.Count == 0
+                ? ActionResult.Ok
+                : new ActionResult(true, $"Windows Update is disabled. Windows protects {string.Join(", ", refused)}, "
+                    + "so that service was left as it was; it may re-enable updates on its own.");
         }
         catch (UnauthorizedAccessException) { return ActionResult.Fail("Administrator rights required."); }
         catch (Exception ex) { return ActionResult.Fail(ex.Message); }
@@ -188,7 +203,7 @@ public static class WindowsUpdateControl
             {
                 foreach (var name in UpdateServices)
                     if (snap.Services.TryGetValue(name, out int prior))
-                        SetServiceStart(name, prior);
+                        TrySetServiceStart(name, prior);
                     // absent from the snapshot ⇒ the service key didn't exist then ⇒ leave it
 
                 using (var au = Registry.LocalMachine.OpenSubKey(AuPolicy, writable: true))
@@ -207,10 +222,10 @@ public static class WindowsUpdateControl
 
             // No snapshot (disabled by an older PowerX or another tool) — fall back to the
             // documented Windows defaults.
-            SetServiceStart("wuauserv", 3);
-            SetServiceStart("UsoSvc", 2);
-            SetServiceStart("WaaSMedicSvc", 3);
-            SetServiceStart("uhssvc", 3);
+            TrySetServiceStart("wuauserv", 3);
+            TrySetServiceStart("UsoSvc", 2);
+            TrySetServiceStart("WaaSMedicSvc", 3);
+            TrySetServiceStart("uhssvc", 3);
 
             using (var au = Registry.LocalMachine.OpenSubKey(AuPolicy, writable: true))
             {
@@ -239,6 +254,13 @@ public static class WindowsUpdateControl
         using var ux = Registry.LocalMachine.OpenSubKey(Ux, writable: true);
         if (ux is null) return;
         foreach (var v in UxPauseValues) ux.DeleteValue(v, throwOnMissingValue: false);
+    }
+
+    // Restore must not stop at a protected key either, or the policies and tasks behind it stay off.
+    private static void TrySetServiceStart(string name, int start)
+    {
+        try { SetServiceStart(name, start); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException) { }
     }
 
     private static void SetServiceStart(string name, int start)

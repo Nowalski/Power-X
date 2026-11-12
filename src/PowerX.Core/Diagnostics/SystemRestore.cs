@@ -33,7 +33,7 @@ public static class SystemRestore
             var scope = Connect();
             using var cls = new ManagementClass(scope, new ManagementPath("SystemRestore"), null);
             var inp = cls.GetMethodParameters("Enable");
-            inp["Drive"] = @"C:\";
+            inp["Drive"] = CommandRunner.SystemDrive + "\\";
             var outp = cls.InvokeMethod("Enable", inp, null);
             return ToResult(outp, "Enable System Protection");
         }

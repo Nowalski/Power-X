@@ -286,9 +286,16 @@ public static class SystemReport
         string user = Environment.UserName;
         string machine = Environment.MachineName;
 
+        // The profile folder is often not the login name (a Microsoft-account profile gets a
+        // truncated folder name, renamed accounts keep the old one), so scrub the folder itself.
+        string profile = "";
+        try { profile = Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd('\\', '/')); }
+        catch { /* no profile path */ }
+
         // Path forms first — these are exact and must always be scrubbed, whatever the name is.
-        text = text.Replace($@"\{user}\", @"\<user>\", StringComparison.OrdinalIgnoreCase)
-                   .Replace($"/{user}/", "/<user>/", StringComparison.OrdinalIgnoreCase);
+        foreach (var name in new[] { user, profile }.Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+            text = text.Replace($@"\{name}\", @"\<user>\", StringComparison.OrdinalIgnoreCase)
+                       .Replace($"/{name}/", "/<user>/", StringComparison.OrdinalIgnoreCase);
 
         try
         {

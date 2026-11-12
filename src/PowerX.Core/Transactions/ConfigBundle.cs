@@ -113,13 +113,34 @@ public static class ConfigBundleService
             if (s.State == TweakState.Applied) already.Add(item with { Actionable = false });
             else if (s.State == TweakState.NotApplicable)
                 warnings.Add($"\"{s.Definition.Name}\" does not apply to this Windows build and was skipped.");
-            else toApply.Add(item);
+            else
+            {
+                toApply.Add(item);
+                // A setup file can come from anyone. Spell out the tweaks that weaken a protection
+                // or are hard to undo, since the import dialog otherwise only lists names.
+                if (s.Definition.Risk is TweakRisk.SecurityTradeoff)
+                    warnings.Add($"\"{s.Definition.Name}\" lowers a Windows security protection. {s.Definition.Downside}");
+                else if (s.Definition.Risk is TweakRisk.Destructive)
+                    warnings.Add($"\"{s.Definition.Name}\" is hard to undo. {s.Definition.Downside}");
+            }
         }
 
+        // Only removable curated debloat entries are honoured: an empty or arbitrary fragment would
+        // otherwise match (and offer to remove) whatever installed package happens to contain it,
+        // and a KeepSystem entry is never something PowerX suggests removing.
+        var curated = new HashSet<string>(
+            DebloatCatalog.Entries.Where(e => e.Class != RemovalClass.KeepSystem).Select(e => e.FamilyNameContains),
+            StringComparer.OrdinalIgnoreCase);
         var toRemove = new List<BundlePlanItem>();
         var notPresent = new List<BundlePlanItem>();
-        foreach (var frag in bundle.RemovedApps)
+        foreach (var frag in bundle.RemovedApps.Distinct(StringComparer.OrdinalIgnoreCase))
         {
+            if (string.IsNullOrWhiteSpace(frag)) continue;
+            if (!curated.Contains(frag))
+            {
+                warnings.Add($"App \"{frag}\" is not a removable entry in PowerX's debloat list and was skipped.");
+                continue;
+            }
             var match = installedApps.FirstOrDefault(a =>
                 a.PackageFamilyName.Contains(frag, StringComparison.OrdinalIgnoreCase));
             if (match is null)

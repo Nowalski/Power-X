@@ -234,7 +234,8 @@ public sealed partial class ToolsPage : Page
                 "This is a security trade-off. Continue?")) return;
         var r = await Task.Run(WindowsUpdateControl.Disable);
         if (!r.Success) await Info("Could not disable Windows Update", r.Message);
-        else await Info("Windows Update disabled", "Update services, tasks and policy have been turned off. Use Restore defaults to undo this, then restart.");
+        else await Info("Windows Update disabled", "Update services, tasks and policy have been turned off. Use Restore defaults to undo this, then restart."
+            + (string.IsNullOrEmpty(r.Message) ? "" : "\n\n" + r.Message));
         RefreshWu();
     }
 

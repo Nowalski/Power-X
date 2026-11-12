@@ -22,6 +22,11 @@ public class UpdaterTests
     [InlineData("http://github.com/x/y/z.msi")]                                  // not https
     [InlineData("https://example.com/PowerX-Setup.msi")]                         // not github
     [InlineData("https://raw.githubusercontent.com/Nowalski/PowerX/main/x.msi")] // wrong github host
+    [InlineData("https://github.com/someone-else/repo/releases/download/v1/x.msi")] // another repo
+    [InlineData("https://github.com/Nowalski/Power-X/blob/main/x.msi")]           // not a release asset
+    [InlineData("https://github.com/Nowalski/Power-X/releases/download/v1/x.exe")] // not an MSI
+    [InlineData("https://objects.githubusercontent.com/whatever/x.msi")]          // redirect target, never in a manifest
+    [InlineData("https://github.com:8443/Nowalski/Power-X/releases/download/v1/x.msi")] // odd port
     public void HasVerifiedInstaller_rejects_untrusted_or_insecure_urls(string url)
         => WithInstaller(url, Sha64, 1234).HasVerifiedInstaller.Should().BeFalse();
 
@@ -95,4 +100,10 @@ public class UpdaterTests
         r.InstallerUrl.Should().BeNull();
         r.Notes.Should().Contain("26100").And.Contain("19045");
     }
+
+    [Fact]
+    public void HasVerifiedInstaller_rejects_a_hash_that_is_not_hex()
+        => WithInstaller("https://github.com/Nowalski/Power-X/releases/download/v0.2.0/PowerX-Setup-0.2.0-win-x64.msi",
+                new string('z', 64), 1234)
+            .HasVerifiedInstaller.Should().BeFalse();
 }

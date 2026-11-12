@@ -29,10 +29,12 @@
 | Package | Licence |
 |---|---|
 | Spectre.Console | MIT |
-| YamlDotNet | MIT |
-| xunit, FluentAssertions, NSubstitute | Apache-2.0 / MIT / BSD-3 |
-| Microsoft.Extensions.* | MIT |
-| (future) Microsoft.WindowsAppSDK | MIT + proprietary redistributables under the MS SDK licence, standard for WinUI apps |
+| xunit, FluentAssertions (6.x only; 8+ is commercially licensed) | Apache-2.0 |
+| Microsoft.Extensions.Logging.Abstractions, System.Management, System.Diagnostics.EventLog, System.ServiceProcess.ServiceController | MIT |
+| Microsoft.Diagnostics.Tracing.TraceEvent, Microsoft.Management.Infrastructure | MIT |
+| Microsoft.WindowsAppSDK | MIT + proprietary redistributables under the MS SDK licence, standard for WinUI apps |
+
+The authoritative, current list is [`THIRD-PARTY-NOTICES.md`](../../THIRD-PARTY-NOTICES.md).
 
 ## Fonts / assets
 Segoe UI Variable + Segoe Fluent Icons ship with Windows and are licensed for use **on Windows** only, fine for an app that runs on Windows; do not embed/redistribute. Provide a fallback stack. Any custom icons: original work or CC0/MIT sets, tracked here.
@@ -41,5 +43,5 @@ Segoe UI Variable + Segoe Fluent Icons ship with Windows and are licensed for us
 - [x] Confirm MIT with project owner; add `LICENSE`.
 - [x] Re-verify Winhance and Sparkle licence text at time of any feature parity work.
 - [x] Per-file check of any System Informer concept we implement (we expect to write our own against NT APIs, no lift).
-- [x] Generate `THIRD-PARTY-NOTICES.md` from the restore graph in CI.
+- [ ] Generate `THIRD-PARTY-NOTICES.md` from the restore graph in CI (still maintained by hand).
 - Full Permission to use Codes from all MIT of them GTweak only research code and Visual,

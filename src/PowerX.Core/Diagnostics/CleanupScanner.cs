@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace PowerX.Core.Diagnostics;
 
@@ -108,7 +109,7 @@ public static partial class CleanupScanner
                 Paths =
                 [
                     Path.Combine(win, "LiveKernelReports"),
-                    Path.Combine(local, "..", "SystemTemp"),
+                    Path.Combine(win, "MEMORY.DMP"),
                 ],
             },
             new CleanupTarget
@@ -178,6 +179,13 @@ public static partial class CleanupScanner
         int count = 0;
         foreach (var root in target.Paths)
         {
+            if (File.Exists(root))
+            {
+                // A single well-known file (e.g. MEMORY.DMP) rather than a folder.
+                try { size += new FileInfo(root).Length; count++; }
+                catch (Exception) { /* locked / gone */ }
+                continue;
+            }
             if (!Directory.Exists(root)) continue;
             try
             {
@@ -217,14 +225,32 @@ public static partial class CleanupScanner
         foreach (var root in target.Paths)
         {
             if (ct.IsCancellationRequested) break;
+
+            if (File.Exists(root))
+            {
+                // A single well-known file (e.g. MEMORY.DMP): it must still be where we expect it.
+                string? parent = Path.GetDirectoryName(root);
+                string? parentFinal = parent is null ? null : FinalDirectoryPath(parent);
+                if (parentFinal is not null && TryDeleteContained(root, isDirectory: false, parentFinal, out long one))
+                {
+                    freed += one; deleted++;
+                }
+                else failed++;
+                continue;
+            }
+
             if (!Directory.Exists(root)) continue;
+
+            // Resolve the root once. Everything deleted below must still resolve to a path inside
+            // it at the moment it is deleted (see TryDeleteContained).
+            string? rootFinal = FinalDirectoryPath(root);
+            if (rootFinal is null) continue;
+
             foreach (var file in SafeEnumerate(root))
             {
                 if (ct.IsCancellationRequested) break;
-                try
+                if (TryDeleteContained(file, isDirectory: false, rootFinal, out long len))
                 {
-                    long len = new FileInfo(file).Length;
-                    File.Delete(file);
                     freed += len;
                     deleted++;
                     sinceReport += len;
@@ -234,17 +260,111 @@ public static partial class CleanupScanner
                         sinceReport = 0;
                     }
                 }
-                catch (Exception) { failed++; }
+                else failed++;
             }
-            // remove now-empty subdirectories (never the root itself)
+            // remove now-empty subdirectories (never the root itself). Deleting a directory by
+            // handle fails on its own when it is not empty, so there is no emptiness race.
             foreach (var dir in SafeEnumerateDirs(root).OrderByDescending(d => d.Length))
-            {
-                try { if (!Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir); }
-                catch (Exception) { /* ignore */ }
-            }
+                TryDeleteContained(dir, isDirectory: true, rootFinal, out _);
         }
         progress?.Report(freed);
         return (freed, deleted, failed);
+    }
+
+    // ---------------------------------------------------------------- containment-checked delete
+    //
+    // PowerX runs elevated, and some cleanup roots (C:\Windows\Temp, the user's %TEMP%) are
+    // writable by unprivileged processes. A path-based File.Delete is then open to a classic race:
+    // after the folder walk, a sub-folder is swapped for a junction pointing somewhere else (e.g.
+    // System32), and the elevated delete follows it. So every delete here opens the item first —
+    // with FILE_FLAG_OPEN_REPARSE_POINT so a symlink is deleted as a link, never followed — asks
+    // Windows where that handle really lives, and only deletes (through the same handle) when the
+    // final path is still inside the cleanup root.
+
+    private const uint DELETE = 0x00010000;
+    private const uint FILE_READ_ATTRIBUTES = 0x0080;
+    private const uint FILE_SHARE_ALL = 0x1 | 0x2 | 0x4;    // read | write | delete
+    private const uint OPEN_EXISTING = 3;
+    private const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;   // required to open a directory
+    private const uint FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
+    private const int FileDispositionInfo = 4;
+
+    [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    private static partial SafeFileHandle CreateFile(string fileName, uint access, uint share, nint security,
+        uint disposition, uint flags, nint template);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", SetLastError = true)]
+    private static unsafe partial uint GetFinalPathNameByHandle(SafeFileHandle file, char* buffer, uint length, uint flags);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetFileInformationByHandle(SafeFileHandle file, int infoClass, ref byte info, uint size);
+
+    /// <summary>The fully resolved path of an existing directory, with a trailing separator.</summary>
+    private static string? FinalDirectoryPath(string dir)
+    {
+        using var h = CreateFile(dir, FILE_READ_ATTRIBUTES, FILE_SHARE_ALL, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+        if (h.IsInvalid) return null;
+        string? p = FinalPath(h);
+        return p is null ? null : WithTrailingSeparator(p);
+    }
+
+    private static unsafe string? FinalPath(SafeFileHandle h)
+    {
+        char[] buf = new char[1024];
+        while (true)
+        {
+            uint n;
+            fixed (char* b = buf) n = GetFinalPathNameByHandle(h, b, (uint)buf.Length, 0);
+            if (n == 0) return null;
+            if (n < buf.Length) return new string(buf, 0, (int)n);
+            if (n > 32_768) return null;
+            buf = new char[n + 1];
+        }
+    }
+
+    internal static string WithTrailingSeparator(string p) =>
+        p.EndsWith('\\') ? p : p + "\\";
+
+    /// <summary>True when <paramref name="finalPath"/> lies strictly inside <paramref name="rootFinalWithSeparator"/>.</summary>
+    internal static bool IsContained(string finalPath, string rootFinalWithSeparator) =>
+        finalPath.Length > rootFinalWithSeparator.Length &&
+        finalPath.StartsWith(rootFinalWithSeparator, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryDeleteContained(string path, bool isDirectory, string rootFinal, out long length)
+    {
+        length = 0;
+        try
+        {
+            uint flags = FILE_FLAG_OPEN_REPARSE_POINT | (isDirectory ? FILE_FLAG_BACKUP_SEMANTICS : 0);
+            using var h = CreateFile(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_ALL, 0, OPEN_EXISTING, flags, 0);
+            if (h.IsInvalid) return false;
+
+            string? final = FinalPath(h);
+            if (final is null || !IsContained(final, rootFinal)) return false;
+
+            if (!isDirectory)
+            {
+                try { length = RandomAccess.GetLength(h); }
+                catch (Exception)
+                {
+                    try { length = new FileInfo(path).Length; } catch (Exception) { length = 0; }
+                }
+            }
+
+            byte deleteFile = 1;   // FILE_DISPOSITION_INFO { BOOLEAN DeleteFile }
+            if (!SetFileInformationByHandle(h, FileDispositionInfo, ref deleteFile, 1))
+            {
+                length = 0;
+                return false;
+            }
+            return true;   // the item goes away when the handle closes
+        }
+        catch (Exception)
+        {
+            length = 0;
+            return false;
+        }
     }
 
     private static IEnumerable<string> SafeEnumerate(string root)

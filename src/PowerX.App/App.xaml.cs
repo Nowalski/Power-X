@@ -78,7 +78,12 @@ public partial class App : Application
         {
             var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PowerX");
             Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "crash.log"),
+            string file = Path.Combine(dir, "crash.log");
+            // Keep the log bounded: once it passes 1 MB, the previous copy becomes crash.log.old.
+            var info = new FileInfo(file);
+            if (info.Exists && info.Length > 1_048_576)
+                File.Move(file, file + ".old", overwrite: true);
+            File.AppendAllText(file,
                 $"[{DateTimeOffset.Now:o}] {source}: {ex}\n\n");
         }
         catch (Exception logEx)

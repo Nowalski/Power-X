@@ -26,6 +26,12 @@ public static class CommandRunner
     private static string Win => Environment.GetFolderPath(Environment.SpecialFolder.Windows);
     private static string Temp => Path.GetTempPath();
 
+    /// <summary>The Windows volume, e.g. "C:". Not always C:.</summary>
+    internal static string SystemDrive =>
+        Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))?.TrimEnd('\\') is { Length: > 0 } d
+            ? d
+            : Environment.GetEnvironmentVariable("SystemDrive") ?? "C:";
+
     public static IReadOnlyList<Job> Jobs { get; } =
     [
         // ---- System file & image integrity ----
@@ -53,11 +59,11 @@ public static class CommandRunner
 
         // ---- Disk ----
         new("Disk", "Scan the system drive (CHKDSK, online)",
-            "Checks the C: volume for file-system errors without taking it offline or making changes.",
-            "chkdsk.exe", "C: /scan"),
-        new("Disk", "Schedule a full check of C: on next restart",
+            "Checks the Windows volume for file-system errors without taking it offline or making changes.",
+            "chkdsk.exe", $"{SystemDrive} /scan"),
+        new("Disk", "Schedule a full check of the system drive on next restart",
             "Queues chkdsk /f /r for the next boot (fixes errors and recovers readable data, and can take a long time). Answers 'Yes' to the schedule prompt for you.",
-            "cmd.exe", "/c echo Y| chkdsk C: /f /r /x", destructive: true),
+            "cmd.exe", $"/c echo Y| chkdsk {SystemDrive} /f /r /x", destructive: true),
 
         // ---- Network ----
         new("Network", "Flush DNS cache", "Clears cached DNS lookups. Harmless; fixes many 'site won't load' issues.",

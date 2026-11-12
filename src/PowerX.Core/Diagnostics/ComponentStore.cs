@@ -147,10 +147,11 @@ public static class ComponentStore
         p.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
-            sb.AppendLine(e.Data);
+            lock (sb) sb.AppendLine(e.Data);
             if (onLine is not null && e.Data.Trim().Length > 0) onLine(e.Data.Trim());
         };
-        p.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) sb.AppendLine(e.Data); };
+        // stdout and stderr are drained on separate threads; StringBuilder is not thread-safe.
+        p.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) lock (sb) sb.AppendLine(e.Data); };
 
         p.Start();
         p.BeginOutputReadLine();
@@ -164,6 +165,7 @@ public static class ComponentStore
             try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch { }
             throw;
         }
-        return (p.ExitCode, sb.ToString());
+        p.WaitForExit();   // parameterless: lets the async output handlers finish flushing
+        lock (sb) return (p.ExitCode, sb.ToString());
     }
 }
