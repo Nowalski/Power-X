@@ -4,6 +4,19 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-044 - Polish round: one divider everywhere, even spacing, start page and system info
+**Date** 2026-11-13
+**Decision** Owner feedback after 0.1.24: features are good, the look should be smoother and more consistent, with dividers like the one above the version in the navigation pane. Done:
+
+- **Dividers.** One line, the navigation footer's own (`DividerStrokeColorDefaultBrush`), used in four places through styles in `App.xaml` (see DESIGN_SYSTEM.md, "Dividers and spacing"): under every page's title block (`PageHeaderStyle`, all 25 pages including Settings), edge to edge under 38 card headers (`CardDividerStyle`), between rows of Settings and the shortcut groups in Tools (`RowDividerStyle`), and between the navigation groups.
+- **Spacing.** Network, Settings, Tools and Change history had a bare title with no subtitle, so their content started higher than on every other page; they have a one-line description now. Processes and Change history used their own title styles. Pages use 16 px between blocks (Settings and Tweaks used 14), list grids 12 px (Processes used 10), and Home's Quick actions card had 14 px padding instead of 18. On Home, the side-by-side cards left an empty grid row whose spacing opened 16 px more between card rows than anywhere else; the stacked card carries its own margin instead.
+- **New:** Settings > General > "Open PowerX on" (Overview, Last page used, Health check, Processes, Tweaks). "Copy system info" on Home and in the command palette copies Windows, CPU, memory, GPU(s), driver and uptime as plain text for a forum post or support chat, without the machine or user name. The palette also reaches Security and Settings, which it did not list. Home's quick actions wrap on a narrow window instead of clipping.
+- **Packages:** every available update is a new major version (the .NET 11 libraries on a .NET 10 app, TraceEvent 4, Spectre.Console 0.5x, test SDK 18, xunit runner 4, FluentAssertions 8 with its paid licence), so none was taken in a polish round.
+
+**Status** Active (0.1.25).
+
+---
+
 ## D-043 - Third sweep: fixes that never reached this repo, 32-bit startup entries, critical processes, layout and the website
 **Date** 2026-11-13
 **Decision** A third pass over the app and the first full pass over the website. Fixed together:
