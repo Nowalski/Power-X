@@ -1,10 +1,10 @@
 {
-  "version": "0.1.23",
-  "published": "2026-11-12",
-  "notes": "Links and per-user uninstallers now open with your normal rights instead of PowerX's administrator rights, power plans and the WinSxS analysis work on any display language, crash evidence is no longer in the default cleanup, and two layout issues are fixed.",
+  "version": "0.1.24",
+  "published": "2026-11-13",
+  "notes": "The system diagnostics report no longer opens Performance Monitor, Startup lists 32-bit apps, service start type changes apply at once, ending a critical Windows process warns first, the window remembers its size, and every page lines up the same way.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
-  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.23/PowerX-Setup-0.1.23-win-x64.msi",
-  "installerSha256": "9adaa76bf62db19f93f973f412c1b456ed125a878fb24d11bcb65a4af2e6be52",
-  "installerBytes": 56455313
+  "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.24/PowerX-Setup-0.1.24-win-x64.msi",
+  "installerSha256": "430f749c7da9d63918ec406b2dac920691a111a21155f07d18d1ad5594855123",
+  "installerBytes": 56459409
 }
