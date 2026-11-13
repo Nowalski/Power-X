@@ -29,7 +29,7 @@ public sealed partial class NetworkPage : Page
         InitializeComponent();
         DownSpark.Accent = Color.FromArgb(0xFF, 0x33, 0xB0, 0xA6);
         UpSpark.Accent = Color.FromArgb(0xFF, 0xE0, 0x9B, 0x3A);
-        PageLayout.CenterCap(this, Root, 1500);
+        PageLayout.LeftCap(this, Root, 1500);
     }
 
     private PowerX.Core.Telemetry.NetworkUsageEtw? _netUsage;
@@ -204,7 +204,7 @@ public sealed partial class NetworkPage : Page
             _connections = conns;
 
             var s = ConnectionProvider.Summarize(conns);
-            ConnSummary.Text = $"{s.Total} connections   {s.Established} established   {s.Listening} listening"
+            ConnSummary.Text = $"{s.Total} connection{Fmt.S(s.Total)}   {s.Established} established   {s.Listening} listening"
                              + (s.TimeWait > 0 ? $"   {s.TimeWait} time-wait" : "")
                              + (s.Udp > 0 ? $"   {s.Udp} UDP" : "");
 
@@ -351,7 +351,9 @@ public sealed partial class NetworkPage : Page
         int disabled = adapters.Count(a => !a.Enabled);
         AdaptersSummary.Text = adapters.Count == 0
             ? "No adapters found."
-            : disabled == 0 ? $"{adapters.Count} adapters, all enabled." : $"{adapters.Count} adapters, {disabled} disabled.";
+            : disabled == 0
+                ? (adapters.Count == 1 ? "1 adapter, enabled." : $"{adapters.Count} adapters, all enabled.")
+                : $"{adapters.Count} adapter{Fmt.S(adapters.Count)}, {disabled} disabled.";
 
         foreach (var a in adapters.OrderByDescending(a => a.Enabled).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -364,10 +366,12 @@ public sealed partial class NetworkPage : Page
                     Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
                 });
 
+            // MinWidth 0, as on the other list pages: the default 154 px left an empty gap between
+            // the label and the card edge. On and Off share one cell, so the switches still line up.
             var toggle = new ToggleSwitch
             {
                 IsOn = a.Enabled, OnContent = "Enabled", OffContent = "Disabled",
-                VerticalAlignment = VerticalAlignment.Center, Tag = a,
+                VerticalAlignment = VerticalAlignment.Center, Tag = a, MinWidth = 0,
             };
             toggle.Toggled += AdapterToggle_Toggled;
 

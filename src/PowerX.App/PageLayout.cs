@@ -9,17 +9,32 @@ namespace PowerX.App;
 /// WinUI quirk: a <c>Stretch</c> element with <c>MaxWidth</c> smaller than the available width does
 /// NOT fill to its MaxWidth — it collapses to its content's desired width and drifts (content
 /// looks "cut off" or shoved to one side as you enlarge the window). These helpers set an explicit
-/// <c>Width</c> from the page's own size so the content is predictable: filled up to a cap and
-/// centred.
+/// <c>Width</c> from the page's own size so the content is predictable: filled up to a cap.
 /// </para>
 /// </summary>
 internal static class PageLayout
 {
-    /// <summary>Centre <paramref name="content"/> and keep its width at min(cap, page − gutter).</summary>
-    public static void CenterCap(Page page, FrameworkElement content, double cap, double gutter = 40)
+    /// <summary>
+    /// The right padding of <c>PageScrollStyle</c> (App.xaml), which keeps content clear of the
+    /// scrollbar. Pages with rows above their scroller stop those rows short by the same amount.
+    /// </summary>
+    public const double ScrollGutter = 16;
+
+    /// <summary>
+    /// Keep <paramref name="content"/> at the page's left edge, with its width at
+    /// min(cap, page − gutter).
+    /// <para>
+    /// Left, not centred: every other page starts at the frame's left edge, and a centred page
+    /// put its title somewhere else (12 px in at one size, 84 px at another), so the title jumped
+    /// sideways when you moved between pages. The default gutter is the scroller's own right
+    /// padding, so below the cap the content ends exactly where an uncapped page's content does.
+    /// </para>
+    /// </summary>
+    public static void LeftCap(Page page, FrameworkElement content, double cap, double gutter = ScrollGutter)
     {
-        content.HorizontalAlignment = HorizontalAlignment.Center;
-        void Fit(double available) => content.Width = Math.Max(0, Math.Min(cap, available - gutter));
+        content.HorizontalAlignment = HorizontalAlignment.Left;
+        // Floor: a fractional width a hair wider than the viewport would clip the cards' right border.
+        void Fit(double available) => content.Width = Math.Max(0, Math.Floor(Math.Min(cap, available - gutter)));
         page.SizeChanged += (_, e) => Fit(e.NewSize.Width);
         if (page.ActualWidth > 0) Fit(page.ActualWidth);
     }

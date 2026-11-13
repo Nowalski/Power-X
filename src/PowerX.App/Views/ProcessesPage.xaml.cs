@@ -63,7 +63,15 @@ public sealed partial class ProcessesPage : Page
 
         IEnumerable<ProcessInfo> live = snap.Processes.Where(p => p.Pid > 0);
         if (_filter.Length > 0)
-            live = live.Where(p => p.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+        {
+            // Digits also match a PID by its start, so "12" finds 1204 as you type it. A name
+            // that happens to contain the digits ("obs64.exe") still matches as before.
+            string filter = _filter;
+            bool digits = filter.All(char.IsAsciiDigit);
+            live = live.Where(p =>
+                p.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                (digits && p.Pid.ToString(System.Globalization.CultureInfo.InvariantCulture).StartsWith(filter, StringComparison.Ordinal)));
+        }
         var byPid = live.ToDictionary(p => p.Pid);
 
         Summary.Text = $"{snap.TotalProcesses} processes · {snap.TotalThreads} threads" +
@@ -144,8 +152,15 @@ public sealed partial class ProcessesPage : Page
     // handledEventsToo — stable coordinate frame, and a header-button press still sorts
     // everywhere except within a few px of a boundary. Dragging a boundary transfers width
     // between its two adjacent columns (Excel-style), so the line follows the cursor.
+    //
+    // The saved widths are a preference. When the table is too narrow for all of them plus the
+    // Name column's minimum, FitColumns narrows the five fixed columns (each no further than its
+    // own minimum) so the table fits; otherwise the last column was simply cut off ("Thre").
+    // What is applied to the header and the rows is _applied, never the raw preference, and the
+    // boundary maths below works on _applied too.
 
     private const double GripTolerance = 8;
+    private const double NameMinWidth = 120;   // the Name column's MinWidth in the XAML
 
     // Each boundary: left column (null = the flexible Name column) and right column. Dragging
     // right grows Left and shrinks Right by the same amount.
@@ -159,21 +174,20 @@ public sealed partial class ProcessesPage : Page
     ];
 
     private readonly ProcessColumns _cols = new();
+    private readonly double[] _applied = new double[ProcessColumns.Keys.Length];   // widths in use, see FitColumns
     private int _dragIndex = -1;
     private double _dragStartX;
     private double _dragStartLeft;   // start width of the boundary's left column (0 for Name)
     private double _dragStartRight;  // start width of the boundary's right column
+    private double _dragStartName;   // start width of the Name column
 
     private void InitColumns()
     {
-        ApplyColumns(HeaderGrid);
-        _cols.PropertyChanged += (_, _) =>
-        {
-            ApplyColumns(HeaderGrid);
-            for (int i = 0; i < _rows.Count; i++)
-                if (List.ContainerFromIndex(i) is ListViewItem { ContentTemplateRoot: Grid g })
-                    ApplyColumns(g);
-        };
+        FitColumns();
+        _cols.PropertyChanged += (_, _) => FitColumns();
+        // The Border, not HeaderGrid: when the columns overflow, a Grid is laid out at its full
+        // desired width and clipped, so HeaderGrid.ActualWidth would report the overflowing width.
+        HeaderBorder.SizeChanged += (_, _) => FitColumns();
 
         HeaderGrid.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(Header_PointerMoved), true);
         HeaderGrid.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(Header_PointerPressed), true);
@@ -185,14 +199,47 @@ public sealed partial class ProcessesPage : Page
         };
     }
 
+    /// <summary>Width the table's columns share: the header row minus HeaderGrid's margins, which
+    /// is also a list row minus its right padding.</summary>
+    private double TableWidth() =>
+        HeaderBorder.ActualWidth - HeaderGrid.Margin.Left - HeaderGrid.Margin.Right;
+
+    /// <summary>Work out the widths actually used (see the comment block above) and apply them to
+    /// the header and every realized row.</summary>
+    private void FitColumns()
+    {
+        var keys = ProcessColumns.Keys;
+        double room = TableWidth() - NameMinWidth;
+        double wanted = 0, slack = 0;
+        foreach (var k in keys)
+        {
+            wanted += _cols.Get(k);
+            slack += Math.Max(0, _cols.Get(k) - ProcessColumns.Min(k));
+        }
+
+        // Share the shortfall out in proportion to how far each column is above its minimum.
+        double share = TableWidth() > 0 && wanted > room && slack > 0
+            ? Math.Min(1, (wanted - room) / slack)
+            : 0;
+        for (int i = 0; i < keys.Length; i++)
+        {
+            double want = _cols.Get(keys[i]);
+            double over = Math.Max(0, want - ProcessColumns.Min(keys[i]));
+            _applied[i] = Math.Floor(want - over * share);
+        }
+
+        ApplyColumns(HeaderGrid);
+        for (int i = 0; i < _rows.Count; i++)
+            if (List.ContainerFromIndex(i) is ListViewItem { ContentTemplateRoot: Grid g })
+                ApplyColumns(g);
+    }
+
     private void ApplyColumns(Grid grid)
     {
         if (grid.ColumnDefinitions.Count < 6) return;
-        grid.ColumnDefinitions[1].Width = _cols.Pid;
-        grid.ColumnDefinitions[2].Width = _cols.Cpu;
-        grid.ColumnDefinitions[3].Width = _cols.Mem;
-        grid.ColumnDefinitions[4].Width = _cols.Io;
-        grid.ColumnDefinitions[5].Width = _cols.Thr;
+        for (int i = 0; i < _applied.Length; i++)
+            if (grid.ColumnDefinitions[i + 1].Width.Value != _applied[i])
+                grid.ColumnDefinitions[i + 1].Width = new GridLength(_applied[i]);
     }
 
     private void List_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -200,26 +247,20 @@ public sealed partial class ProcessesPage : Page
         if (args.ItemContainer?.ContentTemplateRoot is Grid g) ApplyColumns(g);
     }
 
+    private double Applied(string key) => _applied[Array.IndexOf(ProcessColumns.Keys, key)];
+
     /// <summary>X (in HeaderGrid space) of boundary <paramref name="index"/>, measured from the
     /// right edge so the flexible Name column doesn't distort it.</summary>
     private double BoundaryX(int index)
     {
-        double w = HeaderGrid.ActualWidth;
-        double pid = _cols.Pid.Value, cpu = _cols.Cpu.Value, mem = _cols.Mem.Value, io = _cols.Io.Value, thr = _cols.Thr.Value;
-        return index switch
-        {
-            0 => w - pid - cpu - mem - io - thr,   // Name | Pid
-            1 => w - cpu - mem - io - thr,          // Pid  | Cpu
-            2 => w - mem - io - thr,                // Cpu  | Mem
-            3 => w - io - thr,                      // Mem  | Io
-            4 => w - thr,                           // Io   | Thr
-            _ => 0,
-        };
+        double x = TableWidth();
+        for (int i = _applied.Length - 1; i >= index; i--) x -= _applied[i];
+        return index is >= 0 and < 5 ? x : 0;
     }
 
     private int BoundaryNear(double x)
     {
-        if (HeaderGrid.ActualWidth <= 0) return -1;
+        if (TableWidth() <= 0) return -1;
         for (int i = 0; i < Boundaries.Length; i++)
             if (Math.Abs(x - BoundaryX(i)) <= GripTolerance) return i;
         return -1;
@@ -254,11 +295,18 @@ public sealed partial class ProcessesPage : Page
         double lo = double.NegativeInfinity, hi = double.PositiveInfinity;
         if (left is not null)
         {
-            lo = Math.Max(lo, _cols.Min(left) - _dragStartLeft);
-            hi = Math.Min(hi, _cols.Max(left) - _dragStartLeft);
+            lo = Math.Max(lo, ProcessColumns.Min(left) - _dragStartLeft);
+            hi = Math.Min(hi, ProcessColumns.Max(left) - _dragStartLeft);
         }
-        lo = Math.Max(lo, _dragStartRight - _cols.Max(right));
-        hi = Math.Min(hi, _dragStartRight - _cols.Min(right));
+        else
+        {
+            // The Name column is the left one: PID can only take what Name has above its
+            // minimum, or the table would overflow again and FitColumns would squeeze the rest.
+            lo = Math.Max(lo, Math.Min(0, NameMinWidth - _dragStartName));
+        }
+        lo = Math.Max(lo, _dragStartRight - ProcessColumns.Max(right));
+        hi = Math.Min(hi, _dragStartRight - ProcessColumns.Min(right));
+        if (lo > hi) return;
         delta = Math.Clamp(delta, lo, hi);
 
         if (left is not null) _cols.SetPixels(left, _dragStartLeft + delta);
@@ -271,11 +319,19 @@ public sealed partial class ProcessesPage : Page
         int near = BoundaryNear(x);
         if (near < 0) return;   // not on a boundary — let the header button sort
 
+        // Start from what is on screen. If FitColumns had narrowed the saved widths to fit, adopt
+        // the narrowed ones as the preference first; a drag then moves only the two columns
+        // either side of the boundary, so the line stays under the cursor.
+        for (int i = 0; i < ProcessColumns.Keys.Length; i++)
+            if (_cols.Get(ProcessColumns.Keys[i]) != _applied[i])
+                _cols.SetPixels(ProcessColumns.Keys[i], _applied[i]);
+
         var (left, right) = Boundaries[near];
         _dragIndex = near;
         _dragStartX = x;
-        _dragStartLeft = left is null ? 0 : _cols.Get(left);
-        _dragStartRight = _cols.Get(right);
+        _dragStartLeft = left is null ? 0 : Applied(left);
+        _dragStartRight = Applied(right);
+        _dragStartName = BoundaryX(0);
         HeaderGrid.CapturePointer(e.Pointer);
         PositionGuide(BoundaryX(near));
         ResizeGuide.Opacity = 0.9;
@@ -340,7 +396,12 @@ public sealed partial class ProcessesPage : Page
             ("mem", HMem, "Memory"), ("io", HIo, "Disk I/O"), ("thr", HThr, "Threads"),
         ];
         foreach (var (key, btn, label) in cols)
-            btn.Content = key == _sortKey ? $"{label} {(_sortDesc ? "▾" : "▴")}" : label;
+        {
+            string arrow = _sortDesc ? "▾" : "▴";
+            // The arrow goes on the outer side of the label: after Name, but before the
+            // right-aligned numeric labels, so their text still ends in line with the values.
+            btn.Content = key != _sortKey ? label : key == "name" ? $"{label} {arrow}" : $"{arrow} {label}";
+        }
     }
 
     // ---------------------------------------------------------------- context menu
@@ -349,33 +410,66 @@ public sealed partial class ProcessesPage : Page
 
     private async void End_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } row) return;
-        if (!await Confirm($"End {row.Name}?", "Unsaved work in this program will be lost.", "End task")) return;
+        if (RowOf(sender) is not { } row || await DemoBlocked()) return;
+        // A critical process takes Windows down with it, so that warning is shown whatever the
+        // "Confirm before ending or changing processes" setting says.
+        bool ok = ProcessActions.IsCritical(row.Pid)
+            ? await ConfirmCritical($"{row.Name} is a critical Windows process",
+                $"Ending {row.Name} makes Windows stop or restart immediately. "
+                + "Unsaved work in every open program is lost.", "End task")
+            : await Confirm($"End {row.Name}?", "Unsaved work in this program will be lost.", "End task");
+        if (!ok) return;
         Report(ProcessActions.EndTask(row.Pid), "End task");
     }
 
     private async void EndTree_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } row) return;
+        if (RowOf(sender) is not { } row || await DemoBlocked()) return;
         if (TelemetryHub.Instance.LastProcesses is not { } snap) return;
-        if (!await Confirm($"End {row.Name} and its child processes?", "Unsaved work will be lost.", "End tree")) return;
+        bool ok = ProcessActions.TreeHasCritical(row.Pid, snap)
+            ? await ConfirmCritical("This tree includes a critical Windows process",
+                $"{row.Name} or one of its child processes is critical to Windows. Ending the tree "
+                + "makes Windows stop or restart immediately. Unsaved work in every open program is lost.", "End tree")
+            : await Confirm($"End {row.Name} and its child processes?", "Unsaved work will be lost.", "End tree");
+        if (!ok) return;
         Report(ProcessActions.EndTaskTree(row.Pid, snap), "End process tree");
     }
 
-    private void Suspend_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) Report(ProcessActions.Suspend(r.Pid), "Suspend"); }
+    private async void Suspend_Click(object sender, RoutedEventArgs e)
+    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.Suspend(r.Pid), "Suspend"); }
 
-    private void Resume_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) Report(ProcessActions.Resume(r.Pid), "Resume"); }
+    private async void Resume_Click(object sender, RoutedEventArgs e)
+    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.Resume(r.Pid), "Resume"); }
 
-    private void Eco_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) Report(ProcessActions.SetEfficiencyMode(r.Pid, true), "Efficiency mode"); }
+    private async void Eco_Click(object sender, RoutedEventArgs e)
+    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.SetEfficiencyMode(r.Pid, true), "Efficiency mode"); }
 
-    private void Priority_Click(object sender, RoutedEventArgs e)
+    private async void Priority_Click(object sender, RoutedEventArgs e)
     {
         if (RowOf(sender) is not { } r || sender is not FrameworkElement { Tag: string tag }) return;
+        if (await DemoBlocked()) return;
         if (Enum.TryParse<ProcessPriority>(tag, out var pri))
             Report(ProcessActions.SetPriority(r.Pid, pri), "Set priority");
+    }
+
+    /// <summary>
+    /// In demo mode the rows are made up, but their PIDs are ordinary numbers that may belong to
+    /// a real process on this PC, so an action would land on whatever that happens to be.
+    /// </summary>
+    private async Task<bool> DemoBlocked()
+    {
+        if (!Services.DemoData.Active) return false;
+        try
+        {
+            await new ContentDialog
+            {
+                Title = "Demo mode",
+                Content = "These processes are sample data, so nothing was changed.",
+                CloseButtonText = "OK", XamlRoot = XamlRoot,
+            }.ShowAsync();
+        }
+        catch (Exception ex) { App.Log("Processes.Demo", ex); }
+        return true;
     }
 
     private void OpenLocation_Click(object sender, RoutedEventArgs e)
@@ -394,7 +488,7 @@ public sealed partial class ProcessesPage : Page
     { if (RowOf(sender) is { } r) Copy(r.Pid.ToString()); }
 
     private void Search_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) ProcessActions.SearchOnline(r.Name); }
+    { if (RowOf(sender) is { } r) Report(ProcessActions.SearchOnline(r.Name), "Search the web"); }
 
     private async void Props_Click(object sender, RoutedEventArgs e)
     { if (RowOf(sender) is { } r) await ShowDetails(r); }
@@ -416,6 +510,26 @@ public sealed partial class ProcessesPage : Page
             DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
         };
         return await d.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    /// <summary>The warning before ending a critical process. Never skipped by the Settings
+    /// switch, and Cancel is the default so Enter does not take the PC down.</summary>
+    private async Task<bool> ConfirmCritical(string title, string body, string primary)
+    {
+        var d = new ContentDialog
+        {
+            Title = title,
+            Content = new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap },
+            PrimaryButtonText = primary, CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot,
+        };
+        try { return await d.ShowAsync() == ContentDialogResult.Primary; }
+        catch (Exception ex)
+        {
+            // Another dialog already open: treat it as Cancel rather than as a yes.
+            App.Log("Processes.ConfirmCritical", ex);
+            return false;
+        }
     }
 
     private async void Report(PowerX.Core.Processes.ActionResult result, string what)

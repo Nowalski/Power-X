@@ -64,24 +64,53 @@ internal static class DemoData
         };
     }
 
-    public static GpuMetrics Gpu(long tick)
+    /// <summary>
+    /// Demo GPU load. With more than one adapter, each gets its own made-up usage too, keyed to
+    /// the adapter list the GPU page builds its per-GPU cards and picker from; without that the
+    /// cards and the picker had nothing to show in a demo.
+    /// </summary>
+    public static GpuMetrics Gpu(long tick, IReadOnlyList<GpuAdapter>? adapters = null)
     {
         double util = Math.Clamp(
             Wave(tick, 22, 12, 19, 0.5) + Wave(tick, 0, 5, 4.3, 0.2) + Wave(tick, 0, 3, 2.1, 0.7),
             2, 100);
+        GpuEngineLoad[] engines =
+        [
+            new("3D", util),
+            new("Copy", Math.Clamp(util * 0.2, 0, 100)),
+            new("Video Decode", Math.Clamp(Wave(tick, 6, 6, 11, 0), 0, 100)),
+            new("Compute", Math.Clamp(util * 0.4, 0, 100)),
+        ];
+
+        var real = adapters?.Where(a => a.Luid != 0).OrderByDescending(a => a.DedicatedMemoryTotal).ToList() ?? [];
+        var perAdapter = new List<GpuAdapterUsage>();
+        if (real.Count > 1)
+        {
+            for (int i = 0; i < real.Count; i++)
+            {
+                // The biggest GPU does the work; the others idle along, as on a desktop with an iGPU.
+                double u = i == 0 ? util : Math.Clamp(Wave(tick, 5, 3, 13, 0.3 * i), 0, 100);
+                perAdapter.Add(new GpuAdapterUsage
+                {
+                    Luid = real[i].Luid,
+                    Name = real[i].Name,
+                    UtilizationPercent = u,
+                    Engines = i == 0 ? engines : [new("3D", u), new("Video Decode", Math.Clamp(u * 0.5, 0, 100))],
+                    DedicatedMemoryUsed = i == 0 ? 4_200_000_000UL : 500_000_000UL,
+                    DedicatedMemoryTotal = real[i].DedicatedMemoryTotal,
+                    SharedMemoryUsed = i == 0 ? 600_000_000UL : 300_000_000UL,
+                });
+            }
+        }
+
         return new GpuMetrics
         {
             UtilizationPercent = util,
-            Engines =
-            [
-                new("3D", util),
-                new("Copy", Math.Clamp(util * 0.2, 0, 100)),
-                new("Video Decode", Math.Clamp(Wave(tick, 6, 6, 11, 0), 0, 100)),
-                new("Compute", Math.Clamp(util * 0.4, 0, 100)),
-            ],
-            DedicatedMemoryUsed = 4_700_000_000,
-            SharedMemoryUsed = 900_000_000,
+            Engines = engines,
+            DedicatedMemoryUsed = perAdapter.Count > 0 ? perAdapter.Aggregate(0UL, (s, a) => s + a.DedicatedMemoryUsed) : 4_700_000_000,
+            SharedMemoryUsed = perAdapter.Count > 0 ? perAdapter.Aggregate(0UL, (s, a) => s + a.SharedMemoryUsed) : 900_000_000,
             Timestamp = DateTimeOffset.Now,
+            Adapters = perAdapter,
         };
     }
 
@@ -618,7 +647,9 @@ internal static class DemoData
             T(@"\Microsoft\Windows\Windows Error Reporting", "QueueReporting", true, "wermgr.exe -upload", "on an event", TaskStance.Telemetry),
             T(@"\", "GoogleUpdateTaskMachineUA", true, "C:\\Program Files (x86)\\Google\\Update\\GoogleUpdate.exe /ua /installsource scheduler", "daily", TaskStance.Optional),
             T(@"\", "MicrosoftEdgeUpdateTaskMachineCore", true, "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe /c", "at logon, daily", TaskStance.Optional),
-            T(@"\", "NvTmRep_CrashReport3_...", true, "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvtmrep.exe", "daily", TaskStance.Telemetry),
+            // The real name, GUID and all: the demo used to spell it "NvTmRep_CrashReport3_...",
+            // which read as if the row trimmed a name it had plenty of room for.
+            T(@"\", "NvTmRep_CrashReport3_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}", true, "C:\\Program Files\\NVIDIA Corporation\\NvContainer\\nvtmrep.exe", "daily", TaskStance.Telemetry),
             T(@"\Microsoft\Windows\UpdateOrchestrator", "Schedule Scan", true, "usoclient.exe StartScan", "daily", TaskStance.KeepSystem),
             T(@"\Microsoft\Windows\Windows Defender", "Windows Defender Scheduled Scan", true, "MpCmdRun.exe Scan", "weekly", TaskStance.KeepSystem),
             T(@"\Microsoft\Windows\SystemRestore", "SR", true, "srtasks.exe ExecuteScheduledSPPCreation", "daily, at boot", TaskStance.KeepSystem),

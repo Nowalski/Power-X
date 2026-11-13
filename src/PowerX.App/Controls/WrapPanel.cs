@@ -94,25 +94,44 @@ public sealed partial class WrapPanel : Panel
         double fixedW = ItemWidth, fixedH = ItemHeight;
         bool hasFixedW = !double.IsNaN(fixedW), hasFixedH = !double.IsNaN(fixedH);
 
-        double x = 0, y = 0, lineHeight = 0;
-
+        // Each child gets the full height of its line, so its own VerticalAlignment decides where
+        // it sits. Arranging every child at its own height pinned a small chip to the top of a
+        // line next to taller text, a pixel or two above the text's centre.
+        var lineHeights = new List<double>();
+        double x = 0, lineHeight = 0;
         foreach (var child in Children)
         {
             double w = hasFixedW ? fixedW : child.DesiredSize.Width;
             double h = hasFixedH ? fixedH : child.DesiredSize.Height;
+            if (x > 0 && x + w > finalSize.Width + 0.5)
+            {
+                lineHeights.Add(lineHeight);
+                x = 0;
+                lineHeight = 0;
+            }
+            x += w + HorizontalSpacing;
+            lineHeight = Math.Max(lineHeight, h);
+        }
+        lineHeights.Add(lineHeight);
+
+        int line = 0;
+        double y = 0;
+        x = 0;
+        foreach (var child in Children)
+        {
+            double w = hasFixedW ? fixedW : child.DesiredSize.Width;
 
             if (x > 0 && x + w > finalSize.Width + 0.5)
             {
                 x = 0;
-                y += lineHeight + VerticalSpacing;
-                lineHeight = 0;
+                y += lineHeights[line] + VerticalSpacing;
+                line++;
             }
 
-            child.Arrange(new Rect(x, y, w, h));
+            child.Arrange(new Rect(x, y, w, lineHeights[line]));
             x += w + HorizontalSpacing;
-            lineHeight = Math.Max(lineHeight, h);
         }
 
-        return new Size(finalSize.Width, Math.Max(finalSize.Height, y + lineHeight));
+        return new Size(finalSize.Width, Math.Max(finalSize.Height, y + lineHeights[line]));
     }
 }

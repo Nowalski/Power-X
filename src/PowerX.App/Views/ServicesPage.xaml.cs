@@ -38,7 +38,7 @@ public sealed partial class ServicesPage : Page
             return;
         }
         _all = entries.Select(e => new ServiceVm { Entry = e }).ToList();
-        Summary.Text = $"{_all.Count} services · {_all.Count(s => s.IsRunning)} running";
+        Summary.Text = $"{_all.Count} service{Fmt.S(_all.Count)} · {_all.Count(s => s.IsRunning)} running";
         _loaded = true;
         Render();
     }
@@ -130,7 +130,7 @@ public sealed partial class ServicesPage : Page
         var fresh = await Task.Run(() => CoreServices.Enumerate().FirstOrDefault(x => x.Name == vm.Name));
         if (fresh is not null) vm.Refresh(fresh);
         vm.SetBusy(false);
-        Summary.Text = $"{_all.Count} services · {_all.Count(s => s.IsRunning)} running";
+        Summary.Text = $"{_all.Count} service{Fmt.S(_all.Count)} · {_all.Count(s => s.IsRunning)} running";
 
         if (!result.Success)
             await new ContentDialog

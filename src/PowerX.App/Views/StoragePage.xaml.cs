@@ -187,7 +187,7 @@ public sealed partial class StoragePage : Page
             if (!entry.Pending && entry.IsDirectory && entry.FileCount > 0)
                 title.Children.Add(new TextBlock
                 {
-                    Text = $"{entry.FileCount:N0} files",
+                    Text = $"{entry.FileCount:N0} file{(entry.FileCount == 1 ? "" : "s")}",
                     FontSize = 11, VerticalAlignment = VerticalAlignment.Center,
                     Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
                 });
@@ -196,10 +196,14 @@ public sealed partial class StoragePage : Page
             left.Children.Add(title);
             left.Children.Add(bar);
 
+            // A fixed minimum width: the bar beside it fills what is left, so a size column that
+            // was as wide as its own text ("9.1 GB" vs "12.7 GB") made every bar end at a
+            // different x. 80 px fits "measuring..." and "999.9 GB" in the mono font.
             var size = new TextBlock
             {
                 Text = entry.Pending ? "measuring..." : Fmt.Bytes((ulong)entry.SizeBytes),
                 Style = (Style)Application.Current.Resources["MonoStyle"],
+                MinWidth = 80, TextAlignment = TextAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (Brush)Application.Current.Resources[entry.Pending ? "TextFillColorTertiaryBrush" : "TextFillColorSecondaryBrush"],
             };

@@ -8,6 +8,12 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <!-- The scroller spans both columns and its PageScrollStyle padding keeps its cards out of
+             the narrow one, so the rows above end at the same right edge as the cards below. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="16" />
+        </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="Event log" Style="{StaticResource PageTitleStyle}" />
@@ -33,7 +39,7 @@
             <Button x:Name="RefreshButton" Grid.Column="4" Content="Refresh" Click="Reload" />
         </Grid>
 
-        <ScrollViewer Grid.Row="2" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="6" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>

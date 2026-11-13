@@ -9,6 +9,12 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <!-- The scroller spans both columns and its PageScrollStyle padding keeps its cards out of
+             the narrow one, so the rows above end at the same right edge as the cards below. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="16" />
+        </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="What changed" Style="{StaticResource PageTitleStyle}" />
@@ -34,7 +40,7 @@
         <InfoBar Grid.Row="2" IsOpen="True" Severity="Informational" IsClosable="False"
                  Message="PowerX takes a configuration snapshot in the background about once a day. It compares startup entries, scheduled tasks, auto-start services, installed programs, signed drivers and applied tweaks. Everything stays on this PC." />
 
-        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="3" Grid.ColumnSpan="2" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="8" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>

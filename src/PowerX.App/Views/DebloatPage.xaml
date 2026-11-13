@@ -12,14 +12,21 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+        <!-- The scroller spans both columns and its PageScrollStyle padding keeps its cards out of
+             the narrow one, so the rows above and below end at the same right edge as the cards. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="16" />
+        </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="Debloat" Style="{StaticResource PageTitleStyle}" />
             <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Scanning installed apps…" />
         </StackPanel>
 
+        <!-- AppInventory.RemoveAsync removes for every account and deprovisions, so say so here. -->
         <InfoBar Grid.Row="1" IsOpen="True" Severity="Informational" IsClosable="False"
-                 Message="These are per-user Store/consumer apps. Nothing is selected by default. Most can be reinstalled from the Microsoft Store afterwards." />
+                 Message="These are Store and consumer apps. Removing one removes it for every user account on this PC and stops Windows installing it for new accounts. Nothing is selected by default. Most can be reinstalled from the Microsoft Store afterwards." />
 
         <Grid Grid.Row="2" ColumnSpacing="10">
             <Grid.ColumnDefinitions>
@@ -32,11 +39,13 @@
             <Button x:Name="RefreshButton" Grid.Column="2" Content="Rescan" Click="Refresh_Click" />
         </Grid>
 
-        <ScrollViewer Grid.Row="3" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="3" Grid.ColumnSpan="2" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="Sections" Spacing="6" Padding="0,0,0,12" />
         </ScrollViewer>
 
-        <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="14,10">
+        <!-- 18 px sides, as the app cards above have, so "Remove selected" lines up with their
+             Remove buttons and the text with their checkboxes. -->
+        <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="18,10">
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

@@ -10,6 +10,12 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <!-- The scroller spans both columns and its PageScrollStyle padding keeps its cards out of
+             the narrow one, so the rows above end at the same right edge as the cards below. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="16" />
+        </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="Startup" Style="{StaticResource PageTitleStyle}" />
@@ -45,7 +51,7 @@
             <ToggleButton x:Name="BrokenOnly" Grid.Column="1" Content="Missing programs only" Click="BrokenOnly_Click" />
         </Grid>
 
-        <ScrollViewer Grid.Row="4" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="4" Grid.ColumnSpan="2" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="6" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>

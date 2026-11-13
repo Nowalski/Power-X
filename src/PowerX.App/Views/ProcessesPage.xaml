@@ -6,11 +6,19 @@
     xmlns:local="using:PowerX.App.Views">
 
     <Page.Resources>
+        <!-- Right-aligned (numeric) headers. The 8 px right padding matches the 8 px every value
+             cell keeps from its column's right edge, so a header's text ends exactly where the
+             numbers under it end. The Name header uses NameColHeader, whose 12 px left padding
+             matches the Name cell's margin. -->
         <Style x:Key="ColHeader" TargetType="Button" BasedOn="{StaticResource TextBlockButtonStyle}">
-            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Padding" Value="4,4,8,4" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
             <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="NameColHeader" TargetType="Button" BasedOn="{StaticResource ColHeader}">
+            <Setter Property="Padding" Value="12,4,6,4" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
         </Style>
     </Page.Resources>
 
@@ -34,7 +42,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Filter processes…" TextChanged="Filter_TextChanged" />
+            <TextBox x:Name="Filter" Grid.Column="0" PlaceholderText="Filter by name or PID…" TextChanged="Filter_TextChanged" />
             <Button Grid.Column="1" Content="Reset columns" FontSize="12" Click="ResetColumns_Click" />
             <ToggleButton x:Name="FreezeButton" Grid.Column="2" MinWidth="96" Click="Freeze_Click">
                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -44,11 +52,14 @@
             </ToggleButton>
         </Grid>
 
-        <!-- header row; trailing margin leaves room for the list's scrollbar.
-             Column boundaries are draggable — see the pointer handlers wired in code-behind. -->
-        <Border Grid.Row="2" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
+        <!-- Header row. HeaderGrid has the same geometry as a list row: it starts at the row's
+             left edge and stops 8 px short on the right, as the row template's right padding does
+             (the list's scrollbar overlays rows rather than taking width from them). So every
+             column boundary here is the same x as in the rows below.
+             Column boundaries are draggable: see the pointer handlers wired in code-behind. -->
+        <Border x:Name="HeaderBorder" Grid.Row="2" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
             <Grid>
-                <ctl:ResizeGrid x:Name="HeaderGrid" Margin="8,0,20,0">
+                <ctl:ResizeGrid x:Name="HeaderGrid" Margin="0,0,8,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MinWidth="120" />
                         <ColumnDefinition Width="66" />
@@ -58,12 +69,12 @@
                         <ColumnDefinition Width="74" />
                     </Grid.ColumnDefinitions>
 
-                    <Button Grid.Column="0" Style="{StaticResource ColHeader}" Tag="name" Click="Header_Click" x:Name="HName" Content="Name" />
-                    <Button Grid.Column="1" Style="{StaticResource ColHeader}" Tag="pid"  Click="Header_Click" x:Name="HPid"  Content="PID" HorizontalContentAlignment="Right" />
-                    <Button Grid.Column="2" Style="{StaticResource ColHeader}" Tag="cpu"  Click="Header_Click" x:Name="HCpu"  Content="CPU" HorizontalContentAlignment="Right" />
-                    <Button Grid.Column="3" Style="{StaticResource ColHeader}" Tag="mem"  Click="Header_Click" x:Name="HMem"  Content="Memory" HorizontalContentAlignment="Right" />
-                    <Button Grid.Column="4" Style="{StaticResource ColHeader}" Tag="io"   Click="Header_Click" x:Name="HIo"   Content="Disk I/O" HorizontalContentAlignment="Right" />
-                    <Button Grid.Column="5" Style="{StaticResource ColHeader}" Tag="thr"  Click="Header_Click" x:Name="HThr"  Content="Threads" HorizontalContentAlignment="Right" />
+                    <Button Grid.Column="0" Style="{StaticResource NameColHeader}" Tag="name" Click="Header_Click" x:Name="HName" Content="Name" />
+                    <Button Grid.Column="1" Style="{StaticResource ColHeader}" Tag="pid"  Click="Header_Click" x:Name="HPid"  Content="PID" />
+                    <Button Grid.Column="2" Style="{StaticResource ColHeader}" Tag="cpu"  Click="Header_Click" x:Name="HCpu"  Content="CPU" />
+                    <Button Grid.Column="3" Style="{StaticResource ColHeader}" Tag="mem"  Click="Header_Click" x:Name="HMem"  Content="Memory" />
+                    <Button Grid.Column="4" Style="{StaticResource ColHeader}" Tag="io"   Click="Header_Click" x:Name="HIo"   Content="Disk I/O" />
+                    <Button Grid.Column="5" Style="{StaticResource ColHeader}" Tag="thr"  Click="Header_Click" x:Name="HThr"  Content="Threads" />
                 </ctl:ResizeGrid>
 
                 <!-- thin guide shown while hovering / dragging a boundary -->
@@ -127,8 +138,10 @@
 
                         <TextBlock Grid.Column="0" Text="{x:Bind Name, Mode=OneWay}" VerticalAlignment="Center"
                                    Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
+                        <!-- Every value ends 8 px left of its column's right edge (the CPU and
+                             Memory pills: 1 px margin + 7 px inside), matching ColHeader's padding. -->
                         <TextBlock Grid.Column="1" Text="{x:Bind Pid}" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                   FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
+                                   Margin="0,0,8,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <Border Grid.Column="2" Background="{x:Bind CpuHeat, Mode=OneWay}" CornerRadius="4" Margin="1,2">
                             <TextBlock Text="{x:Bind CpuText, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Right"
@@ -141,10 +154,10 @@
                                        FontWeight="{x:Bind MemWeight, Mode=OneWay}" />
                         </Border>
                         <TextBlock Grid.Column="4" Text="{x:Bind Io, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                   Margin="0,0,6,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
+                                   Margin="0,0,8,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <TextBlock Grid.Column="5" Text="{x:Bind Threads, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                   Margin="0,0,6,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
+                                   Margin="0,0,8,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Grid>
                 </DataTemplate>

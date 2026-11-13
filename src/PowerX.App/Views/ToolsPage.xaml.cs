@@ -18,7 +18,7 @@ public sealed partial class ToolsPage : Page
     public ToolsPage()
     {
         InitializeComponent();
-        PageLayout.CenterCap(this, Root, 1420);
+        PageLayout.LeftCap(this, Root, 1420);
         BuildShortcuts();
         BuildLearn();
         _ = InitAsync();
@@ -94,7 +94,7 @@ public sealed partial class ToolsPage : Page
                     + $"(shared with Windows: {Fmt.Bytes((ulong)info.SharedWithWindowsBytes)}).\n"
                     + $"Reclaimable: backups and disabled features {Fmt.Bytes((ulong)info.BackupsAndDisabledBytes)}, "
                     + $"cache and temp {Fmt.Bytes((ulong)info.CacheAndTempBytes)}. "
-                    + $"{info.ReclaimablePackages} superseded package(s).\n"
+                    + $"{info.ReclaimablePackages} superseded package{Fmt.S(info.ReclaimablePackages)}.\n"
                     + (info.CleanupRecommended
                         ? "Windows recommends a component cleanup."
                         : "Windows does not think a cleanup is needed right now.")
@@ -171,7 +171,7 @@ public sealed partial class ToolsPage : Page
         var parts = new List<string> { charge };
         if (info.DesignCapacityMwh > 0)
             parts.Add($"full charge holds {info.FullChargeCapacityMwh:N0} mWh of the original {info.DesignCapacityMwh:N0} mWh");
-        if (info.CycleCount > 0) parts.Add($"{info.CycleCount} charge cycles");
+        if (info.CycleCount > 0) parts.Add($"{info.CycleCount} charge cycle{Fmt.S(info.CycleCount)}");
         if (info.FullChargeRuntime is { } fr) parts.Add($"about {Fmt.Duration(fr)} of active use on a full charge");
         if (info.Error is not null) parts.Add(info.Error);
         BatteryDetail.Text = string.Join(".  ", parts) + ".";
@@ -182,19 +182,45 @@ public sealed partial class ToolsPage : Page
 
     private async void BatteryReport_Click(object sender, RoutedEventArgs e)
     {
+        var button = sender as Button;
+        if (button is not null) button.IsEnabled = false;
         try
         {
             string outPath = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PowerX-battery-report.html");
+            var startedAtUtc = DateTime.UtcNow;
+            int exitCode = -1;
             using (var p = Process.Start(new ProcessStartInfo("powercfg.exe", $"/batteryreport /output \"{outPath}\"")
             { UseShellExecute = false, CreateNoWindow = true }))
             {
-                if (p is not null) await p.WaitForExitAsync();
+                if (p is not null) { await p.WaitForExitAsync(); exitCode = p.ExitCode; }
             }
-            if (System.IO.File.Exists(outPath))
-                Process.Start(new ProcessStartInfo(outPath) { UseShellExecute = true });
+
+            // powercfg exits 0 even when it wrote nothing, and the report from an earlier run is
+            // still at the same path, so only a file written by this run counts.
+            if (!CommandRunner.IsFresh(outPath, startedAtUtc))
+            {
+                await Info("No battery report was written",
+                    $"powercfg did not write a new report to {outPath}"
+                    + (exitCode is not (0 or -1) ? $" (exit code {exitCode})" : "")
+                    + ", so there is nothing to open.");
+                return;
+            }
+
+            // Opened with the user's normal rights, not PowerX's: the browser must not run elevated.
+            var opened = ShellLauncher.Open(outPath);
+            if (!opened.Success)
+                await Info("Could not open the battery report", $"The report was saved to {outPath}.\n\n{opened.Message}");
         }
-        catch (Exception ex) { App.Log("Tools.BatteryReport", ex); }
+        catch (Exception ex)
+        {
+            App.Log("Tools.BatteryReport", ex);
+            await Info("Could not create the battery report", ex.Message);
+        }
+        finally
+        {
+            if (button is not null) button.IsEnabled = true;
+        }
     }
 
     private static void Guard(string what, Action step)
@@ -406,12 +432,9 @@ public sealed partial class ToolsPage : Page
 
         Add(ShortcutRow1, "Hosts file", () => Run("notepad.exe",
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts")));
-        Add(ShortcutRow1, "God Mode", () =>
-        {
-            var p = Path.Combine(Path.GetTempPath(), "GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}");
-            Directory.CreateDirectory(p);
-            Open(p);
-        });
+        // The shell namespace itself, so nothing is created on disk. The old way made a
+        // "GodMode.{...}" folder in %TEMP% on every click.
+        Add(ShortcutRow1, "God Mode", () => Run("explorer.exe", "shell:::{ED7BA470-8E54-465E-825C-99712043E01C}"));
         Add(ShortcutRow1, "Startup folder", () => Open("shell:startup"));
         Add(ShortcutRow1, "Temp folder", () => Open(Path.GetTempPath()));
         Add(ShortcutRow1, "SoftwareDistribution", () => Open(Path.Combine(
@@ -603,7 +626,7 @@ public sealed partial class ToolsPage : Page
         if (picked.Count == 0) return;
         long totalSel = picked.Sum(c => c.target.SizeBytes);
         if (!await Confirm("Delete selected files?",
-                $"This permanently deletes about {Fmt.Bytes((ulong)totalSel)} across {picked.Count} location(s). Files still in use are skipped.")) return;
+                $"This permanently deletes about {Fmt.Bytes((ulong)totalSel)} across {picked.Count} location{Fmt.S(picked.Count)}. Files still in use are skipped.")) return;
 
         _cleanCts = new CancellationTokenSource();
         var ct = _cleanCts.Token;
@@ -644,7 +667,7 @@ public sealed partial class ToolsPage : Page
 
         CleanProgress.Value = ct.IsCancellationRequested ? CleanProgress.Value : 100;
         CleanProgressText.Text = (ct.IsCancellationRequested ? "Stopped. " : "")
-            + $"freed {Fmt.Bytes((ulong)freedTotal)} · {deleted} files"
+            + $"freed {Fmt.Bytes((ulong)freedTotal)} · {deleted} file{Fmt.S(deleted)}"
             + (failed > 0 ? $" · {failed} in use, skipped" : "");
         await Task.Delay(1400);
         CleanProgress.Visibility = Visibility.Collapsed;

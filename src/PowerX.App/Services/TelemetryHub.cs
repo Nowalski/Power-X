@@ -93,7 +93,15 @@ public sealed class TelemetryHub
         {
             CpuHistory.Add(DemoData.Cpu(t).TotalUsagePercent);
             MemHistory.Add(DemoData.Memory(t).UsedPercent);
-            GpuHistory.Add(DemoData.Gpu(t).UtilizationPercent);
+            var g = DemoData.Gpu(t, GpuAdapters);
+            GpuHistory.Add(g.UtilizationPercent);
+            // Per-GPU rings too, or a demo GPU page with one adapter picked opens on a flat line.
+            foreach (var au in g.Adapters)
+            {
+                if (!_gpuAdapterHistory.TryGetValue(au.Luid, out var ring))
+                    _gpuAdapterHistory[au.Luid] = ring = new MetricRing(HistoryCapacity);
+                ring.Add(au.UtilizationPercent);
+            }
             var n = DemoData.Network(t);
             NetDownHistory.Add(n.TotalReceiveBytesPerSec);
             NetUpHistory.Add(n.TotalSendBytesPerSec);
@@ -171,7 +179,7 @@ public sealed class TelemetryHub
             var dcpu = ProviderResult<CpuMetrics>.Ok(DemoData.Cpu(_tick));
             var dmem = ProviderResult<MemoryMetrics>.Ok(DemoData.Memory(_tick));
             var dproc = DemoData.Processes(_tick);
-            var dgpu = ProviderResult<GpuMetrics>.Ok(DemoData.Gpu(_tick));
+            var dgpu = ProviderResult<GpuMetrics>.Ok(DemoData.Gpu(_tick, GpuAdapters));
             var dnet = ProviderResult<NetworkMetrics>.Ok(DemoData.Network(_tick));
             _ui?.TryEnqueue(() => Commit(dcpu, dmem, dproc, dgpu, dnet));
             return;

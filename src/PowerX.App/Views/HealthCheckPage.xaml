@@ -8,6 +8,12 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <!-- The scroller spans both columns and its PageScrollStyle padding keeps its cards out of
+             the narrow one, so the rows above end at the same right edge as the cards below. -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="16" />
+        </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="2">
             <TextBlock Text="Health check" Style="{StaticResource PageTitleStyle}" />
@@ -36,7 +42,7 @@
             </Grid>
         </Border>
 
-        <ScrollViewer Grid.Row="2" Style="{StaticResource PageScrollStyle}">
+        <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource PageScrollStyle}">
             <StackPanel x:Name="List" Spacing="8" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>

@@ -20,7 +20,7 @@ public sealed partial class GpuPage : Page
     private long? _selectedLuid;                       // null = Combined
     private GpuMetrics? _lastGpu;
 
-    private sealed record AdapterCardRefs(Controls.LoadBar Bar, TextBlock Percent, TextBlock Vram, TextBlock Engine);
+    private sealed record AdapterCardRefs(Border Card, Controls.LoadBar Bar, TextBlock Percent, TextBlock Vram, TextBlock Engine);
 
     public GpuPage()
     {
@@ -28,7 +28,7 @@ public sealed partial class GpuPage : Page
         Spark.Accent = Color.FromArgb(0xFF, 0x3F, 0xB9, 0x50);
         Spark.MaxLabel = "100%";
         Engines.ItemsSource = _engines;
-        PageLayout.CenterCap(this, Root, 1120);
+        PageLayout.LeftCap(this, Root, 1120);
 
         var adapters = TelemetryHub.Instance.GpuAdapters;
         var primary = adapters.OrderByDescending(a => a.DedicatedMemoryTotal).FirstOrDefault();
@@ -92,9 +92,15 @@ public sealed partial class GpuPage : Page
     // GPUs with more than one real adapter (integrated + discrete is the common case) get one
     // card per GPU below the hero — an always-visible overview regardless of which one the
     // picker above has selected.
+    //
+    // A card stays hidden until a sample carries usage for its adapter, and the section stays
+    // hidden until at least one card has some. The adapter list comes from DXGI but the numbers
+    // from performance counters, and an adapter can have no counters (or a sample can carry no
+    // per-adapter data at all), which used to leave a card with a name, an empty bar and blank
+    // lines where the numbers go.
     private void BuildAdapterCards(IReadOnlyList<GpuAdapter> adapters)
     {
-        AdaptersSection.Visibility = Visibility.Visible;
+        AdaptersSection.Visibility = Visibility.Collapsed;
         AdapterCards.Children.Clear();
         _adapterCards.Clear();
 
@@ -122,8 +128,9 @@ public sealed partial class GpuPage : Page
             body.Children.Add(vram);
             body.Children.Add(engine);
 
-            AdapterCards.Children.Add(new Border { Style = (Style)Application.Current.Resources["CardStyle"], Child = body });
-            _adapterCards[a.Luid] = new AdapterCardRefs(bar, pct, vram, engine);
+            var card = new Border { Style = (Style)Application.Current.Resources["CardStyle"], Child = body, Visibility = Visibility.Collapsed };
+            AdapterCards.Children.Add(card);
+            _adapterCards[a.Luid] = new AdapterCardRefs(card, bar, pct, vram, engine);
         }
     }
 
@@ -152,6 +159,8 @@ public sealed partial class GpuPage : Page
         foreach (var au in g.Adapters)
         {
             if (!_adapterCards.TryGetValue(au.Luid, out var refs)) continue;
+            refs.Card.Visibility = Visibility.Visible;
+            AdaptersSection.Visibility = Visibility.Visible;
             refs.Bar.Value = au.UtilizationPercent;
             refs.Percent.Text = $"{au.UtilizationPercent:0}%";
             refs.Vram.Text = au.DedicatedMemoryTotal > 0

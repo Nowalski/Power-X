@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -66,7 +65,7 @@ public sealed partial class RepairPage : Page
         cts.Dispose();
 
         MemResult.Text = result.Passed
-            ? $"✔ No errors. Tested {Fmt.Bytes((ulong)result.BytesTested)} over {result.Passes} passes in {result.Elapsed:mm\\:ss} at {result.AverageMBps / 1024:0.0} GB/s."
+            ? $"✔ No errors. Tested {Fmt.Bytes((ulong)result.BytesTested)} over {result.Passes} pass{(result.Passes == 1 ? "" : "es")} in {result.Elapsed:mm\\:ss} at {result.AverageMBps / 1024:0.0} GB/s."
             : $"x {result.Errors.Count} error{Fmt.S(result.Errors.Count)} found. This RAM, or its overclock, is not stable. First at byte offset 0x{result.Errors[0].ByteOffset:X}.";
     }
 
@@ -118,8 +117,15 @@ public sealed partial class RepairPage : Page
 
     private async void Recommended_Click(object sender, RoutedEventArgs e)
     {
-        var dism = CommandRunner.Jobs.First(j => j.Title.Contains("RestoreHealth"));
-        var sfc = CommandRunner.Jobs.First(j => j.Title.StartsWith("Scan & repair"));
+        // Matched by title, so a rename would otherwise throw straight out of an async void
+        // handler and take the app down. RepairJobCatalogTests pins both titles.
+        var dism = CommandRunner.Jobs.FirstOrDefault(j => j.Title.Contains("RestoreHealth", StringComparison.Ordinal));
+        var sfc = CommandRunner.Jobs.FirstOrDefault(j => j.Title.StartsWith("Scan & repair", StringComparison.Ordinal));
+        if (dism is null || sfc is null)
+        {
+            App.Log("Recommended", new InvalidOperationException("recommended repair jobs not found"));
+            return;
+        }
         await RunSequence("Recommended repair", [dism, sfc]);
     }
 
@@ -157,6 +163,7 @@ public sealed partial class RepairPage : Page
 
         OutputBox.Text = _console.ToString();
         OutputBox.Select(OutputBox.Text.Length, 0);
+        ConsoleHint.Visibility = Visibility.Collapsed;
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -164,6 +171,7 @@ public sealed partial class RepairPage : Page
         while (_pending.TryDequeue(out _)) { }
         _console.Clear();
         OutputBox.Text = "";
+        ConsoleHint.Visibility = Visibility.Visible;
     }
 
     private async Task RunSequence(string title, IReadOnlyList<CommandRunner.Job> jobs)
@@ -182,16 +190,16 @@ public sealed partial class RepairPage : Page
             foreach (var job in jobs)
             {
                 Line($"══ {job.Title} ══");
-                int code;
+                CommandRunner.JobRun run;
                 try
                 {
-                    code = await CommandRunner.RunAsync(job, Line, _cts.Token);
+                    run = await CommandRunner.RunAsync(job, Line, _cts.Token);
                 }
-                catch (Exception ex) { Line($"error: {ex.Message}"); code = -1; }
+                catch (Exception ex) { Line($"error: {ex.Message}"); run = new CommandRunner.JobRun(-1, null); }
 
-                Line(code == 0 ? "✔ completed\n" : $"✖ exit code {code}\n");
-                if (code == 0 && job.OpenReportPath is not null && System.IO.File.Exists(job.OpenReportPath))
-                    reportToOpen = job.OpenReportPath;
+                Line(run.ExitCode == 0 ? "✔ completed\n" : $"✖ exit code {run.ExitCode}\n");
+                if (run.ExitCode == 0 && run.ReportPath is not null && System.IO.File.Exists(run.ReportPath))
+                    reportToOpen = run.ReportPath;
                 if (_cts.IsCancellationRequested) break;
             }
         }
@@ -212,8 +220,15 @@ public sealed partial class RepairPage : Page
 
         if (reportToOpen is not null)
         {
-            try { Process.Start(new ProcessStartInfo(reportToOpen) { UseShellExecute = true }); }
-            catch (Exception ex) { App.Log("OpenReport", ex); }
+            // Through the shell with the user's normal rights: Process.Start from here would open
+            // the report's viewer (a browser, for the HTML reports) as administrator.
+            var opened = PowerX.Core.Processes.ShellLauncher.Open(reportToOpen);
+            if (!opened.Success)
+            {
+                App.Log("OpenReport", new InvalidOperationException(opened.Message));
+                _pending.Enqueue($"Could not open the report ({opened.Message}). It is at {reportToOpen}");
+                FlushTick(null!, null!);
+            }
         }
     }
 

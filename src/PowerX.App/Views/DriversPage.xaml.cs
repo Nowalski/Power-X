@@ -47,7 +47,7 @@ public sealed partial class DriversPage : Page
     private void Render()
     {
         int old = _all.Count(d => d.Age is DriverAge.Old or DriverAge.VeryOld);
-        Summary.Text = $"{_all.Count} drivers, {_all.Count(d => !d.IsInbox)} from a third party."
+        Summary.Text = $"{_all.Count} driver{Fmt.S(_all.Count)}, {_all.Count(d => !d.IsInbox)} from a third party."
                      + (old > 0 ? $"  {old} are three years old or more." : "  None look stale.")
                      + "  PowerX never installs a driver; check the vendor if one is flagged.";
 

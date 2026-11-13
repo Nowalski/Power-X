@@ -37,7 +37,7 @@ public sealed partial class HomePage : Page
 
         BuildQuickActions();
         LoadRecommendations();
-        PageLayout.CenterCap(this, Root, 1480);
+        PageLayout.LeftCap(this, Root, 1480);
     }
 
     private void BuildQuickActions()

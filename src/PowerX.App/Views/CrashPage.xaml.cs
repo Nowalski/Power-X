@@ -15,7 +15,7 @@ public sealed partial class CrashPage : Page
     public CrashPage()
     {
         InitializeComponent();
-        PageLayout.CenterCap(this, Root, 1000);
+        PageLayout.LeftCap(this, Root, 1000);
         _loaded = true;
         _ = ScanAsync();
     }

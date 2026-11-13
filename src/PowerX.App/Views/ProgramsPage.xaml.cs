@@ -50,7 +50,7 @@ public sealed partial class ProgramsPage : Page
         }
         _all = progs.Select(p => new ProgramVm { Program = p }).ToList();
         long totalSize = _all.Sum(p => p.Program.EstimatedSizeBytes);
-        Summary.Text = $"{_all.Count} programs · {Fmt.Bytes((ulong)totalSize)} on disk (reported)";
+        Summary.Text = $"{_all.Count} program{Fmt.S(_all.Count)} · {Fmt.Bytes((ulong)totalSize)} on disk (reported)";
         RefreshButton.IsEnabled = true;
         _loaded = true;
         Render();

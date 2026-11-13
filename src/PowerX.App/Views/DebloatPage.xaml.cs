@@ -42,7 +42,7 @@ public sealed partial class DebloatPage : Page
         foreach (var vm in _apps) vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppVm.Selected)) UpdateSelection(); };
 
         int removable = _apps.Count(a => a.CanRemove);
-        Summary.Text = $"{_apps.Count} apps installed · {removable} removable · {_apps.Count(a => a.App.Catalog is not null)} in the curated catalog";
+        Summary.Text = $"{_apps.Count} app{Fmt.S(_apps.Count)} installed · {removable} removable · {_apps.Count(a => a.App.Catalog is not null)} in the curated catalog";
 
         var cats = new List<string> { "All categories" };
         cats.AddRange(_apps.Select(a => a.Category).Distinct().OrderBy(c => c));
@@ -102,18 +102,24 @@ public sealed partial class DebloatPage : Page
         check.Checked += (_, _) => vm.Selected = true;
         check.Unchecked += (_, _) => vm.Selected = false;
 
-        var chips = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
-        chips.Children.Add(Chip(vm.ClassLabel, ClassBrush(vm.App.Class)));
-        if (vm.CanRemove) chips.Children.Add(Chip(vm.RestoreLabel, (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
-
-        var title = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-        title.Children.Add(new TextBlock { Text = vm.DisplayName, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"], VerticalAlignment = VerticalAlignment.Center });
-        title.Children.Add(chips);
+        // A WrapPanel, not a horizontal StackPanel: a StackPanel measures at infinite width, so a
+        // long name next to both chips ran past the card edge and was clipped. Here the chips move
+        // to a second line when they do not fit beside the name, and a name wider than the card
+        // wraps instead of being cut off.
+        var title = new Controls.WrapPanel { HorizontalSpacing = 6, VerticalSpacing = 4 };
+        title.Children.Add(new TextBlock
+        {
+            Text = vm.DisplayName, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+            VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 4, 0),
+        });
+        title.Children.Add(Chip(vm.ClassLabel, ClassBrush(vm.App.Class)));
+        if (vm.CanRemove) title.Children.Add(Chip(vm.RestoreLabel, (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
 
         var text = new StackPanel { Spacing = 2 };
         text.Children.Add(title);
         text.Children.Add(new TextBlock { Text = vm.Description, FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-        text.Children.Add(new TextBlock { Text = $"{vm.Publisher} · {vm.App.PackageFamilyName}", FontSize = 11, Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] });
+        text.Children.Add(new TextBlock { Text = $"{vm.Publisher} · {vm.App.PackageFamilyName}", FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] });
 
         var remove = new Button { Content = "Remove", VerticalAlignment = VerticalAlignment.Center, IsEnabled = vm.CanRemove };
         remove.Click += async (_, _) => await RemoveOne(vm, remove);
@@ -190,10 +196,14 @@ public sealed partial class DebloatPage : Page
 
     private async Task<bool> Confirm(IReadOnlyList<AppVm> apps)
     {
+        // RemoveAsync removes the package for every account on the PC and deprovisions it, so the
+        // question has to say that, not "for your user account".
         string body = apps.Count == 1
-            ? $"Remove {apps[0].DisplayName} for your user account?\n\n{apps[0].RestoreLabel}."
-            : $"Remove these {apps.Count} apps for your user account?\n\n" +
-              string.Join('\n', apps.Select(a => $"• {a.DisplayName}"));
+            ? $"Remove {apps[0].DisplayName} for every user account on this PC?\n\n"
+              + $"Windows also stops installing it for new accounts. {apps[0].RestoreLabel}."
+            : $"Remove these {apps.Count} apps for every user account on this PC? "
+              + "Windows also stops installing them for new accounts.\n\n"
+              + string.Join('\n', apps.Select(a => $"• {a.DisplayName}"));
         return await new ContentDialog
         {
             Title = apps.Count == 1 ? "Remove app" : "Remove apps",

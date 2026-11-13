@@ -91,7 +91,7 @@ public sealed partial class FirewallPage : Page
     private void Render()
     {
         int review = _all.Count(r => r.WorthReviewing);
-        Summary.Text = $"{_all.Count} rules, {_all.Count(r => r.Enabled)} enabled."
+        Summary.Text = $"{_all.Count} rule{Fmt.S(_all.Count)}, {_all.Count(r => r.Enabled)} enabled."
                      + (review > 0 ? $"  {review} broad inbound-allow rule{Fmt.S(review)} worth a look." : "")
                      + "  Read-only; PowerX does not change firewall rules.";
 

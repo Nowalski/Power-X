@@ -18,7 +18,7 @@ public sealed partial class CpuPage : Page
         Spark.Accent = Color.FromArgb(0xFF, 0x4C, 0x8B, 0xF5);
         Spark.MaxLabel = "100%";
         Cores.ItemsSource = _cores;
-        PageLayout.CenterCap(this, Root, 1120);
+        PageLayout.LeftCap(this, Root, 1120);
 
         var ci = TelemetryHub.Instance.CpuInfo;
         if (ci is not null)

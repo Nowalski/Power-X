@@ -28,7 +28,9 @@
             <Button Content="Clear output" Click="Clear_Click" />
         </StackPanel>
 
-        <Grid Grid.Row="2" ColumnSpacing="16" MinHeight="180">
+        <!-- No column spacing: the job list's PageScrollStyle already keeps 16 px clear on its
+             right for the scrollbar, and spacing on top of that left a 32 px gap. -->
+        <Grid Grid.Row="2" MinHeight="180">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1.1*" />
                 <ColumnDefinition Width="1.4*" />
@@ -55,8 +57,15 @@
                     <TextBox x:Name="OutputBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
                              BorderThickness="0" Background="Transparent" Padding="12"
                              FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
-                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             Text="Select a job on the left to run it. Its output appears here." />
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    <!-- The hint sits over the empty console rather than being its text: console
+                         output must not wrap (it would break up tables), but a hint that does not
+                         wrap was cut off mid-word in a narrow window. Shown only while the console
+                         is empty. -->
+                    <TextBlock x:Name="ConsoleHint" Grid.Row="1" Margin="12" TextWrapping="Wrap" IsHitTestVisible="False"
+                               FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="Select a job on the left to run it. Its output appears here." />
                 </Grid>
             </Border>
         </Grid>

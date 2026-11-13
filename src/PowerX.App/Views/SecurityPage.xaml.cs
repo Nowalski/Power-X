@@ -15,7 +15,7 @@ public sealed partial class SecurityPage : Page
     public SecurityPage()
     {
         InitializeComponent();
-        PageLayout.CenterCap(this, Root, 1000);
+        PageLayout.LeftCap(this, Root, 1000);
         _onPage = true;
         _ = LoadAsync();
     }

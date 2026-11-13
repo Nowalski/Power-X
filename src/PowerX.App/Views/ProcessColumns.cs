@@ -13,15 +13,19 @@ public sealed class ProcessColumns : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    // (key, min, max, default)
+    // (key, min, max, default). A minimum is never below what the column's header needs with
+    // its sort arrow ("▾ Threads" plus padding is about 66 px), or the header is cut short.
     private static readonly (string Key, double Min, double Max, double Default)[] Spec =
     [
         ("Pid", 48, 180, 66),
         ("Cpu", 56, 260, 92),
         ("Mem", 76, 340, 112),
-        ("Io", 68, 340, 104),
-        ("Thr", 52, 220, 74),
+        ("Io", 70, 340, 104),
+        ("Thr", 68, 220, 74),
     ];
+
+    /// <summary>The columns after Name, left to right.</summary>
+    public static readonly string[] Keys = ["Pid", "Cpu", "Mem", "Io", "Thr"];
 
     private GridLength _pid, _cpu, _mem, _io, _thr;
 
@@ -48,8 +52,8 @@ public sealed class ProcessColumns : INotifyPropertyChanged
         "Io" => _io.Value, "Thr" => _thr.Value, _ => 0,
     };
 
-    public double Min(string key) => Array.Find(Spec, x => x.Key == key).Min;
-    public double Max(string key) => Array.Find(Spec, x => x.Key == key).Max;
+    public static double Min(string key) => Array.Find(Spec, x => x.Key == key).Min;
+    public static double Max(string key) => Array.Find(Spec, x => x.Key == key).Max;
 
     /// <summary>Set one column to an absolute pixel width, clamped to its allowed range.</summary>
     public void SetPixels(string key, double value)

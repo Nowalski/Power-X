@@ -23,7 +23,7 @@ public sealed partial class MemoryPage : Page
         Spark.MaxLabel = "100%";
         foreach (var r in Rows) _breakdown.Add(new NameValueVm { Name = r });
         Breakdown.ItemsSource = _breakdown;
-        PageLayout.CenterCap(this, Root, 1120);
+        PageLayout.LeftCap(this, Root, 1120);
         _ = LoadHardwareAsync();
     }
 

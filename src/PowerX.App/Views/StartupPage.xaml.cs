@@ -44,8 +44,8 @@ public sealed partial class StartupPage : Page
             return;
         }
         int broken = _entries.Count(e => e.Broken);
-        Summary.Text = $"{_entries.Count} startup entries · {_entries.Count(e => e.Enabled)} enabled"
-                     + (broken > 0 ? $" · {broken} point at a missing program" : "");
+        Summary.Text = $"{_entries.Count} startup {(_entries.Count == 1 ? "entry" : "entries")} · {_entries.Count(e => e.Enabled)} enabled"
+                     + (broken > 0 ? $" · {broken} {(broken == 1 ? "entry points" : "entries point")} at a missing program" : "");
         ShowBootCard(boot);
         _loaded = true;
         Render();
@@ -70,7 +70,7 @@ public sealed partial class StartupPage : Page
                 ? $"about the same as your recent average ({avgS:0.0} s)"
                 : delta > 0 ? $"{delta:0.0} s slower than your recent average" : $"{-delta:0.0} s faster than your recent average");
         }
-        if (b.StartupAppCount > 0) parts.Add($"{b.StartupAppCount} startup apps");
+        if (b.StartupAppCount > 0) parts.Add($"{b.StartupAppCount} startup app{Fmt.S(b.StartupAppCount)}");
         if (b.Degraded) parts.Add("Windows flagged this boot as slower than usual");
         BootDetail.Text = string.Join(".   ", parts) + (parts.Count > 0 ? "." : "")
                         + "   From the same data as Task Manager's Startup impact.";
@@ -160,8 +160,16 @@ public sealed partial class StartupPage : Page
     private Border BuildRow(StartupEntry entry)
     {
         var text = new StackPanel { Spacing = 2 };
-        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        titleRow.Children.Add(new TextBlock { Text = entry.Name, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"], VerticalAlignment = VerticalAlignment.Center });
+        // A WrapPanel, not a horizontal StackPanel: a StackPanel measures at infinite width, so a
+        // long name with publisher, "all users", "program missing" and an impact chip ran past the
+        // card edge and was clipped. Here chips that do not fit move to a second line, and a name
+        // wider than the card wraps instead of being cut off.
+        var titleRow = new Controls.WrapPanel { HorizontalSpacing = 8, VerticalSpacing = 4 };
+        titleRow.Children.Add(new TextBlock
+        {
+            Text = entry.Name, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+            VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap,
+        });
         if (entry.Publisher is not null)
             titleRow.Children.Add(Chip(entry.Publisher, (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
         if (entry.RequiresAdmin)
@@ -186,17 +194,21 @@ public sealed partial class StartupPage : Page
         });
 
         bool canToggle = StartupProvider.CanToggle(entry);
+        // MinWidth 0: ToggleSwitch reserves 154 px by default, which left a wide empty gap between
+        // "Off" and the "..." button. Its On and Off labels share one cell, so every row's switch
+        // is still the same width and the switches line up down the list.
         var toggle = new ToggleSwitch
         {
             IsOn = entry.Enabled, OnContent = "On", OffContent = "Off",
-            VerticalAlignment = VerticalAlignment.Center, Tag = entry, IsEnabled = canToggle,
+            VerticalAlignment = VerticalAlignment.Center, Tag = entry, IsEnabled = canToggle, MinWidth = 0,
         };
         toggle.Toggled += Toggle_Toggled;
         if (!canToggle)
             text.Children.Add(new TextBlock
             {
                 Text = "Runs once at the next sign-in. It cannot be disabled, only removed from the ... menu.",
-                FontSize = 11, Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+                FontSize = 11, TextWrapping = TextWrapping.Wrap,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
             });
 
         var menuBtn = new Button { Content = "…", VerticalAlignment = VerticalAlignment.Center, Padding = new Thickness(10, 4, 10, 4) };

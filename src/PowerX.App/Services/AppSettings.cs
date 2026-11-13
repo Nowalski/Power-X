@@ -21,8 +21,23 @@ public sealed class AppSettings
     public bool ConfirmProcessActions { get; set; } = true;
     public bool BackgroundThrottle { get; set; } = true;
     public bool AutoCheckUpdates { get; set; } = true;
+    /// <summary>When an update check last succeeded. A failed check does not move this, so the
+    /// daily silent check retries next launch instead of waiting another 20 hours.</summary>
     public DateTimeOffset LastUpdateCheck { get; set; } = DateTimeOffset.MinValue;
+    /// <summary>When an update check last failed, and why. Settings shows it when it is newer
+    /// than <see cref="LastUpdateCheck"/>.</summary>
+    public DateTimeOffset LastUpdateFailure { get; set; } = DateTimeOffset.MinValue;
+    public string LastUpdateError { get; set; } = "";
     public string DismissedUpdateVersion { get; set; } = "";
+
+    // Main window placement in physical pixels (AppWindow coordinates), as it was when PowerX
+    // last closed. Width 0 = never saved. X/Y/Width/Height are the restored (not maximized)
+    // bounds, so un-maximizing after a restart returns to the size the user chose.
+    public int WindowX { get; set; }
+    public int WindowY { get; set; }
+    public int WindowWidth { get; set; }
+    public int WindowHeight { get; set; }
+    public bool WindowMaximized { get; set; }
 
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
 

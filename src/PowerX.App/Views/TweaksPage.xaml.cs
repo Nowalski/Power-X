@@ -16,7 +16,7 @@ public sealed partial class TweaksPage : Page
     public TweaksPage()
     {
         InitializeComponent();
-        PageLayout.CenterCap(this, Root, 1320);
+        PageLayout.LeftCap(this, Root, 1320);
         BuildProfileStrip();
         Rebuild();
     }
@@ -80,7 +80,7 @@ public sealed partial class TweaksPage : Page
 
         var count = profile.Tone == ProfileTone.Restore
             ? "Undoes every applied tweak"
-            : $"{profile.TweakIds.Count} tweaks · all reversible";
+            : $"{profile.TweakIds.Count} tweak{Fmt.S(profile.TweakIds.Count)} · all reversible";
 
         var desc = Muted(profile.Description, 12);
         // Kept as a backstop so an over-long future description degrades to an ellipsis instead of
@@ -267,7 +267,7 @@ public sealed partial class TweaksPage : Page
     {
         var all = _engine.GetAllStatus();
         int applied = all.Count(s => s.State == TweakState.Applied);
-        Summary.Text = $"{all.Count} tweaks · {applied} applied";
+        Summary.Text = $"{all.Count} tweak{Fmt.S(all.Count)} · {applied} applied";
 
         IEnumerable<TweakStatus> shown = all;
         if (_recOnly) shown = shown.Where(s => s.Definition.Recommended);
@@ -326,6 +326,8 @@ public sealed partial class TweaksPage : Page
 
         // Custom = some of a multi-value tweak's keys are set: treat as "off", let the user apply all.
         bool togglable = status.State is TweakState.Applied or TweakState.Default or TweakState.Custom;
+        // MinWidth 0, as on Startup and Scheduled tasks: the default 154 px left a wide empty gap
+        // between "On" and the card edge. On and Off share one cell, so the switches still line up.
         var toggle = new ToggleSwitch
         {
             IsOn = status.State == TweakState.Applied,
@@ -334,6 +336,7 @@ public sealed partial class TweaksPage : Page
             OffContent = "Off",
             VerticalAlignment = VerticalAlignment.Center,
             Tag = d.Id,
+            MinWidth = 0,
         };
         toggle.Toggled += Toggle_Toggled;
 
@@ -406,7 +409,7 @@ public sealed partial class TweaksPage : Page
             }.ShowAsync();
         }
 
-        Summary.Text = $"{_engine.Catalog.Count} tweaks · {_engine.GetAllStatus().Count(s => s.State == TweakState.Applied)} applied";
+        Summary.Text = $"{_engine.Catalog.Count} tweak{Fmt.S(_engine.Catalog.Count)} · {_engine.GetAllStatus().Count(s => s.State == TweakState.Applied)} applied";
 
         if (rec.PreviousState != rec.ResultingState && def.Restart != RestartScope.None)
         {

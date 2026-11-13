@@ -18,7 +18,7 @@ public sealed partial class SettingsPage : Page
     {
         InitializeComponent();
 
-        PageLayout.CenterCap(this, Root, 900);
+        PageLayout.LeftCap(this, Root, 900);
 
         var s = AppSettings.Current;
         ThemeBox.SelectedIndex = s.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 };
@@ -28,9 +28,7 @@ public sealed partial class SettingsPage : Page
         ThrottleSwitch.IsOn = s.BackgroundThrottle;
         ConfirmSwitch.IsOn = s.ConfirmProcessActions;
         AutoUpdateSwitch.IsOn = s.AutoCheckUpdates;
-        UpdateCheckStatus.Text = s.LastUpdateCheck == DateTimeOffset.MinValue
-            ? "Never checked"
-            : $"Last checked {s.LastUpdateCheck.LocalDateTime:g}";
+        UpdateCheckStatus.Text = UpdateStatusText(s);
 
         var info = SystemInfoProvider.Collect();
         var ver = typeof(SettingsPage).Assembly.GetName().Version;
@@ -41,19 +39,41 @@ public sealed partial class SettingsPage : Page
 
     private void OpenHistory_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) => App.Window?.Navigate("history");
 
-    // Opened through the shell so the browser runs with normal rights, not PowerX's elevated ones.
-    private void OpenProject_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) =>
-        PowerX.Core.Processes.ShellLauncher.Open("https://github.com/Nowalski/Power-X");
-
-    private void OpenNotices_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    /// <summary>
+    /// The update line under "Check now". A failed check does not count as a check (MainWindow
+    /// only stamps LastUpdateCheck on success), so a failure is reported as one, together with
+    /// when the last check that did work was.
+    /// </summary>
+    internal static string UpdateStatusText(AppSettings s)
     {
-        try
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "THIRD-PARTY-NOTICES.md");
-            if (File.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
-            else PowerX.Core.Processes.ShellLauncher.Open("https://github.com/Nowalski/Power-X/blob/main/THIRD-PARTY-NOTICES.md");
-        }
-        catch (Exception ex) { App.Log("OpenNotices", ex); }
+        bool everOk = s.LastUpdateCheck != DateTimeOffset.MinValue;
+        if (s.LastUpdateFailure > s.LastUpdateCheck)
+            return $"The last check, {s.LastUpdateFailure.LocalDateTime:g}, failed"
+                 + (string.IsNullOrWhiteSpace(s.LastUpdateError) ? "." : $": {s.LastUpdateError.TrimEnd('.')}.")
+                 + (everOk ? $" Last successful check {s.LastUpdateCheck.LocalDateTime:g}." : "");
+        return everOk ? $"Last checked {s.LastUpdateCheck.LocalDateTime:g}" : "Never checked";
+    }
+
+    // Opened through the shell so the browser runs with normal rights, not PowerX's elevated ones.
+    private async void OpenProject_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) =>
+        await OpenUnelevated("https://github.com/Nowalski/Power-X", "Could not open the project page");
+
+    private async void OpenNotices_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "THIRD-PARTY-NOTICES.md");
+        // The viewer for a .md file is usually an editor; it must not inherit PowerX's elevation.
+        await OpenUnelevated(File.Exists(path) ? path : "https://github.com/Nowalski/Power-X/blob/main/THIRD-PARTY-NOTICES.md",
+            "Could not open the notices");
+    }
+
+    /// <summary>Open a link or document with the user's normal rights, and say so if it failed.</summary>
+    private async Task OpenUnelevated(string target, string failureTitle)
+    {
+        var r = PowerX.Core.Processes.ShellLauncher.Open(target);
+        if (r.Success) return;
+        App.Log("Settings.Open", new InvalidOperationException($"{target}: {r.Message}"));
+        try { await Info(failureTitle, $"{target}\n\n{r.Message}"); }
+        catch (Exception ex) { App.Log("Settings.Open", ex); }
     }
 
     private void Theme_Changed(object sender, SelectionChangedEventArgs e)
@@ -180,7 +200,7 @@ public sealed partial class SettingsPage : Page
         CheckUpdatesButton.IsEnabled = false;
         UpdateCheckStatus.Text = "Checking…";
         if (App.Window is not null) await App.Window.CheckForUpdatesAsync(silent: false);
-        UpdateCheckStatus.Text = $"Last checked {AppSettings.Current.LastUpdateCheck.LocalDateTime:g}";
+        UpdateCheckStatus.Text = UpdateStatusText(AppSettings.Current);
         CheckUpdatesButton.IsEnabled = true;
     }
 
@@ -205,11 +225,15 @@ public sealed partial class SettingsPage : Page
             ReportButton.Content = "Create system report";
         }
 
+        // No MinWidth: a ContentDialog clamps its content to ContentDialogMaxWidth (548 by
+        // default), and the old MinWidth of 560 put the box's right edge and its scrollbar past
+        // that, where they were clipped. The dialog is allowed to be wider instead (below), and
+        // the box stretches to whatever width the dialog has.
         var box = new TextBox
         {
             Text = md, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
             FontFamily = new FontFamily("Consolas, Cascadia Mono, monospace"), FontSize = 12,
-            Height = 420, MinWidth = 560,
+            Height = 420, HorizontalAlignment = HorizontalAlignment.Stretch,
         };
         ScrollViewer.SetVerticalScrollBarVisibility(box, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollBarVisibility(box, ScrollBarVisibility.Auto);
@@ -224,6 +248,7 @@ public sealed partial class SettingsPage : Page
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
         };
+        dialog.Resources["ContentDialogMaxWidth"] = 760.0;   // as ProcessesPage.ShowDetails does
 
         while (true)
         {
@@ -241,7 +266,11 @@ public sealed partial class SettingsPage : Page
                         Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                         $"PowerX-report-{DateTime.Now:yyyy-MM-dd-HHmm}.md");
                     File.WriteAllText(path, md);
-                    Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                    // Opened unelevated: the .md viewer is usually an editor, which should not
+                    // run as administrator just because PowerX does.
+                    var opened = PowerX.Core.Processes.ShellLauncher.Open(path);
+                    if (!opened.Success)
+                        await Info("Report saved", $"Saved to {path}, but it could not be opened: {opened.Message}");
                 }
                 catch (Exception ex)
                 {

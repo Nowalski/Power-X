@@ -35,7 +35,11 @@ public sealed partial class MainWindow : Window
                 TelemetryHub.Instance.Active = e.Visible;
         };
 
-        Closed += (_, _) => TelemetryHub.Instance.Shutdown();
+        Closed += (_, _) =>
+        {
+            SavePlacement();
+            TelemetryHub.Instance.Shutdown();
+        };
 
         // QA helpers: POWERX_WINDOW_SIZE=1900x1100 opens the window at that size;
         // POWERX_START_PAGE=network lands on that page instead of Home.
@@ -43,8 +47,15 @@ public sealed partial class MainWindow : Window
             size.Split('x') is [var ws, var hs] &&
             int.TryParse(ws, out var winW) && int.TryParse(hs, out var winH))
         {
-            try { AppWindow.Resize(new Windows.Graphics.SizeInt32(winW, winH)); } catch { }
+            _qaSize = new Windows.Graphics.SizeInt32(winW, winH);
+            try { AppWindow.Resize(_qaSize.Value); } catch { }
         }
+        else
+        {
+            RestorePlacement();
+        }
+        TrackPlacement();
+        ((FrameworkElement)Content).Loaded += (_, _) => ApplyMinimumSize();
 
         var startPage = Environment.GetEnvironmentVariable("POWERX_START_PAGE")?.Trim().ToLowerInvariant();
         if (!string.IsNullOrEmpty(startPage) && startPage != "home")
@@ -80,8 +91,21 @@ public sealed partial class MainWindow : Window
         var current = typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 1, 0);
         var result = await PowerX.Core.Diagnostics.UpdateChecker.CheckAsync(current);
 
-        AppSettings.Current.LastUpdateCheck = DateTimeOffset.UtcNow;
-        AppSettings.Current.Save();
+        // Only a check that worked counts as a check. Stamping a failed one (no network, say)
+        // held off the silent retry for 20 hours and let Settings say "Last checked" for a check
+        // that never happened.
+        var s = AppSettings.Current;
+        if (result.Error is null)
+        {
+            s.LastUpdateCheck = DateTimeOffset.UtcNow;
+            s.LastUpdateError = "";
+        }
+        else
+        {
+            s.LastUpdateFailure = DateTimeOffset.UtcNow;
+            s.LastUpdateError = result.Error;
+        }
+        s.Save();
 
         if (result.UpdateAvailable && result.Latest is not null)
         {
@@ -106,7 +130,11 @@ public sealed partial class MainWindow : Window
 
     private void UpdateBar_Open(object sender, RoutedEventArgs e)
     {
-        try { PowerX.Core.Processes.ShellLauncher.Open(_updateUrl ?? "https://github.com/Nowalski/Power-X/releases"); }
+        try
+        {
+            var r = PowerX.Core.Processes.ShellLauncher.Open(_updateUrl ?? "https://github.com/Nowalski/Power-X/releases");
+            if (!r.Success) App.Log("UpdateOpen", new InvalidOperationException(r.Message));
+        }
         catch (Exception ex) { App.Log("UpdateOpen", ex); }
     }
 
@@ -169,6 +197,12 @@ public sealed partial class MainWindow : Window
     /// <summary>Select a nav item by tag (used by in-page links, e.g. Home → Tweaks).</summary>
     public void Navigate(string tag)
     {
+        // Settings is the NavigationView's own footer item, not one of MenuItems.
+        if (tag == "settings")
+        {
+            if (Nav.SettingsItem is NavigationViewItem settings) Nav.SelectedItem = settings;
+            return;
+        }
         foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
         {
             if ((string?)item.Tag == tag) { Nav.SelectedItem = item; return; }

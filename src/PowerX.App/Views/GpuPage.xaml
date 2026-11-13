@@ -107,15 +107,19 @@
                 <Border x:Name="VramCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
                     <StackPanel Spacing="10">
                         <TextBlock Text="Video memory" Style="{StaticResource SectionHeaderStyle}" />
-                        <Grid ColumnSpacing="12" HorizontalAlignment="Left" MaxWidth="460">
+                        <!-- Stretches like the Engines rows and uses the same LoadBar. It used to be a
+                             left-aligned Grid with a MaxWidth, which in WinUI shrinks to its content,
+                             so the bar's star column fell to its 60 px minimum and a thin
+                             ProgressBar line was all that showed. -->
+                        <Grid ColumnSpacing="12" Padding="0,3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" MinWidth="84" />
                                 <ColumnDefinition Width="*" MinWidth="60" />
-                                <ColumnDefinition Width="Auto" MinWidth="120" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Dedicated" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <ProgressBar x:Name="VramBar" Grid.Column="1" Minimum="0" Maximum="100" VerticalAlignment="Center" />
+                            <ctl:LoadBar x:Name="VramBar" Grid.Column="1" VerticalAlignment="Center" />
                             <TextBlock x:Name="VramText" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"
                                        Style="{StaticResource MonoStyle}" />
                         </Grid>

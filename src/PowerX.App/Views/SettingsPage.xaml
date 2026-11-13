@@ -89,10 +89,16 @@
                     <TextBlock Text="Updates" Style="{StaticResource SectionHeaderStyle}" />
                     <ToggleSwitch x:Name="AutoUpdateSwitch" Header="Check for updates automatically"
                                   Toggled="AutoUpdate_Toggled" />
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="CheckUpdatesButton" Content="Check now" Click="CheckUpdates_Click" />
-                        <TextBlock x:Name="UpdateCheckStatus" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <!-- A Grid so a failed check's reason can wrap instead of running off the card. -->
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="CheckUpdatesButton" Content="Check now" Click="CheckUpdates_Click" VerticalAlignment="Center" />
+                        <TextBlock x:Name="UpdateCheckStatus" Grid.Column="1" Style="{StaticResource MutedStyle}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
                     <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
                                Text="PowerX checks a small version file in the public repo once a day. When an update has a verified installer it can download and run it after you confirm. Otherwise it just points you to the releases page." />
                 </StackPanel>

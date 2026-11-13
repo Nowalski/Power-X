@@ -47,7 +47,7 @@ public sealed partial class TasksPage : Page
     private void Render()
     {
         int telemetry = _all.Count(t => t.Stance == TaskStance.Telemetry && t.Enabled);
-        Summary.Text = $"{_all.Count} tasks, {_all.Count(t => t.Enabled)} enabled."
+        Summary.Text = $"{_all.Count} task{Fmt.S(_all.Count)}, {_all.Count(t => t.Enabled)} enabled."
                      + (telemetry > 0 ? $"  {telemetry} enabled telemetry task{Fmt.S(telemetry)} you can turn off." : "");
 
         IEnumerable<ScheduledTaskInfo> shown = _all;
@@ -84,13 +84,26 @@ public sealed partial class TasksPage : Page
     {
         var text = new StackPanel { Spacing = 2 };
 
-        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        titleRow.Children.Add(new TextBlock
+        // A ShrinkRow, not a horizontal StackPanel: the StackPanel measured everything at infinite
+        // width, so in a narrow window the stance chip was cut off ("telemet") while the name
+        // could never trim. Now the name and chips keep their full width while they fit; when
+        // they do not, the folder path trims first (the name and stance say what the task is; the
+        // folder only says where it lives), then disappears, and only then does the name trim.
+        // The stance and "hidden" chips are never cut.
+        var titleRow = new Controls.ShrinkRow { Spacing = 8 };
+        var name = new TextBlock
         {
             Text = t.Name, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
             VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        titleRow.Children.Add(Chip(t.Folder == "\\" ? "\\" : t.Folder, (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]));
+            TextWrapping = TextWrapping.NoWrap,   // the style wraps; this line must trim instead
+        };
+        Controls.ShrinkRow.SetShrinkOrder(name, 2);
+        Controls.ShrinkRow.SetShrinkMin(name, 80);
+        titleRow.Children.Add(name);
+        var folder = Chip(t.Folder == "\\" ? "\\" : t.Folder, (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"]);
+        ((TextBlock)folder.Child).TextTrimming = TextTrimming.CharacterEllipsis;
+        Controls.ShrinkRow.SetShrinkOrder(folder, 1);
+        titleRow.Children.Add(folder);
         if (t.Stance != TaskStance.Unreviewed)
             titleRow.Children.Add(Chip(StanceTag(t.Stance), StanceBrush(t.Stance)));
         if (t.Hidden)
@@ -118,10 +131,13 @@ public sealed partial class TasksPage : Page
         });
 
         bool canToggle = t.Stance != TaskStance.KeepSystem;
+        // MinWidth 0: ToggleSwitch reserves 154 px by default, which left a wide empty gap between
+        // "On" and the card edge. Its On and Off labels share one cell, so every row's switch is
+        // still the same width and the switches line up down the list.
         var toggle = new ToggleSwitch
         {
             IsOn = t.Enabled, OnContent = "On", OffContent = "Off", IsEnabled = canToggle,
-            VerticalAlignment = VerticalAlignment.Center, Tag = t,
+            VerticalAlignment = VerticalAlignment.Center, Tag = t, MinWidth = 0,
         };
         toggle.Toggled += Toggle_Toggled;
 
