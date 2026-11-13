@@ -15,6 +15,7 @@ public sealed partial class TasksPage : Page
     public TasksPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

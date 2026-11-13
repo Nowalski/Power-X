@@ -29,7 +29,11 @@ public sealed record ComponentStoreInfo
 [SupportedOSPlatform("windows")]
 public static class ComponentStore
 {
-    public static async Task<ComponentStoreInfo> AnalyzeAsync(CancellationToken ct = default)
+    public static Task<ComponentStoreInfo> AnalyzeAsync(CancellationToken ct = default) => AnalyzeAsync(null, ct);
+
+    /// <param name="progress">DISM's own percentage (0 to 100) each time its progress bar moves.
+    /// Nothing is reported before DISM draws its first bar, which can take a while.</param>
+    public static async Task<ComponentStoreInfo> AnalyzeAsync(IProgress<double>? progress, CancellationToken ct = default)
     {
         // DISM analyze usually takes under a minute but has been known to stall; cap it so the
         // caller's button never gets stuck disabled.
@@ -37,7 +41,7 @@ public static class ComponentStore
         timeout.CancelAfter(TimeSpan.FromMinutes(4));
         try
         {
-            var (code, output) = await RunDismAsync("/English /Online /Cleanup-Image /AnalyzeComponentStore", null, timeout.Token);
+            var (code, output) = await RunDismAsync("/English /Online /Cleanup-Image /AnalyzeComponentStore", null, progress, timeout.Token);
             var info = Parse(output);
             if (code != 0 && info.ActualSizeBytes == 0)
                 return new ComponentStoreInfo
@@ -69,13 +73,18 @@ public static class ComponentStore
         return null;
     }
 
-    /// <summary>Run <c>/StartComponentCleanup</c>, streaming DISM's progress lines. Reversible in the
+    /// <summary>Run <c>/StartComponentCleanup</c>, streaming DISM's output lines. Reversible in the
     /// sense that it only removes superseded components; installed updates stay uninstallable.</summary>
-    public static async Task<int> StartCleanupAsync(Action<string> onLine, CancellationToken ct = default)
+    public static Task<int> StartCleanupAsync(Action<string> onLine, CancellationToken ct = default) =>
+        StartCleanupAsync(onLine, null, ct);
+
+    /// <summary>As above; with <paramref name="progress"/>, DISM's progress bar goes there as a
+    /// percentage instead of arriving as one "[=====  20.0%  ]" line per step.</summary>
+    public static async Task<int> StartCleanupAsync(Action<string> onLine, IProgress<double>? progress, CancellationToken ct = default)
     {
         try
         {
-            var (code, _) = await RunDismAsync("/English /Online /Cleanup-Image /StartComponentCleanup", onLine, ct);
+            var (code, _) = await RunDismAsync("/English /Online /Cleanup-Image /StartComponentCleanup", onLine, progress, ct);
             onLine(code == 0 ? "Component cleanup finished." : $"DISM exited with code {code}.");
             return code;
         }
@@ -146,7 +155,31 @@ public static class ComponentStore
         return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
-    private static async Task<(int Code, string Output)> RunDismAsync(string args, Action<string>? onLine, CancellationToken ct)
+    // DISM's progress bar: "[=====                      20.0%                           ]". The
+    // number can carry a decimal comma in some regional formats, as the sizes can (TryParseSize).
+    private static readonly Regex ProgressBar = new(@"\[[=\s]*(\d{1,3}(?:[.,]\d+)?)\s*%[=\s]*\]?",
+        RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// DISM's percentage in <paramref name="text"/>, or null when it holds no progress bar. DISM
+    /// redraws the bar after a carriage return with no newline. The reader behind
+    /// <see cref="Process.OutputDataReceived"/> ends a line at a lone '\r' as well as at '\n', so
+    /// each redraw normally arrives on its own; when several arrive in one string anyway (read
+    /// some other way, or split differently), the last one is the current value.
+    /// </summary>
+    internal static double? ParseProgress(string? text)
+    {
+        if (string.IsNullOrEmpty(text) || text.IndexOf('%') < 0) return null;
+        var matches = ProgressBar.Matches(text);
+        if (matches.Count == 0) return null;
+        string number = matches[^1].Groups[1].Value.Replace(',', '.');
+        return double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out var pct)
+            ? Math.Clamp(pct, 0, 100)
+            : null;
+    }
+
+    private static async Task<(int Code, string Output)> RunDismAsync(
+        string args, Action<string>? onLine, IProgress<double>? progress, CancellationToken ct)
     {
         using var p = new Process
         {
@@ -161,8 +194,17 @@ public static class ComponentStore
         p.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
-            lock (sb) sb.AppendLine(e.Data);
-            if (onLine is not null && e.Data.Trim().Length > 0) onLine(e.Data.Trim());
+            string text = e.Data;
+            if (progress is not null && ParseProgress(text) is { } pct)
+            {
+                // Shown as a percentage, not as a line per redraw. Anything else that shared the
+                // string with the bar is kept.
+                progress.Report(pct);
+                text = ProgressBar.Replace(text, "");
+                if (text.Trim().Length == 0) return;
+            }
+            lock (sb) sb.AppendLine(text);
+            if (onLine is not null && text.Trim().Length > 0) onLine(text.Trim());
         };
         // stdout and stderr are drained on separate threads; StringBuilder is not thread-safe.
         p.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) lock (sb) sb.AppendLine(e.Data); };

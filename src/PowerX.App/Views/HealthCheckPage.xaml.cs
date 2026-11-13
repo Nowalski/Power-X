@@ -14,6 +14,7 @@ public sealed partial class HealthCheckPage : Page
     public HealthCheckPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         Loaded += (_, _) => { if (!_scannedOnce) { _scannedOnce = true; _ = ScanAsync(); } };
     }
 

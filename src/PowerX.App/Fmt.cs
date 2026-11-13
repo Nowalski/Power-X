@@ -23,6 +23,22 @@ internal static class Fmt
 
     public static string Rate(double bytesPerSec) => bytesPerSec < 1 ? "0/s" : $"{Bytes(bytesPerSec)}/s";
 
+    /// <summary>How long ago something happened, for a result shown again later: "just now",
+    /// "5 minutes ago", "2 hours ago", "3 days ago".</summary>
+    public static string Ago(TimeSpan t)
+    {
+        int n;
+        if (t.TotalMinutes < 1) return "just now";
+        if (t.TotalHours < 1) { n = (int)t.TotalMinutes; return $"{n} minute{S(n)} ago"; }
+        if (t.TotalDays < 1) { n = (int)t.TotalHours; return $"{n} hour{S(n)} ago"; }
+        n = (int)t.TotalDays;
+        return $"{n} day{S(n)} ago";
+    }
+
+    /// <summary>Elapsed time as a clock, "0:42" or "12:05", for something still running.</summary>
+    public static string Clock(TimeSpan t) =>
+        t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+
     public static string Duration(TimeSpan t) =>
         t.TotalDays >= 1 ? $"{(int)t.TotalDays}d {t.Hours}h" :
         t.TotalHours >= 1 ? $"{(int)t.TotalHours}h {t.Minutes}m" :

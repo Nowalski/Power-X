@@ -1,8 +1,11 @@
 using System.Diagnostics;
 using System.Text;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using PowerX.App.Services;
 using PowerX.Core.Diagnostics;
 using PowerX.Core.Processes;
 
@@ -70,86 +73,147 @@ public sealed partial class ToolsPage : Page
     }
 
     // ---------------------------------------------------------------- component store
+    //
+    // The analysis and the cleanup run in ComponentStoreSession, which outlives this page: DISM
+    // takes minutes, and this page is rebuilt on every visit. The page shows the session's state
+    // while it is on screen and lets go of it when navigated away from.
 
-    private CancellationTokenSource? _winsxsCts;
+    private DispatcherQueueTimer? _winsxsTimer;
 
-    private async void WinSxsAnalyze_Click(object sender, RoutedEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        WinSxsAnalyzeButton.IsEnabled = false;
-        WinSxsText.Text = "Analyzing the component store. This can take a minute...";
-        try
-        {
-            var info = Services.DemoData.Active
-                ? Services.DemoData.ComponentStore()
-                : await ComponentStore.AnalyzeAsync();
+        base.OnNavigatedTo(e);
+        ComponentStoreSession.Changed += WinSxs_Changed;
+        RenderWinSxs();
+    }
 
-            if (info.Error is not null)
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        // Detach so the session neither updates nor keeps alive a page that is gone.
+        ComponentStoreSession.Changed -= WinSxs_Changed;
+        _winsxsTimer?.Stop();
+    }
+
+    private void WinSxs_Changed(object? sender, EventArgs e) => RenderWinSxs();
+
+    private void WinSxsAnalyze_Click(object sender, RoutedEventArgs e) => ComponentStoreSession.Analyze();
+
+    private void WinSxsClean_Click(object sender, RoutedEventArgs e) => ComponentStoreSession.StartCleanup();
+
+    private void WinSxsStop_Click(object sender, RoutedEventArgs e) => ComponentStoreSession.Stop();
+
+    /// <summary>Show the session's state: running (bar, percentage, elapsed time), the last
+    /// result and how long ago it was measured, and the cleanup's output.</summary>
+    private void RenderWinSxs()
+    {
+        bool analyzing = ComponentStoreSession.Analyzing, cleaning = ComponentStoreSession.Cleaning;
+        var result = ComponentStoreSession.LastResult;
+        var now = DateTimeOffset.Now;
+
+        if (analyzing)
+            SetText(WinSxsText, "Analyzing the component store. DISM usually needs one to several minutes, "
+                + "and it keeps going if you leave this page.");
+        else if (result is null)
+            SetText(WinSxsText, "Not analyzed yet.");
+        else
+            SetText(WinSxsText, Describe(result));
+
+        string status = "";
+        double? pct = null;
+        if (analyzing)
+        {
+            pct = ComponentStoreSession.Percent;
+            // DISM can work for a while before it draws its first progress bar, so until then
+            // the bar is indeterminate and the elapsed time is what shows it is alive.
+            status = (pct is { } p ? $"{p:0}% done, " : "Running, ")
+                + $"{Fmt.Clock(now - ComponentStoreSession.AnalysisStartedAt)} elapsed";
+        }
+        else if (cleaning)
+        {
+            pct = ComponentStoreSession.CleanupPercent;
+            status = "Cleaning up: " + (pct is { } p ? $"{p:0}% done, " : "running, ")
+                + $"{Fmt.Clock(now - ComponentStoreSession.CleanupStartedAt)} elapsed";
+        }
+        else if (ComponentStoreSession.AnalysisStopped)
+        {
+            status = "The analysis was stopped."
+                + (result is null ? "" : $" The figures above are from the one before, {Fmt.Ago(now - ComponentStoreSession.LastResultAt)}.");
+        }
+        else if (result is { Error: not null })
+        {
+            status = $"Last tried {Fmt.Ago(now - ComponentStoreSession.LastResultAt)}.";
+        }
+        else if (result is not null)
+        {
+            status = $"Analyzed {Fmt.Ago(now - ComponentStoreSession.LastResultAt)}"
+                + (ComponentStoreSession.CleanedSinceAnalysis ? ", before the last cleanup. Analyze again for current figures." : ".");
+        }
+
+        bool running = analyzing || cleaning;
+        WinSxsProgress.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+        WinSxsProgress.IsIndeterminate = running && pct is null;
+        if (pct is { } v) WinSxsProgress.Value = v;
+        SetText(WinSxsStatus, status);
+        WinSxsStatus.Visibility = status.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        WinSxsRun.Visibility = running || status.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        WinSxsAnalyzeButton.IsEnabled = !running;
+        WinSxsCleanButton.IsEnabled = !running && !ComponentStoreSession.CleanedSinceAnalysis
+            && result is { Error: null } r && (r.ReclaimablePackages > 0 || r.CleanupRecommended);
+        WinSxsStopButton.IsEnabled = running;
+
+        if (ComponentStoreSession.HasCleanupOutput)
+        {
+            WinSxsOut.Visibility = Visibility.Visible;
+            string text = ComponentStoreSession.CleanupOutput;
+            if (WinSxsOut.Text != text)
             {
-                WinSxsText.Text = "Could not analyze the component store: " + info.Error;
-            }
-            else
-            {
-                WinSxsText.Text =
-                    $"Actual size on disk: {Fmt.Bytes((ulong)info.ActualSizeBytes)}   "
-                    + $"(shared with Windows: {Fmt.Bytes((ulong)info.SharedWithWindowsBytes)}).\n"
-                    + $"Reclaimable: backups and disabled features {Fmt.Bytes((ulong)info.BackupsAndDisabledBytes)}, "
-                    + $"cache and temp {Fmt.Bytes((ulong)info.CacheAndTempBytes)}. "
-                    + $"{info.ReclaimablePackages} superseded package{Fmt.S(info.ReclaimablePackages)}.\n"
-                    + (info.CleanupRecommended
-                        ? "Windows recommends a component cleanup."
-                        : "Windows does not think a cleanup is needed right now.")
-                    + (info.LastCleanup is { } d ? $"  Last cleanup {d.LocalDateTime:d}." : "");
-                WinSxsCleanButton.IsEnabled = info.ReclaimablePackages > 0 || info.CleanupRecommended;
+                WinSxsOut.Text = text;
+                WinSxsOut.Select(text.Length, 0);
             }
         }
-        catch (Exception ex)
+        else WinSxsOut.Visibility = Visibility.Collapsed;
+
+        // Tick every second while something runs (elapsed time), otherwise now and then so that
+        // "analyzed N minutes ago" stays true while the page is open.
+        if (running || result is not null)
         {
-            App.Log("Tools.WinSxs", ex);
-            WinSxsText.Text = "Could not analyze the component store: " + ex.Message;
+            _winsxsTimer ??= CreateWinSxsTimer();
+            // Only when it differs: progress reports re-render often, and setting the interval
+            // restarts the countdown, so the elapsed time would never tick between them.
+            var interval = TimeSpan.FromSeconds(running ? 1 : 20);
+            if (_winsxsTimer.Interval != interval) _winsxsTimer.Interval = interval;
+            if (!_winsxsTimer.IsRunning) _winsxsTimer.Start();
         }
-        finally
+        else _winsxsTimer?.Stop();
+
+        static void SetText(TextBlock block, string text)
         {
-            WinSxsAnalyzeButton.IsEnabled = true;
+            if (block.Text != text) block.Text = text;
         }
     }
 
-    private async void WinSxsClean_Click(object sender, RoutedEventArgs e)
+    private DispatcherQueueTimer CreateWinSxsTimer()
     {
-        if (_winsxsCts is not null) return;
-        _winsxsCts = new CancellationTokenSource();
-        var cts = _winsxsCts;
-        WinSxsOut.Visibility = Visibility.Visible;
-        WinSxsOut.Text = "";
-        WinSxsCleanButton.IsEnabled = false;
-        WinSxsAnalyzeButton.IsEnabled = false;
-        WinSxsStopButton.IsEnabled = true;
-
-        void Line(string s) => DispatcherQueue.TryEnqueue(() =>
-        {
-            WinSxsOut.Text += s + "\n";
-            WinSxsOut.Select(WinSxsOut.Text.Length, 0);
-        });
-
-        try
-        {
-            if (Services.DemoData.Active) { Line("Component cleanup finished. (demo)"); }
-            else await ComponentStore.StartCleanupAsync(Line, cts.Token);
-        }
-        catch (Exception ex)
-        {
-            App.Log("Tools.WinSxsClean", ex);
-            Line("error: " + ex.Message);
-        }
-        finally
-        {
-            cts.Dispose();
-            _winsxsCts = null;
-            WinSxsStopButton.IsEnabled = false;
-            WinSxsAnalyzeButton.IsEnabled = true;
-        }
+        var timer = DispatcherQueue.CreateTimer();
+        timer.IsRepeating = true;
+        timer.Tick += (_, _) => RenderWinSxs();
+        return timer;
     }
 
-    private void WinSxsStop_Click(object sender, RoutedEventArgs e) => _winsxsCts?.Cancel();
+    private static string Describe(ComponentStoreInfo info) =>
+        info.Error is not null
+            ? "Could not analyze the component store: " + info.Error
+            : $"Actual size on disk: {Fmt.Bytes((ulong)info.ActualSizeBytes)}   "
+              + $"(shared with Windows: {Fmt.Bytes((ulong)info.SharedWithWindowsBytes)}).\n"
+              + $"Reclaimable: backups and disabled features {Fmt.Bytes((ulong)info.BackupsAndDisabledBytes)}, "
+              + $"cache and temp {Fmt.Bytes((ulong)info.CacheAndTempBytes)}. "
+              + $"{info.ReclaimablePackages} superseded package{Fmt.S(info.ReclaimablePackages)}.\n"
+              + (info.CleanupRecommended
+                  ? "Windows recommends a component cleanup."
+                  : "Windows does not think a cleanup is needed right now.")
+              + (info.LastCleanup is { } d ? $"  Last cleanup {d.LocalDateTime:d}." : "");
 
     // ---------------------------------------------------------------- battery
 

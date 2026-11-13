@@ -48,6 +48,35 @@ public class SystemDiagnosticsTests
         ComponentStore.Parse("Error: 1392").ReclaimablePackages.Should().Be(0);
     }
 
+    [Theory]
+    [InlineData("[                           0.1%                           ]", 0.1)]
+    [InlineData("[===                        6.4%                           ]", 6.4)]
+    [InlineData("[==========                 20.0%                          ]", 20.0)]
+    [InlineData("[==========================100.0%==========================]", 100.0)]
+    [InlineData("  [==========  20.0%  ]  ", 20.0)]
+    // Regional format with a decimal comma.
+    [InlineData("[=====================      43,7%                           ]", 43.7)]
+    // Several redraws in one string, as when the carriage returns between them are not split
+    // into lines: the last one is the current value.
+    [InlineData("[=   2.0%   ]\r[====  10.0%   ]\r[=======  25.5%  ]", 25.5)]
+    public void ComponentStore_reads_dism_progress(string line, double expected)
+    {
+        ComponentStore.ParseProgress(line).Should().BeApproximately(expected, 0.001);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    [InlineData("Deployment Image Servicing and Management tool")]
+    [InlineData("Component Store Cleanup Recommended : Yes")]
+    [InlineData("Number of Reclaimable Packages : 12")]
+    [InlineData("The operation completed successfully.")]
+    [InlineData("CPU at 50% for a while")]
+    public void ComponentStore_ignores_lines_without_a_progress_bar(string? line)
+    {
+        ComponentStore.ParseProgress(line).Should().BeNull();
+    }
+
     [Fact]
     public void BatteryReport_parses_capacity_and_cycles()
     {

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using PowerX.App.Services;
@@ -10,22 +11,33 @@ namespace PowerX.App.Views;
 
 public sealed partial class ProcessesPage : Page
 {
-    private const int MaxRows = 300;
-    private const int ReorderEveryTicks = 3;
-
+    // The list is a row of fixed slots, one per visible position (see ProcessRow). Each refresh
+    // sorts the snapshot and writes process i into slot i. Items are only added or removed at the
+    // end, and only when the number of processes shown changes, so the ListView never moves,
+    // re-creates or animates a row: the rows stay put and the values in them change. It used to
+    // keep one item per PID, re-sort it with Move/Insert every third tick and cut the list at 300
+    // rows, so rows slid about, vanished at the cut-off and the order lagged and then jumped.
     private readonly ObservableCollection<ProcessRow> _rows = [];
-    private readonly Dictionary<int, ProcessRow> _byPid = [];
+    private readonly List<ProcessInfo> _shown = [];
+    private ProcessSnapshot? _shownSnap;   // the snapshot on screen; a sort while frozen re-sorts it
     private IDisposable? _subscription;
     private string _filter = "";
     private string _sortKey = "cpu";
     private bool _sortDesc = true;
-    private int _tick;
     private bool _loaded;
     private ulong _totalRam;
+
+    // Selection belongs to a process, not to a slot: the PID is remembered when the user picks a
+    // row, and each refresh highlights whichever slot now holds it (ProcessRow.SelectionOpacity).
+    // It is not the ListView's own selection: moving that from slot to slot while the list has
+    // keyboard focus (it does once a row has been clicked) also moves focus to the new slot and
+    // scrolls it into view, so the list chased the selected process up and down as it re-ranked.
+    private int _selectedPid;
 
     public ProcessesPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         List.ItemsSource = _rows;
         _totalRam = TelemetryHub.Instance.LastMemory?.Value?.TotalPhysical ?? 0;
         _loaded = true;
@@ -40,7 +52,20 @@ public sealed partial class ProcessesPage : Page
 
     private bool _menuOpen;
 
-    private void Menu_Opening(object sender, object e) => _menuOpen = true;
+    /// <summary>The process a right-click menu was opened on, copied when it opened. The slot
+    /// under the cursor shows another process after the next refresh, and the menu's actions
+    /// (and the confirmation dialogs they await) must still act on the one the user clicked.</summary>
+    private ProcTarget? _menuTarget;
+
+    private sealed record ProcTarget(int Pid, string Name);
+
+    private void Menu_Opening(object sender, object e)
+    {
+        _menuOpen = true;
+        _menuTarget = sender is FlyoutBase { Target: FrameworkElement { DataContext: ProcessRow r } } && r.Pid > 0
+            ? new ProcTarget(r.Pid, r.Name)
+            : null;
+    }
 
     private void Menu_Closed(object sender, object e)
     {
@@ -58,76 +83,94 @@ public sealed partial class ProcessesPage : Page
         if (TelemetryHub.Instance.LastProcesses is not { } snap) return;
         if (_totalRam == 0) _totalRam = TelemetryHub.Instance.LastMemory?.Value?.TotalPhysical ?? 0;
 
-        bool force = sender is null;
-        bool reorder = force || _tick++ % ReorderEveryTicks == 0;
-
-        IEnumerable<ProcessInfo> live = snap.Processes.Where(p => p.Pid > 0);
-        if (_filter.Length > 0)
-        {
-            // Digits also match a PID by its start, so "12" finds 1204 as you type it. A name
-            // that happens to contain the digits ("obs64.exe") still matches as before.
-            string filter = _filter;
-            bool digits = filter.All(char.IsAsciiDigit);
-            live = live.Where(p =>
-                p.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                (digits && p.Pid.ToString(System.Globalization.CultureInfo.InvariantCulture).StartsWith(filter, StringComparison.Ordinal)));
-        }
-        var byPid = live.ToDictionary(p => p.Pid);
-
         Summary.Text = $"{snap.TotalProcesses} processes · {snap.TotalThreads} threads" +
                        (FreezeButton.IsChecked == true ? " · frozen" : "");
+        Render(snap);
+    }
 
-        for (int i = _rows.Count - 1; i >= 0; i--)
+    /// <summary>Filter and sort <paramref name="snap"/> and write it into the slots. When as many
+    /// processes are shown as before (no process started or exited, filter unchanged) this makes
+    /// no change to the collection at all, only to the values inside the rows.</summary>
+    private void Render(ProcessSnapshot snap)
+    {
+        _shownSnap = snap;
+        _shown.Clear();
+        string filter = _filter;
+        bool digits = filter.Length > 0 && filter.All(char.IsAsciiDigit);
+        bool selectedAlive = false;
+        foreach (var p in snap.Processes)
         {
-            if (byPid.TryGetValue(_rows[i].Pid, out var info)) _rows[i].Update(info, _totalRam);
-            else { _byPid.Remove(_rows[i].Pid); _rows.RemoveAt(i); }
+            if (p.Pid <= 0) continue;
+            if (p.Pid == _selectedPid) selectedAlive = true;
+            // Digits also match a PID by its start, so "12" finds 1204 as you type it. A name
+            // that happens to contain the digits ("obs64.exe") still matches as before.
+            if (filter.Length > 0 &&
+                !p.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) &&
+                !(digits && p.Pid.ToString(System.Globalization.CultureInfo.InvariantCulture).StartsWith(filter, StringComparison.Ordinal)))
+                continue;
+            _shown.Add(p);
         }
+        _shown.Sort(SortOrder());
 
-        if (!reorder) return;
+        // A process that has exited is forgotten, so its PID being reused later selects nothing.
+        // One that is only hidden by the filter stays selected for when the filter is cleared.
+        if (!selectedAlive) _selectedPid = 0;
 
-        var target = Sort(live).Take(MaxRows).ToList();
-        for (int i = 0; i < target.Count; i++)
+        while (_rows.Count > _shown.Count) _rows.RemoveAt(_rows.Count - 1);
+        for (int i = 0; i < _shown.Count; i++)
         {
-            var info = target[i];
-            if (i < _rows.Count && _rows[i].Pid == info.Pid) continue;
-
-            if (_byPid.TryGetValue(info.Pid, out var existing))
-            {
-                int j = _rows.IndexOf(existing);
-                if (j > i) _rows.Move(j, i);
-            }
-            else
-            {
-                var row = new ProcessRow(info.Pid);
-                row.Update(info, _totalRam);
-                _byPid[info.Pid] = row;
-                _rows.Insert(Math.Min(i, _rows.Count), row);
-            }
-        }
-        while (_rows.Count > target.Count)
-        {
-            _byPid.Remove(_rows[^1].Pid);
-            _rows.RemoveAt(_rows.Count - 1);
+            if (i == _rows.Count) _rows.Add(new ProcessRow());
+            _rows[i].Update(_shown[i], _totalRam);
+            _rows[i].SelectionOpacity = _shown[i].Pid == _selectedPid ? 1 : 0;
         }
     }
 
-    private IEnumerable<ProcessInfo> Sort(IEnumerable<ProcessInfo> src)
-    {
-        Func<ProcessInfo, object> key = _sortKey switch
-        {
-            "name" => p => p.Name,
-            "pid" => p => p.Pid,
-            "mem" => p => p.WorkingSetBytes,
-            "io" => p => p.IoBytesPerSec,
-            "thr" => p => p.ThreadCount,
-            _ => p => p.CpuPercent,
-        };
-        var ordered = _sortDesc
-            ? src.OrderByDescending(key, Comparer<object>.Create(Compare))
-            : src.OrderBy(key, Comparer<object>.Create(Compare));
-        return _sortKey == "cpu" ? ordered.ThenByDescending(p => p.WorkingSetBytes) : ordered;
+    // ---------------------------------------------------------------- selection
 
-        static int Compare(object a, object b) => a is string sa ? string.Compare(sa, (string)b, StringComparison.OrdinalIgnoreCase) : Comparer<object>.Default.Compare(a, b);
+    private void SelectRow(ProcessRow? row)
+    {
+        _selectedPid = row?.Pid ?? 0;
+        foreach (var r in _rows) r.SelectionOpacity = r.Pid == _selectedPid && _selectedPid != 0 ? 1 : 0;
+    }
+
+    private void List_ItemClick(object sender, ItemClickEventArgs e) => SelectRow(e.ClickedItem as ProcessRow);
+
+    /// <summary>Arrow keys move keyboard focus from row to row; the row they land on is selected,
+    /// as the ListView's own selection did. A click is handled by ItemClick.</summary>
+    private void List_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (e.OriginalSource is ListViewItem { FocusState: FocusState.Keyboard } item &&
+            List.ItemFromContainer(item) is ProcessRow row)
+            SelectRow(row);
+    }
+
+    /// <summary>
+    /// The order for the current sort column. Always a total order (the PID breaks ties): List.Sort
+    /// is not stable, and processes that compare equal would otherwise swap places between
+    /// refreshes for no visible reason. CPU sorts on the value shown (one decimal, and anything
+    /// under 0.05% shows as idle), so the hundreds of idle processes keep a steady order by memory
+    /// instead of shuffling on noise in the third decimal.
+    /// </summary>
+    private Comparison<ProcessInfo> SortOrder()
+    {
+        int dir = _sortDesc ? -1 : 1;
+        return _sortKey switch
+        {
+            "name" => (a, b) => Then(dir * string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase), a, b),
+            "pid" => (a, b) => dir * a.Pid.CompareTo(b.Pid),
+            "mem" => (a, b) => Then(dir * a.WorkingSetBytes.CompareTo(b.WorkingSetBytes), a, b),
+            "io" => (a, b) => Then(dir * a.IoBytesPerSec.CompareTo(b.IoBytesPerSec), a, b),
+            "thr" => (a, b) => Then(dir * a.ThreadCount.CompareTo(b.ThreadCount), a, b),
+            _ => (a, b) =>
+            {
+                int c = dir * ShownCpu(a).CompareTo(ShownCpu(b));
+                if (c == 0) c = b.WorkingSetBytes.CompareTo(a.WorkingSetBytes);   // then by memory, largest first
+                return Then(c, a, b);
+            },
+        };
+
+        static int Then(int c, ProcessInfo a, ProcessInfo b) => c != 0 ? c : a.Pid.CompareTo(b.Pid);
+        static double ShownCpu(ProcessInfo p) => p.CpuPercent < 0.05 ? 0 : Math.Round(p.CpuPercent, 1);
     }
 
     // ---------------------------------------------------------------- toolbar / headers
@@ -136,7 +179,10 @@ public sealed partial class ProcessesPage : Page
     {
         if (!_loaded) return;
         _filter = Filter.Text.Trim();
-        OnTick(null, EventArgs.Empty);
+        // While frozen the filter works on the frozen snapshot, as sorting does, so the values
+        // stay the ones that were frozen.
+        if (FreezeButton.IsChecked == true && _shownSnap is { } frozen) Render(frozen);
+        else OnTick(null, EventArgs.Empty);
     }
 
     private void Freeze_Click(object sender, RoutedEventArgs e)
@@ -359,33 +405,10 @@ public sealed partial class ProcessesPage : Page
         UpdateHeaderGlyphs();
 
         // Sorting is an explicit action — it works even while the list is frozen. When frozen we
-        // reorder the rows already on screen (keeping their frozen values); otherwise a normal
+        // re-sort the snapshot already on screen (keeping its frozen values); otherwise a normal
         // refresh re-sorts against live data.
-        if (FreezeButton.IsChecked == true) SortRowsInPlace();
+        if (FreezeButton.IsChecked == true) { if (_shownSnap is { } frozen) Render(frozen); }
         else OnTick(null, EventArgs.Empty);
-    }
-
-    private void SortRowsInPlace()
-    {
-        Comparison<ProcessRow> cmp = _sortKey switch
-        {
-            "name" => (a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase),
-            "pid" => (a, b) => a.Pid.CompareTo(b.Pid),
-            "mem" => (a, b) => a.WorkingSetBytes.CompareTo(b.WorkingSetBytes),
-            "io" => (a, b) => a.IoBytesPerSec.CompareTo(b.IoBytesPerSec),
-            "thr" => (a, b) => a.Threads.CompareTo(b.Threads),
-            _ => (a, b) => a.Cpu.CompareTo(b.Cpu),
-        };
-
-        var sorted = _rows.ToList();
-        sorted.Sort(cmp);
-        if (_sortDesc) sorted.Reverse();
-
-        for (int i = 0; i < sorted.Count; i++)
-        {
-            int cur = _rows.IndexOf(sorted[i]);
-            if (cur != i) _rows.Move(cur, i);
-        }
     }
 
     private void UpdateHeaderGlyphs()
@@ -405,12 +428,14 @@ public sealed partial class ProcessesPage : Page
     }
 
     // ---------------------------------------------------------------- context menu
-
-    private static ProcessRow? RowOf(object sender) => (sender as FrameworkElement)?.DataContext as ProcessRow;
+    //
+    // Every action reads _menuTarget, the PID and name copied when the menu opened, never the
+    // row's DataContext: that slot shows another process after the next refresh, which can come
+    // between the click and the end of a confirmation dialog.
 
     private async void End_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } row || await DemoBlocked()) return;
+        if (_menuTarget is not { } row || await DemoBlocked()) return;
         // A critical process takes Windows down with it, so that warning is shown whatever the
         // "Confirm before ending or changing processes" setting says.
         bool ok = ProcessActions.IsCritical(row.Pid)
@@ -424,7 +449,7 @@ public sealed partial class ProcessesPage : Page
 
     private async void EndTree_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } row || await DemoBlocked()) return;
+        if (_menuTarget is not { } row || await DemoBlocked()) return;
         if (TelemetryHub.Instance.LastProcesses is not { } snap) return;
         bool ok = ProcessActions.TreeHasCritical(row.Pid, snap)
             ? await ConfirmCritical("This tree includes a critical Windows process",
@@ -436,17 +461,17 @@ public sealed partial class ProcessesPage : Page
     }
 
     private async void Suspend_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.Suspend(r.Pid), "Suspend"); }
+    { if (_menuTarget is { } r && !await DemoBlocked()) Report(ProcessActions.Suspend(r.Pid), "Suspend"); }
 
     private async void Resume_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.Resume(r.Pid), "Resume"); }
+    { if (_menuTarget is { } r && !await DemoBlocked()) Report(ProcessActions.Resume(r.Pid), "Resume"); }
 
     private async void Eco_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r && !await DemoBlocked()) Report(ProcessActions.SetEfficiencyMode(r.Pid, true), "Efficiency mode"); }
+    { if (_menuTarget is { } r && !await DemoBlocked()) Report(ProcessActions.SetEfficiencyMode(r.Pid, true), "Efficiency mode"); }
 
     private async void Priority_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } r || sender is not FrameworkElement { Tag: string tag }) return;
+        if (_menuTarget is not { } r || sender is not FrameworkElement { Tag: string tag }) return;
         if (await DemoBlocked()) return;
         if (Enum.TryParse<ProcessPriority>(tag, out var pri))
             Report(ProcessActions.SetPriority(r.Pid, pri), "Set priority");
@@ -474,27 +499,32 @@ public sealed partial class ProcessesPage : Page
 
     private void OpenLocation_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } r) return;
+        if (_menuTarget is not { } r) return;
         Report(ProcessActions.OpenFileLocation(ProcessDetailsProvider.ImagePath(r.Pid)), "Open file location");
     }
 
     private void CopyPath_Click(object sender, RoutedEventArgs e)
     {
-        if (RowOf(sender) is not { } r) return;
+        if (_menuTarget is not { } r) return;
         Copy(ProcessDetailsProvider.ImagePath(r.Pid) ?? r.Name);
     }
 
     private void CopyPid_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) Copy(r.Pid.ToString()); }
+    { if (_menuTarget is { } r) Copy(r.Pid.ToString()); }
 
     private void Search_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) Report(ProcessActions.SearchOnline(r.Name), "Search the web"); }
+    { if (_menuTarget is { } r) Report(ProcessActions.SearchOnline(r.Name), "Search the web"); }
 
     private async void Props_Click(object sender, RoutedEventArgs e)
-    { if (RowOf(sender) is { } r) await ShowDetails(r); }
+    { if (_menuTarget is { } r) await ShowDetails(r); }
 
     private async void List_DoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
-    { if (List.SelectedItem is ProcessRow r) await ShowDetails(r); }
+    {
+        // The row that was double-clicked (its first click selected it). Copy the PID and name
+        // now: the slot shows something else after the next refresh.
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is ProcessRow { Pid: > 0 } r)
+            await ShowDetails(new ProcTarget(r.Pid, r.Name));
+    }
 
     // ---------------------------------------------------------------- helpers
 
@@ -551,7 +581,7 @@ public sealed partial class ProcessesPage : Page
         }
     }
 
-    private async Task ShowDetails(ProcessRow row)
+    private async Task ShowDetails(ProcTarget row)
     {
         var inspector = new Controls.ProcessInspector(row.Pid, row.Name);
         var dialog = new ContentDialog

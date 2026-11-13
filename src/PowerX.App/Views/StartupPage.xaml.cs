@@ -16,6 +16,7 @@ public sealed partial class StartupPage : Page
     public StartupPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

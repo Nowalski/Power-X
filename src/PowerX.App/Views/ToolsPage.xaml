@@ -98,6 +98,13 @@
                                         Body="WinSxS holds every version of every Windows component, so updates can be uninstalled and system files repaired. It looks huge in Explorer because most of it is hard links shared with the live system, not a second copy. The part that is safe to reclaim is superseded components and backups. PowerX runs the Microsoft-recommended cleanup only, never /ResetBase (which would permanently block uninstalling installed updates)." />
                     </StackPanel>
                     <TextBlock x:Name="WinSxsText" Style="{StaticResource MutedStyle}" Text="Not analyzed yet." TextWrapping="Wrap" />
+                    <!-- While DISM runs: indeterminate until it reports its first percentage, then
+                         determinate. The status line under it says what is running, how far and
+                         for how long, or how long ago the result on the card was measured. -->
+                    <StackPanel x:Name="WinSxsRun" Spacing="4" Visibility="Collapsed">
+                        <ProgressBar x:Name="WinSxsProgress" Minimum="0" Maximum="100" IsIndeterminate="True" Visibility="Collapsed" />
+                        <TextBlock x:Name="WinSxsStatus" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" Visibility="Collapsed" />
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="WinSxsAnalyzeButton" Content="Analyze" Click="WinSxsAnalyze_Click" />
                         <Button x:Name="WinSxsCleanButton" Content="Run component cleanup" Click="WinSxsClean_Click" IsEnabled="False" />

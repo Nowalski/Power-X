@@ -17,6 +17,7 @@ public sealed partial class DriversPage : Page
     public DriversPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

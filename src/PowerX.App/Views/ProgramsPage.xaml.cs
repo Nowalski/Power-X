@@ -28,6 +28,7 @@ public sealed partial class ProgramsPage : Page
     public ProgramsPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         List.ItemsSource = _view;
         _ = LoadAsync();
     }

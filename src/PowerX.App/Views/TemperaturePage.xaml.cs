@@ -18,6 +18,9 @@ public sealed partial class TemperaturePage : Page
     public TemperaturePage()
     {
         InitializeComponent();
+        // The same cap as the CPU, Memory and GPU pages beside it: a reading's name and its value
+        // were otherwise 3000 px apart in a maximized ultrawide window.
+        PageLayout.LeftCap(this, Root, 1120);
         _ = LoadAsync();
     }
 

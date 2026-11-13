@@ -19,6 +19,7 @@ public sealed partial class ServicesPage : Page
     public ServicesPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         List.ItemsSource = _view;
         _ = LoadAsync();
     }

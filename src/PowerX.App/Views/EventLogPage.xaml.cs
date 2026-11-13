@@ -14,6 +14,7 @@ public sealed partial class EventLogPage : Page
     public EventLogPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

@@ -21,6 +21,7 @@ public sealed partial class StoragePage : Page
     public StoragePage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         var roots = DemoData.Active
             ? new[] { @"C:\Users\user", @"C:\" }
             : FolderSizer.Roots().ToArray();

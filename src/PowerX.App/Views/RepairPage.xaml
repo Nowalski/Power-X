@@ -29,10 +29,14 @@
         </StackPanel>
 
         <!-- No column spacing: the job list's PageScrollStyle already keeps 16 px clear on its
-             right for the scrollbar, and spacing on top of that left a 32 px gap. -->
+             right for the scrollbar, and spacing on top of that left a 32 px gap.
+             The job list keeps its share in a narrow window but stops growing at a width where a
+             card reads comfortably; the console takes the rest, up to the page cap (ListCap, set
+             in code). As two plain shares the console grew to an empty box over 1700 px wide on
+             an ultrawide monitor. -->
         <Grid Grid.Row="2" MinHeight="180">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.1*" />
+                <ColumnDefinition Width="1.1*" MaxWidth="560" />
                 <ColumnDefinition Width="1.4*" />
             </Grid.ColumnDefinitions>
 
@@ -70,39 +74,61 @@
             </Border>
         </Grid>
 
-        <Expander Grid.Row="3" Margin="0,0,0,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-            <Expander.Header>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="Memory test" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
-                    <ctl:InfoButton Title="About this test"
-                                    Body="Grabs a large block of free RAM and runs pattern write/verify and moving-inversion passes over it. It catches an unstable overclock or a failing module, but it only tests free memory and runs alongside Windows. For a full test use Windows Memory Diagnostic (needs a reboot) or MemTest86." />
-                </StackPanel>
-            </Expander.Header>
-            <StackPanel Spacing="10" Padding="0,6,0,10">
-                <Grid ColumnSpacing="12" RowSpacing="10">
+        <!-- Memory test: an always-open card whose size never changes. It was an Expander under
+             the job list and console, so opening it took their height in one jump, and starting a
+             test jumped again as the progress bar and result appeared. Now the controls sit on
+             one row and the second row has a fixed height for the status text and the progress
+             bar, which only changes its Opacity. Nothing in the card is ever Collapsed, and the
+             Start/Stop button has a MinWidth so its label change cannot resize it either.
+             The slider's column takes the room first (100* against the spacer's 1*) up to its
+             MaxWidth; past that the spacer takes the rest, keeping Start at the right edge. -->
+        <Border Grid.Row="3" Style="{StaticResource CardStyle}" Padding="14,10" Margin="0,0,0,16">
+            <Grid RowSpacing="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="20" />
+                </Grid.RowDefinitions>
+
+                <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="100*" MinWidth="100" MaxWidth="320" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Size" VerticalAlignment="Center" FontSize="12"
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Memory test" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                        <ctl:InfoButton Title="About this test"
+                                        Body="Grabs a large block of free RAM and runs pattern write/verify and moving-inversion passes over it. It catches an unstable overclock or a failing module, but it only tests free memory and runs alongside Windows. For a full test use Windows Memory Diagnostic (needs a reboot) or MemTest86." />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="Size" VerticalAlignment="Center" FontSize="12"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <Slider x:Name="MemSize" Grid.Column="1" Minimum="1" Maximum="8" Value="4" StepFrequency="1" VerticalAlignment="Center" MinWidth="120" />
-                    <TextBlock x:Name="MemSizeText" Grid.Column="2" Text="4 GB" VerticalAlignment="Center"
-                               Style="{StaticResource MonoStyle}" MinWidth="48" />
-                    <ComboBox x:Name="MemPasses" Grid.Column="3" SelectedIndex="1" VerticalAlignment="Center">
+                    <Slider x:Name="MemSize" Grid.Column="3" Minimum="1" Maximum="8" Value="4" StepFrequency="1" VerticalAlignment="Center" />
+                    <TextBlock x:Name="MemSizeText" Grid.Column="4" Text="4 GB" VerticalAlignment="Center"
+                               Style="{StaticResource MonoStyle}" MinWidth="44" />
+                    <ComboBox x:Name="MemPasses" Grid.Column="5" SelectedIndex="1" VerticalAlignment="Center" MinWidth="112">
                         <ComboBoxItem Content="1 pass" />
                         <ComboBoxItem Content="2 passes" />
                         <ComboBoxItem Content="4 passes" />
                         <ComboBoxItem Content="8 passes" />
                     </ComboBox>
-                    <Button x:Name="MemStart" Grid.Column="4" Content="Start" Click="MemStart_Click" VerticalAlignment="Center" />
+                    <Button x:Name="MemStart" Grid.Column="6" Content="Start" Click="MemStart_Click" VerticalAlignment="Center" MinWidth="72" />
                 </Grid>
-                <ProgressBar x:Name="MemProgress" Minimum="0" Maximum="100" Visibility="Collapsed" />
-                <TextBlock x:Name="MemResult" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
-            </StackPanel>
-        </Expander>
+
+                <Grid Grid.Row="1" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="MemResult" Style="{StaticResource MutedStyle}" VerticalAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                               Text="Checks free RAM for errors while Windows runs. Not run yet." />
+                    <ProgressBar x:Name="MemProgress" Grid.Column="1" Minimum="0" Maximum="100" VerticalAlignment="Center" Opacity="0" />
+                </Grid>
+            </Grid>
+        </Border>
     </Grid>
 </Page>

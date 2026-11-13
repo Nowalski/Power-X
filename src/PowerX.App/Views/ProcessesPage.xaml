@@ -83,10 +83,20 @@
             </Grid>
         </Border>
 
-        <ListView Grid.Row="3" x:Name="List" SelectionMode="Single"
+        <!-- No item transitions: rows are fixed slots whose values change (see ProcessRow), and
+             the default add/remove/reposition animations made the list slide about whenever a
+             process started or exited.
+             SelectionMode None: the selection is kept by PID in code-behind and drawn by the row
+             template, because the ListView's own selection, moved from slot to slot as the
+             selected process re-ranks, scrolled the list after it (see ProcessesPage). -->
+        <ListView Grid.Row="3" x:Name="List" SelectionMode="None"
+                  IsItemClickEnabled="True" ItemClick="List_ItemClick" GotFocus="List_GotFocus"
                   ShowsScrollingPlaceholders="False"
                   ContainerContentChanging="List_ContainerContentChanging"
                   IsDoubleTapEnabled="True" DoubleTapped="List_DoubleTapped">
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection />
+            </ListView.ItemContainerTransitions>
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -131,6 +141,11 @@
                             <ColumnDefinition Width="74" />
                         </Grid.ColumnDefinitions>
 
+                        <!-- the selected process: the same fill the ListView uses for a selected row -->
+                        <Rectangle Grid.ColumnSpan="6" Margin="0,0,-8,0" RadiusX="4" RadiusY="4" IsHitTestVisible="False"
+                                   Fill="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                   Opacity="{x:Bind SelectionOpacity, Mode=OneWay}" />
+
                         <!-- left accent bar: blue → amber → red for the CPU hogs -->
                         <Rectangle Grid.ColumnSpan="6" Width="3" HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                    Margin="0,2,0,2" RadiusX="1.5" RadiusY="1.5" IsHitTestVisible="False"
@@ -140,7 +155,7 @@
                                    Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
                         <!-- Every value ends 8 px left of its column's right edge (the CPU and
                              Memory pills: 1 px margin + 7 px inside), matching ColHeader's padding. -->
-                        <TextBlock Grid.Column="1" Text="{x:Bind Pid}" VerticalAlignment="Center" HorizontalAlignment="Right"
+                        <TextBlock Grid.Column="1" Text="{x:Bind Pid, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Right"
                                    Margin="0,0,8,0" FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <Border Grid.Column="2" Background="{x:Bind CpuHeat, Mode=OneWay}" CornerRadius="4" Margin="1,2">

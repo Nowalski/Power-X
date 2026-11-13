@@ -38,4 +38,23 @@ internal static class PageLayout
         page.SizeChanged += (_, e) => Fit(e.NewSize.Width);
         if (page.ActualWidth > 0) Fit(page.ActualWidth);
     }
+
+    /// <summary>
+    /// The cap for list pages (Processes, Services, Programs and the like) and Repair. Without one
+    /// a maximized window on an ultrawide monitor stretched every row to about 3000 px, with the
+    /// name at the far left and its buttons at the far right, and Repair's console to an empty
+    /// box over 1700 px wide. The same as Home's cap, the widest of the dashboard pages.
+    /// </summary>
+    public const double ListCap = 1480;
+
+    /// <summary>
+    /// <see cref="LeftCap"/> for a page whose content is a Grid filling the page, with its list
+    /// scrolling inside it rather than the whole page scrolling. No gutter: the Grid already
+    /// reaches the page's right edge (its rows keep their own distance from the list's
+    /// scrollbar), so below the cap nothing moves.
+    /// </summary>
+    public static void CapListPage(Page page, double cap = ListCap)
+    {
+        if (page.Content is FrameworkElement root) LeftCap(page, root, cap, gutter: 0);
+    }
 }

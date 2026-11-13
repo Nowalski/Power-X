@@ -9,6 +9,7 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         Render();
     }
 

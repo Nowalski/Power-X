@@ -26,6 +26,7 @@ public sealed partial class RepairPage : Page
     public RepairPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         BuildJobs();
         MemSize.ValueChanged += (_, e) => MemSizeText.Text = $"{(int)e.NewValue} GB";
         long safe = MemoryTest.SafeMaxBytes() / 1024 / 1024 / 1024;
@@ -37,11 +38,13 @@ public sealed partial class RepairPage : Page
     {
         if (_memCts is not null) { _memCts.Cancel(); return; }
 
+        // Nothing here changes a size: the progress bar only fades in and out (Opacity), and the
+        // status line has a fixed height and trims, with the full text in its tooltip.
         _memCts = new CancellationTokenSource();
         MemStart.Content = "Stop";
-        MemProgress.Visibility = Visibility.Visible;
         MemProgress.Value = 0;
-        MemResult.Text = "Starting…";
+        MemProgress.Opacity = 1;
+        MemStatus("Starting…");
         MemSize.IsEnabled = MemPasses.IsEnabled = false;
 
         long bytes = (long)MemSize.Value * 1024 * 1024 * 1024;
@@ -50,23 +53,30 @@ public sealed partial class RepairPage : Page
         var progress = new Progress<MemoryTestProgress>(p =>
         {
             MemProgress.Value = Math.Clamp(p.Percent, 0, 100);
-            MemResult.Text = p.Pass == 0
+            MemStatus(p.Pass == 0
                 ? $"{p.Phase}… {p.Percent:0}%"
-                : $"Pass {p.Pass}/{p.TotalPasses} · {p.Phase} · {p.Percent:0}% · {p.MegabytesPerSecond / 1024:0.0} GB/s";
+                : $"Pass {p.Pass}/{p.TotalPasses} · {p.Phase} · {p.Percent:0}% · {p.MegabytesPerSecond / 1024:0.0} GB/s");
         });
 
         var cts = _memCts;
         var result = await Task.Run(() => MemoryTest.Run(bytes, passes, progress, cts.Token));
 
-        MemProgress.Visibility = Visibility.Collapsed;
+        MemProgress.Opacity = 0;
         MemStart.Content = "Start";
         MemSize.IsEnabled = MemPasses.IsEnabled = true;
         _memCts = null;
         cts.Dispose();
 
-        MemResult.Text = result.Passed
+        MemStatus(result.Passed
             ? $"✔ No errors. Tested {Fmt.Bytes((ulong)result.BytesTested)} over {result.Passes} pass{(result.Passes == 1 ? "" : "es")} in {result.Elapsed:mm\\:ss} at {result.AverageMBps / 1024:0.0} GB/s."
-            : $"x {result.Errors.Count} error{Fmt.S(result.Errors.Count)} found. This RAM, or its overclock, is not stable. First at byte offset 0x{result.Errors[0].ByteOffset:X}.";
+            : $"x {result.Errors.Count} error{Fmt.S(result.Errors.Count)} found. This RAM, or its overclock, is not stable. First at byte offset 0x{result.Errors[0].ByteOffset:X}.");
+    }
+
+    private void MemStatus(string text)
+    {
+        MemResult.Text = text;
+        // The line trims in a narrow window; the whole text is still there on hover.
+        ToolTipService.SetToolTip(MemResult, text);
     }
 
     private void BuildJobs()

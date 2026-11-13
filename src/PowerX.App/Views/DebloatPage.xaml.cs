@@ -16,6 +16,7 @@ public sealed partial class DebloatPage : Page
     public DebloatPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

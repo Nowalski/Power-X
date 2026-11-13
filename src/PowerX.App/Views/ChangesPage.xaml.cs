@@ -13,6 +13,7 @@ public sealed partial class ChangesPage : Page
     public ChangesPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 

@@ -18,6 +18,7 @@ public sealed partial class FirewallPage : Page
     public FirewallPage()
     {
         InitializeComponent();
+        PageLayout.CapListPage(this);
         _ = LoadAsync();
     }
 
