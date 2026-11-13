@@ -1,5 +1,8 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using Microsoft.Win32;
+using PowerX.Core.Interop;
 using PowerX.Core.Processes;
 
 namespace PowerX.Core.Services;
@@ -42,8 +45,8 @@ public sealed record ServiceEntry
 
 /// <summary>
 /// A modern front end for the common <c>services.msc</c> workflows. Start/stop go through
-/// <see cref="ServiceController"/>; start-type changes are a registry write to the service's
-/// <c>Start</c> value (reversible, what Autoruns/most tools do). Known-critical services are
+/// <see cref="ServiceController"/>; start-type changes go through the Service Control Manager
+/// (see <see cref="SetStartMode"/> for why not the registry). Known-critical services are
 /// flagged so the UI can warn before stopping them.
 /// </summary>
 public static class ServiceProvider
@@ -106,31 +109,75 @@ public static class ServiceProvider
         return Start(name);
     }
 
+    /// <summary>
+    /// Change a service's start type through the Service Control Manager.
+    ///
+    /// This used to write the service's <c>Start</c> and <c>DelayedAutoStart</c> registry values
+    /// directly. The SCM keeps its own in-memory copy of every service's configuration and only
+    /// reads the registry at boot, so that write did nothing until the next restart: services.msc
+    /// and <c>sc qc</c> kept showing the old start type, and a service set to Disabled could still
+    /// be started. ChangeServiceConfig updates the SCM and the registry together.
+    ///
+    /// Boot and System start types are only valid for drivers; the SCM rejects them for an
+    /// ordinary service and that error is passed through rather than second-guessed here.
+    /// </summary>
     public static ActionResult SetStartMode(string name, ServiceStartMode2 mode)
     {
+        uint startType;
+        switch (mode)
+        {
+            case ServiceStartMode2.Boot: startType = 0; break;
+            case ServiceStartMode2.System: startType = 1; break;
+            case ServiceStartMode2.Automatic or ServiceStartMode2.AutomaticDelayed: startType = 2; break;
+            case ServiceStartMode2.Manual: startType = 3; break;
+            case ServiceStartMode2.Disabled: startType = 4; break;
+            default: return ActionResult.Fail("Unknown start type.");
+        }
+
+        nint scm = ServiceNative.OpenSCManagerW(null, null, ServiceNative.SC_MANAGER_CONNECT);
+        if (scm == 0) return ActionResult.Fail(ScmError(Marshal.GetLastPInvokeError()));
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{name}", writable: true);
-            if (key is null) return ActionResult.Fail("Service not found.");
-
-            int start = mode switch
+            nint svc = ServiceNative.OpenServiceW(scm, name, ServiceNative.SERVICE_CHANGE_CONFIG);
+            if (svc == 0) return ActionResult.Fail(ScmError(Marshal.GetLastPInvokeError()));
+            try
             {
-                ServiceStartMode2.Boot => 0,
-                ServiceStartMode2.System => 1,
-                ServiceStartMode2.Automatic or ServiceStartMode2.AutomaticDelayed => 2,
-                ServiceStartMode2.Manual => 3,
-                ServiceStartMode2.Disabled => 4,
-                _ => 3,
-            };
-            key.SetValue("Start", start, RegistryValueKind.DWord);
-            key.SetValue("DelayedAutoStart", mode == ServiceStartMode2.AutomaticDelayed ? 1 : 0, RegistryValueKind.DWord);
-            return ActionResult.Ok;
+                if (!ServiceNative.ChangeServiceConfigW(svc,
+                        ServiceNative.SERVICE_NO_CHANGE, startType, ServiceNative.SERVICE_NO_CHANGE,
+                        null, null, 0, null, null, null, null))
+                    return ActionResult.Fail(ScmError(Marshal.GetLastPInvokeError()));
+
+                // The delayed flag is separate from the start type. Set it only for Automatic
+                // (delayed); otherwise clear it, so a service moved off delayed start does not come
+                // back delayed the next time someone picks plain Automatic.
+                bool delayed = mode == ServiceStartMode2.AutomaticDelayed;
+                var info = new ServiceNative.SERVICE_DELAYED_AUTO_START_INFO { fDelayedAutostart = delayed ? 1 : 0 };
+                if (!ServiceNative.ChangeServiceConfig2W(svc, ServiceNative.SERVICE_CONFIG_DELAYED_AUTO_START_INFO, ref info)
+                    && delayed)
+                {
+                    // Clearing can fail on services that do not support the flag. That does not
+                    // matter once the start type itself changed. Failing to set it does matter:
+                    // the user asked for a delayed start and did not get one.
+                    return ActionResult.Fail(
+                        "The start type was set to Automatic, but Windows did not accept the delayed start: "
+                        + ScmError(Marshal.GetLastPInvokeError()));
+                }
+                return ActionResult.Ok;
+            }
+            finally { ServiceNative.CloseServiceHandle(svc); }
         }
-        catch (UnauthorizedAccessException) { return ActionResult.Fail("Administrator rights required."); }
         catch (Exception ex) { return ActionResult.Fail(ex.Message); }
+        finally { ServiceNative.CloseServiceHandle(scm); }
     }
 
     // ---------------------------------------------------------------- internals
+
+    private static string ScmError(int error) => error switch
+    {
+        ServiceNative.ERROR_ACCESS_DENIED => "Windows denied access to this service.",
+        ServiceNative.ERROR_SERVICE_DOES_NOT_EXIST => "Service not found.",
+        _ => new Win32Exception(error).Message,
+    };
 
     private static ActionResult Control(string name, Action<ServiceController> act)
     {

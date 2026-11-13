@@ -14,6 +14,17 @@ public enum StartupSource
     StartupFolderUser,
     StartupFolderCommon,
     ScheduledTask,
+
+    /// <summary>
+    /// HKLM\SOFTWARE\WOW6432Node\...\Run: where 32-bit installers register an all-users startup
+    /// entry. A 64-bit process reading HKLM\SOFTWARE\...\Run never sees it, so these used to be
+    /// missing from the list even though Task Manager shows them. Added at the end so existing
+    /// values keep their numbers.
+    /// </summary>
+    RunMachine32,
+
+    /// <summary>The 32-bit counterpart of <see cref="RunOnceMachine"/>.</summary>
+    RunOnceMachine32,
 }
 
 public sealed record StartupEntry
@@ -36,6 +47,8 @@ public sealed record StartupEntry
         StartupSource.RunMachine => "Registry · all users",
         StartupSource.RunOnceUser => "Registry · run once (this user)",
         StartupSource.RunOnceMachine => "Registry · run once (all users)",
+        StartupSource.RunMachine32 => "Registry · all users (32-bit)",
+        StartupSource.RunOnceMachine32 => "Registry · run once (all users, 32-bit)",
         StartupSource.StartupFolderUser => "Startup folder · this user",
         StartupSource.StartupFolderCommon => "Startup folder · all users",
         StartupSource.ScheduledTask => "Scheduled task · at logon or boot",
@@ -45,7 +58,14 @@ public sealed record StartupEntry
     /// <summary>The Task Scheduler path, for scheduled-task entries.</summary>
     public string? TaskPath { get; init; }
 
-    public bool RequiresAdmin => Source is StartupSource.RunMachine or StartupSource.RunOnceMachine or StartupSource.StartupFolderCommon;
+    public bool RequiresAdmin => Source is StartupSource.RunMachine or StartupSource.RunOnceMachine
+        or StartupSource.RunMachine32 or StartupSource.RunOnceMachine32 or StartupSource.StartupFolderCommon;
+
+    /// <summary>A RunOnce entry, which Windows runs a single time and StartupApproved does not govern.</summary>
+    public bool IsRunOnce => Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine or StartupSource.RunOnceMachine32;
+
+    /// <summary>A regular (not RunOnce) registry Run entry.</summary>
+    public bool IsRun => Source is StartupSource.RunUser or StartupSource.RunMachine or StartupSource.RunMachine32;
 }
 
 /// <summary>
@@ -60,13 +80,23 @@ public static class StartupProvider
     private const string ApprovedRun = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
     private const string ApprovedFolder = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
 
+    // The 32-bit view of the machine Run keys. PowerX is a 64-bit process, so the registry
+    // redirector never sends it here on its own; the WOW6432Node path has to be named. Windows
+    // keeps the on/off state for these entries in a separate StartupApproved\Run32 key (HKLM only:
+    // HKCU\SOFTWARE is not split into 32-bit and 64-bit views, so there is no per-user Run32).
+    private const string RunKey32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
+    private const string RunOnceKey32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\RunOnce";
+    private const string ApprovedRun32 = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
+
     public static IReadOnlyList<StartupEntry> Enumerate()
     {
         var list = new List<StartupEntry>();
         ReadRun(list, Registry.CurrentUser, RunKey, StartupSource.RunUser, ApprovedRun, Registry.CurrentUser);
         ReadRun(list, Registry.LocalMachine, RunKey, StartupSource.RunMachine, ApprovedRun, Registry.LocalMachine);
+        ReadRun(list, Registry.LocalMachine, RunKey32, StartupSource.RunMachine32, ApprovedRun32, Registry.LocalMachine);
         ReadRun(list, Registry.CurrentUser, RunOnceKey, StartupSource.RunOnceUser, null, null);
         ReadRun(list, Registry.LocalMachine, RunOnceKey, StartupSource.RunOnceMachine, null, null);
+        ReadRun(list, Registry.LocalMachine, RunOnceKey32, StartupSource.RunOnceMachine32, null, null);
         ReadFolder(list, UserStartupFolder, StartupSource.StartupFolderUser, Registry.CurrentUser);
         ReadFolder(list, CommonStartupFolder, StartupSource.StartupFolderCommon, Registry.LocalMachine);
 
@@ -88,8 +118,7 @@ public static class StartupProvider
     }
 
     /// <summary>True when <see cref="SetEnabled"/> can actually change this entry's state.</summary>
-    public static bool CanToggle(StartupEntry entry) =>
-        entry.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine);
+    public static bool CanToggle(StartupEntry entry) => !entry.IsRunOnce;
 
     /// <summary>
     /// True when <see cref="Remove"/> can delete this entry: a RunOnce value (which can't be
@@ -99,8 +128,37 @@ public static class StartupProvider
     /// at their source.
     /// </summary>
     public static bool CanRemove(StartupEntry entry) =>
-        entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine
-        || (entry.Broken && entry.Source is StartupSource.RunUser or StartupSource.RunMachine);
+        entry.IsRunOnce || (entry.Broken && entry.IsRun);
+
+    /// <summary>
+    /// The registry key a Run or RunOnce entry lives in, or null for any other source. Remove has
+    /// to delete from the key the entry was read from: a 32-bit entry deleted from the 64-bit key
+    /// would report success while the entry stayed exactly where it was.
+    /// </summary>
+    internal static (bool Machine, string SubKey)? RegistryLocation(StartupSource source) => source switch
+    {
+        StartupSource.RunUser => (false, RunKey),
+        StartupSource.RunOnceUser => (false, RunOnceKey),
+        StartupSource.RunMachine => (true, RunKey),
+        StartupSource.RunOnceMachine => (true, RunOnceKey),
+        StartupSource.RunMachine32 => (true, RunKey32),
+        StartupSource.RunOnceMachine32 => (true, RunOnceKey32),
+        _ => null,
+    };
+
+    /// <summary>
+    /// The StartupApproved key that holds the on/off state for an entry from this source, and
+    /// whether it is under HKLM. Null for sources StartupApproved does not govern (RunOnce, tasks).
+    /// </summary>
+    internal static (bool Machine, string SubKey)? ApprovedLocation(StartupSource source) => source switch
+    {
+        StartupSource.RunUser => (false, ApprovedRun),
+        StartupSource.RunMachine => (true, ApprovedRun),
+        StartupSource.RunMachine32 => (true, ApprovedRun32),
+        StartupSource.StartupFolderUser => (false, ApprovedFolder),
+        StartupSource.StartupFolderCommon => (true, ApprovedFolder),
+        _ => null,
+    };
 
     private const string RemovedBackup = @"SOFTWARE\PowerX\RemovedRunOnce";
 
@@ -110,12 +168,11 @@ public static class StartupProvider
     /// </summary>
     public static ActionResult Remove(StartupEntry entry)
     {
-        if (!CanRemove(entry))
+        if (!CanRemove(entry) || RegistryLocation(entry.Source) is not { } location)
             return ActionResult.Fail("This entry can't be removed here. Use the On/Off switch instead.");
+        var (machine, subKey) = location;
         try
         {
-            bool machine = entry.Source is StartupSource.RunOnceMachine or StartupSource.RunMachine;
-            string subKey = entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine ? RunOnceKey : RunKey;
             var root = machine ? Registry.LocalMachine : Registry.CurrentUser;
             using var key = root.OpenSubKey(subKey, writable: true);
             if (key is null) return ActionResult.Ok;   // key not present, nothing to remove
@@ -148,18 +205,18 @@ public static class StartupProvider
 
         // RunOnce is not governed by StartupApproved — Windows runs the entry once at the next
         // start regardless. Writing a "disabled" marker here would be a silent no-op, so refuse.
-        if (entry.Source is StartupSource.RunOnceUser or StartupSource.RunOnceMachine)
+        if (entry.IsRunOnce)
             return ActionResult.Fail(
                 "RunOnce entries run a single time at the next sign-in and cannot be disabled. " +
                 "Use \"Remove entry\" from the … menu if you don't want it to run.");
 
+        if (ApprovedLocation(entry.Source) is not { } approved)
+            return ActionResult.Fail("This entry can't be switched on or off here.");
+
         try
         {
-            bool folder = entry.Source is StartupSource.StartupFolderUser or StartupSource.StartupFolderCommon;
-            var root = entry.RequiresAdmin ? Registry.LocalMachine : Registry.CurrentUser;
-            string approvedKey = folder ? ApprovedFolder : ApprovedRun;
-
-            using var key = root.CreateSubKey(approvedKey, writable: true);
+            var root = approved.Machine ? Registry.LocalMachine : Registry.CurrentUser;
+            using var key = root.CreateSubKey(approved.SubKey, writable: true);
             // 12-byte value: first byte 0x02 (enabled) or 0x03 (disabled), rest = timestamp (left 0).
             byte[] value = new byte[12];
             value[0] = (byte)(enabled ? 0x02 : 0x03);

@@ -27,6 +27,10 @@ internal static partial class ProcessNative
     [LibraryImport("kernel32.dll", SetLastError = true)]
     internal static partial uint GetPriorityClass(nint handle);
 
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool IsProcessCritical(nint handle, [MarshalAs(UnmanagedType.Bool)] out bool critical);
+
     [LibraryImport("ntdll.dll")]
     internal static partial int NtSuspendProcess(nint handle);
 

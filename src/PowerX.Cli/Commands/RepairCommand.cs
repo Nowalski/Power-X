@@ -29,11 +29,11 @@ internal static class RepairCommand
                 return 1;
 
             AnsiConsole.MarkupLineInterpolated($"[teal]{job.Title}[/]\n");
-            int code = CommandRunner.RunAsync(job, line => AnsiConsole.WriteLine(line)).GetAwaiter().GetResult();
-            AnsiConsole.MarkupLine(code == 0 ? "\n[green]✔ completed[/]" : $"\n[red]✖ exit {code}[/]");
-            if (code == 0 && job.OpenReportPath is not null && File.Exists(job.OpenReportPath))
-                AnsiConsole.MarkupLineInterpolated($"[grey]Report:[/] {job.OpenReportPath}");
-            return code == 0 ? 0 : 1;
+            var run = CommandRunner.RunAsync(job, line => AnsiConsole.WriteLine(line)).GetAwaiter().GetResult();
+            AnsiConsole.MarkupLine(run.ExitCode == 0 ? "\n[green]✔ completed[/]" : $"\n[red]✖ exit {run.ExitCode}[/]");
+            if (run.ExitCode == 0 && run.ReportPath is not null && File.Exists(run.ReportPath))
+                AnsiConsole.MarkupLineInterpolated($"[grey]Report:[/] {run.ReportPath}");
+            return run.ExitCode == 0 ? 0 : 1;
         }
 
         AnsiConsole.MarkupLine("usage: powerx repair [[list]] | run <#>");

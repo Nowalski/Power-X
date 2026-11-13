@@ -43,7 +43,12 @@ public sealed class ProcessProvider
             while ((status = NtDll.NtQuerySystemInformation(
                        NtDll.SystemProcessInformation, buffer, size, out uint needed)) == unchecked((int)0xC0000004))
             {
+                // Forget the pointer before allocating. If AllocHGlobal throws, _buffer must not
+                // still name memory that has already been freed: both the catch below and the
+                // finalizer free _buffer when it is non-zero, which would be a double free.
                 Marshal.FreeHGlobal(buffer);
+                _buffer = 0;
+                _bufferSize = 0;
                 size = needed + (64 * 1024);
                 buffer = _buffer = Marshal.AllocHGlobal((int)size);
                 _bufferSize = (int)size;

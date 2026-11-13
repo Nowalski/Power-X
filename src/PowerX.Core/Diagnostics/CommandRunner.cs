@@ -10,17 +10,30 @@ public static class CommandRunner
 {
     public sealed record Step(string File, string Arguments);
 
+    /// <summary>Outcome of a job: its exit code, plus a report to open if it produced one.</summary>
+    public sealed record JobRun(int ExitCode, string? ReportPath);
+
     public sealed record Job(
         string Category,
         string Title,
         string Explanation,
         IReadOnlyList<Step> Steps,
         bool Destructive = false,
-        string? OpenReportPath = null)
+        string? OpenReportPath = null,
+        Func<Action<string>, CancellationToken, Task<JobRun>>? Custom = null)
     {
         public Job(string category, string title, string explanation, string file, string arguments,
                    bool destructive = false, string? openReport = null)
             : this(category, title, explanation, new Step[] { new(file, arguments) }, destructive, openReport) { }
+
+        /// <summary>
+        /// A job that is not just "run this exe": it drives something itself and decides at run time
+        /// what, if anything, there is to open. Used where a plain command line cannot do the work
+        /// (see <see cref="SystemDiagnosticsReport"/>).
+        /// </summary>
+        public Job(string category, string title, string explanation,
+                   Func<Action<string>, CancellationToken, Task<JobRun>> custom)
+            : this(category, title, explanation, [], false, null, custom) { }
     }
 
     private static string Win => Environment.GetFolderPath(Environment.SpecialFolder.Windows);
@@ -113,8 +126,8 @@ public static class CommandRunner
             "powercfg.exe", $"/batteryreport /output \"{Path.Combine(Temp, "powerx-battery.html")}\"",
             openReport: Path.Combine(Temp, "powerx-battery.html")),
         new("Reports", "Generate a system diagnostics report",
-            "Runs perfmon's system diagnostics collector for 60 seconds and opens the result.",
-            "perfmon.exe", "/report"),
+            $"Collects performance counters, a kernel trace and a full hardware / driver / service inventory for 60 seconds, then opens the HTML report Windows builds from it. Runs without opening Performance Monitor. Writes roughly 50 MB per run under {SystemDrive}\\PerfLogs.",
+            SystemDiagnosticsReport.RunAsync),
         new("Reports", "List boot configuration (BCD)",
             "Prints the boot menu entries and settings. Read-only.",
             "bcdedit.exe", "/enum"),
@@ -123,9 +136,29 @@ public static class CommandRunner
             "driverquery.exe", "/fo table /si"),
     ];
 
-    /// <summary>Run every step of a job, streaming output. Returns the last non-zero exit code, or 0.</summary>
-    public static async Task<int> RunAsync(Job job, Action<string> onLine, CancellationToken ct = default)
+    /// <summary>
+    /// A report is only this run's report if it was written after this run started.
+    ///
+    /// Report jobs write to a fixed path that survives between runs, and the tools behind them do
+    /// not reliably fail when they fail: powercfg /batteryreport exits 0 and still prints "Battery
+    /// life report saved to ..." when the output path was not writable and nothing was written
+    /// (measured). Without this check, a run that quietly wrote nothing would find the previous
+    /// run's file sitting there and open it as if it were new.
+    /// </summary>
+    public static bool IsFresh(string path, DateTime startedAtUtc)
     {
+        try { return File.Exists(path) && File.GetLastWriteTimeUtc(path) >= startedAtUtc; }
+        catch (Exception) { return false; }
+    }
+
+    /// <summary>
+    /// Run every step of a job, streaming output. The exit code is the last non-zero one, or 0.
+    /// </summary>
+    public static async Task<JobRun> RunAsync(Job job, Action<string> onLine, CancellationToken ct = default)
+    {
+        if (job.Custom is not null) return await job.Custom(onLine, ct);
+
+        var startedAtUtc = DateTime.UtcNow;
         int result = 0;
         foreach (var step in job.Steps)
         {
@@ -134,7 +167,16 @@ public static class CommandRunner
             if (code != 0) result = code;
             if (ct.IsCancellationRequested) break;
         }
-        return result;
+
+        if (job.OpenReportPath is null) return new JobRun(result, null);
+
+        if (IsFresh(job.OpenReportPath, startedAtUtc))
+            return new JobRun(result, job.OpenReportPath);
+
+        // Do not offer a report this run did not write. Saying so beats opening stale data.
+        if (result == 0)
+            onLine($"No report was written to {job.OpenReportPath}, so there is nothing to open.");
+        return new JobRun(result, null);
     }
 
     private static async Task<int> RunStepAsync(Step step, Action<string> onLine, CancellationToken ct)

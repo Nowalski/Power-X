@@ -43,26 +43,76 @@ public static class ProcessActions
             ? ActionResult.Ok
             : ActionResult.Fail(Win32("End task")));
 
-    /// <summary>Terminate the process and every descendant, leaves-first.</summary>
-    public static ActionResult EndTaskTree(int pid, ProcessSnapshot snapshot)
+    /// <summary>
+    /// Whether Windows marks the process as critical. Ending a critical process stops the whole
+    /// PC with a CRITICAL_PROCESS_DIED bugcheck, and PowerX runs elevated, so for some of them
+    /// TerminateProcess would actually succeed. This only reports it; the caller decides how
+    /// loudly to warn. PIDs 0 (Idle) and 4 (System) count as critical. A process that cannot be
+    /// opened, or a query that fails, reports false: query-limited is the weakest access there is,
+    /// so a process PowerX cannot open for that is in practice one it cannot terminate either.
+    /// </summary>
+    public static bool IsCritical(int pid)
     {
+        if (pid <= 4) return true;
+        nint h = ProcessNative.OpenProcess(ProcessNative.PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)pid);
+        if (h == 0) return false;
+        try
+        {
+            return ProcessNative.IsProcessCritical(h, out bool critical) && critical;
+        }
+        finally
+        {
+            ProcessNative.CloseHandle(h);
+        }
+    }
+
+    /// <summary>
+    /// The process and every descendant in <paramref name="snapshot"/>, leaves first: every child
+    /// comes before its parent, which is the order <see cref="EndTaskTree"/> ends them in.
+    ///
+    /// PowerX itself is never in the list, and neither is anything below it. End process tree on
+    /// the Explorer that started PowerX would otherwise end PowerX halfway through the list and
+    /// leave the rest of the tree running. Anything below PowerX is something PowerX started and
+    /// may still be waiting on (a repair job, for one), so it is left alone as well.
+    /// </summary>
+    public static IReadOnlyList<int> TreePids(int pid, ProcessSnapshot snapshot)
+    {
+        int self = Environment.ProcessId;
         var order = new List<int>();
         var seen = new HashSet<int>();
         Collect(pid);
         order.Reverse();
-        var failures = 0;
-        foreach (var p in order)
-            if (!EndTask(p).Success) failures++;
-        return failures == 0 ? ActionResult.Ok : ActionResult.Fail($"{failures} process(es) could not be ended");
+        return order;
 
         void Collect(int parent)
         {
+            if (parent == self) return;
             // PIDs are reused, so a stale parent PID can make the "tree" loop back on itself.
             if (!seen.Add(parent)) return;
             order.Add(parent);
             foreach (var child in snapshot.Processes.Where(x => x.ParentPid == parent && x.Pid != parent))
                 Collect(child.Pid);
         }
+    }
+
+    /// <summary>
+    /// Whether any process <see cref="EndTaskTree"/> would end is critical (see
+    /// <see cref="IsCritical"/>), so the caller can warn before the whole PC goes down with it.
+    /// </summary>
+    public static bool TreeHasCritical(int pid, ProcessSnapshot snapshot) =>
+        TreePids(pid, snapshot).Any(IsCritical);
+
+    /// <summary>Terminate the process and every descendant, leaves-first (see <see cref="TreePids"/>).</summary>
+    public static ActionResult EndTaskTree(int pid, ProcessSnapshot snapshot)
+    {
+        var order = TreePids(pid, snapshot);
+        if (order.Count == 0)
+            return ActionResult.Fail("This is PowerX itself. Close PowerX instead of ending its process tree.");
+
+        var failures = 0;
+        foreach (var p in order)
+            if (!EndTask(p).Success) failures++;
+        return failures == 0 ? ActionResult.Ok : ActionResult.Fail(failures == 1 ? "1 process could not be ended" : $"{failures} processes could not be ended");
     }
 
     public static ActionResult Suspend(int pid) => WithHandle(pid, ProcessNative.PROCESS_SUSPEND_RESUME, h =>

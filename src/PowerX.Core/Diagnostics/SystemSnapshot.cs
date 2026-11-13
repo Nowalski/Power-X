@@ -21,6 +21,14 @@ public sealed record ConfigSnapshot
     public string WindowsBuild { get; init; } = "";
     public bool Automatic { get; init; }
     public required Dictionary<SnapshotCategory, List<SnapshotItem>> Items { get; init; }
+
+    /// <summary>
+    /// The startup sources (<see cref="StartupSource"/> names) this snapshot read. Null in
+    /// snapshots saved before this was recorded; those covered
+    /// <see cref="SystemSnapshot.LegacyStartupSources"/>. Stored as strings so a snapshot written by
+    /// a newer PowerX, naming a source this one does not know, still loads.
+    /// </summary>
+    public List<string>? StartupSources { get; init; }
 }
 
 public enum ChangeKind { Added, Removed, Changed }
@@ -91,17 +99,45 @@ public static class SystemSnapshot
             WindowsBuild = build,
             Automatic = automatic,
             Items = items,
+            StartupSources = SnapshotStartupSources.Select(s => s.ToString()).ToList(),
         };
     }
 
+    /// <summary>
+    /// The startup sources a snapshot records. RunOnce entries are left out because they delete
+    /// themselves after running, which a diff would report as a change nobody made; scheduled
+    /// tasks have their own category.
+    /// </summary>
+    internal static readonly StartupSource[] SnapshotStartupSources =
+    [
+        StartupSource.RunUser, StartupSource.RunMachine, StartupSource.RunMachine32,
+        StartupSource.StartupFolderUser, StartupSource.StartupFolderCommon,
+    ];
+
+    /// <summary>
+    /// What every snapshot covered before <see cref="ConfigSnapshot.StartupSources"/> was recorded,
+    /// which was also before PowerX read the 32-bit Run key.
+    /// </summary>
+    internal static readonly StartupSource[] LegacyStartupSources =
+    [
+        StartupSource.RunUser, StartupSource.RunMachine,
+        StartupSource.StartupFolderUser, StartupSource.StartupFolderCommon,
+    ];
+
     private static List<SnapshotItem> CaptureStartup() => StartupProvider.Enumerate()
-        .Where(e => e.Source is not (StartupSource.RunOnceUser or StartupSource.RunOnceMachine
-                    or StartupSource.ScheduledTask))   // tasks have their own category
-        .Select(e => new SnapshotItem(
-            $"{e.Source}:{e.Name}".ToLowerInvariant(),
-            e.Name,
-            e.Enabled ? "enabled" : "disabled"))
+        .Where(e => SnapshotStartupSources.Contains(e.Source))
+        .Select(StartupItem)
         .ToList();
+
+    /// <summary>
+    /// The key is "source:name", so a 32-bit entry and a 64-bit entry with the same name stay two
+    /// separate items, and the key for every source that existed before keeps its old spelling,
+    /// so older snapshots still line up with new ones.
+    /// </summary>
+    internal static SnapshotItem StartupItem(StartupEntry e) => new(
+        $"{e.Source}:{e.Name}".ToLowerInvariant(),
+        e.Name,
+        e.Enabled ? "enabled" : "disabled");
 
     private static List<SnapshotItem> CaptureScheduledTasks() => ScheduledTasks.Enumerate()
         .Select(t => new SnapshotItem(t.Path.ToLowerInvariant(), t.Name, t.Enabled ? "enabled" : "disabled"))
@@ -220,6 +256,12 @@ public static class SystemSnapshot
     {
         var changes = new List<SnapshotChange>();
 
+        // A startup entry from a source only one of the two snapshots looked at is not a change
+        // on the PC. Without this, the first diff after PowerX started reading the 32-bit Run key
+        // listed every existing 32-bit entry as newly added.
+        var fromSources = CoveredStartupSources(from);
+        var toSources = CoveredStartupSources(to);
+
         foreach (SnapshotCategory cat in Enum.GetValues<SnapshotCategory>())
         {
             // Two entries can legitimately share a key (an installer that registers the same
@@ -230,13 +272,19 @@ public static class SystemSnapshot
             foreach (var (key, item) in after)
             {
                 if (!before.TryGetValue(key, out var old))
+                {
+                    if (cat == SnapshotCategory.Startup && !Covers(fromSources, key)) continue;
                     changes.Add(new SnapshotChange(cat, item.Label, ChangeKind.Added, null, item.State));
+                }
                 else if (!string.Equals(old.State, item.State, StringComparison.OrdinalIgnoreCase))
                     changes.Add(new SnapshotChange(cat, item.Label, ChangeKind.Changed, old.State, item.State));
             }
             foreach (var (key, old) in before)
-                if (!after.ContainsKey(key))
-                    changes.Add(new SnapshotChange(cat, old.Label, ChangeKind.Removed, old.State, null));
+            {
+                if (after.ContainsKey(key)) continue;
+                if (cat == SnapshotCategory.Startup && !Covers(toSources, key)) continue;
+                changes.Add(new SnapshotChange(cat, old.Label, ChangeKind.Removed, old.State, null));
+            }
         }
 
         changes = changes
@@ -253,5 +301,22 @@ public static class SystemSnapshot
         var d = new Dictionary<string, SnapshotItem>();
         foreach (var i in items ?? []) d[i.Key] = i;   // last write wins
         return d;
+    }
+
+    private static HashSet<string> CoveredStartupSources(ConfigSnapshot s) =>
+        new(s.StartupSources ?? LegacyStartupSources.Select(x => x.ToString()), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether a snapshot that read <paramref name="sources"/> would have seen the startup item
+    /// with this key. Keys are "source:name". A key whose prefix is not a startup source name is
+    /// counted as covered: there is nothing to say it was out of view, so it is reported as before.
+    /// </summary>
+    private static bool Covers(HashSet<string> sources, string key)
+    {
+        int colon = key.IndexOf(':');
+        if (colon <= 0) return true;
+        string source = key[..colon];
+        bool isKnownSource = Enum.GetNames<StartupSource>().Contains(source, StringComparer.OrdinalIgnoreCase);
+        return !isKnownSource || sources.Contains(source);
     }
 }

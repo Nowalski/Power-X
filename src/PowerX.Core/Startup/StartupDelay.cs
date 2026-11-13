@@ -22,7 +22,7 @@ public static class StartupDelay
     private const int TASK_RUNLEVEL_LUA = 0;
 
     public static bool CanDelay(StartupEntry e) =>
-        e.Source is StartupSource.RunUser or StartupSource.RunMachine
+        e.IsRun
         && !string.IsNullOrEmpty(e.ExecutablePath)
         && File.Exists(e.ExecutablePath);
 

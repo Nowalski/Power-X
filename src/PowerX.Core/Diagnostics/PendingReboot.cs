@@ -40,7 +40,8 @@ public static class PendingReboot
             using (var sm = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager"))
             {
                 if (sm?.GetValue("PendingFileRenameOperations") is string[] { Length: > 1 } ops)
-                    reasons.Add($"{ops.Length / 2} file(s) are queued to be replaced or deleted at the next restart. "
+                    reasons.Add((ops.Length / 2 == 1 ? "1 file is queued" : $"{ops.Length / 2} files are queued")
+                              + $" to be replaced or deleted at the next restart. "
                               + "This is often left behind by an installer and usually clears itself, but a setting or "
                               + "update that will not stick is the reason to restart.");
                 if (sm?.GetValue("PendingFileRenameOperations2") is string[] { Length: > 1 })
