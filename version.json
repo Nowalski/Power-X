@@ -1,10 +1,10 @@
 {
   "version": "0.1.24",
   "published": "2026-11-13",
-  "notes": "The system diagnostics report no longer opens Performance Monitor, Startup lists 32-bit apps, service start type changes apply at once, ending a critical Windows process warns first, the window remembers its size, and every page lines up the same way.",
+  "notes": "The system diagnostics report no longer opens Performance Monitor, Startup lists 32-bit apps, service start type changes apply at once, ending a critical Windows process warns first, the Processes list holds still like Task Manager, the WinSxS analysis shows progress, and every page lines up the same way.",
   "url": "https://github.com/Nowalski/Power-X/releases",
   "minimumWindowsBuild": 19041,
   "installerUrl": "https://github.com/Nowalski/Power-X/releases/download/v0.1.24/PowerX-Setup-0.1.24-win-x64.msi",
-  "installerSha256": "430f749c7da9d63918ec406b2dac920691a111a21155f07d18d1ad5594855123",
-  "installerBytes": 56459409
+  "installerSha256": "b95dd6f912962069e6b6c541c514f35c20321641ee9bc4774bc35bc165f46cee",
+  "installerBytes": 56471697
 }
