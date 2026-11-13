@@ -4,6 +4,27 @@ Running record of significant choices. Newest first. Each entry: context → dec
 
 ---
 
+## D-043 - Third sweep: fixes that never reached this repo, 32-bit startup entries, critical processes, layout and the website
+**Date** 2026-11-13
+**Decision** A third pass over the app and the first full pass over the website. Fixed together:
+
+- **Three older fixes had never reached this repository's source** (the same class D-041 found). "Generate a system diagnostics report" still ran `perfmon.exe /report`, which opens the Performance Monitor window, streams nothing and never says where the report went; it now drives the System Diagnostics collector set directly (`SystemDiagnosticsReport`) and opens the finished report. Report jobs only open a report written by that run (`CommandRunner.IsFresh`): `powercfg /batteryreport` exits 0 and claims success even when it wrote nothing, so an old report used to be opened as if it were new. `ProcessProvider` could free its buffer twice if growing it failed.
+- **Startup lists 32-bit entries.** Programs that register under `HKLM\SOFTWARE\WOW6432Node\...\Run` (Discord's machine installer, for one) were missing although Task Manager shows them. They are listed, switched through `StartupApproved\Run32` and removed from the right key. A snapshot records which startup sources it read, so "What changed" does not report every existing 32-bit entry as newly added after the update.
+- **Service start type goes through the Service Control Manager.** It was a direct registry write, which the SCM does not see until the next boot: services.msc kept the old start type and a service set to Disabled could still be started. `ChangeServiceConfig` applies it at once.
+- **Critical processes.** PowerX is elevated, so End task can end a process Windows marks as critical, which stops the PC. End task and End process tree now warn about that even when confirmations are switched off in Settings. End process tree never includes PowerX itself or what it started.
+- **Debloat says what it does.** The page and its confirmation said apps are removed "for your user account"; removal is for every account and the app is deprovisioned for new ones. The text now says so.
+- **Reports and documents open with normal rights.** HTML reports (Repair, battery), the saved system report and the notices file were opened by the elevated app, so the browser or editor ran as administrator. They go through `ShellLauncher.Open` like web links do since D-042.
+- **Smaller fixes:** a failed update check is no longer recorded as a check (it used to hold off the retry for 20 hours); the system report dialog was wider than a dialog can be and lost its right edge; the God Mode shortcut no longer creates a folder in `%TEMP%`; plurals.
+- **New:** the window remembers its size, position and maximized state, and has a minimum size. The Processes filter also matches a PID.
+- **Layout** (every page screenshotted in demo mode at 1024x700 and 1600x1000, before and after): every page now starts at the same left edge (capped pages were centred, so the title moved sideways between pages; `PageLayout.LeftCap` replaces `CenterCap`); header rows and list cards share one right edge on the pages where they differed by the scrollbar gutter; the Processes headers line up with their values and "Threads" is no longer cut at 1024 px (saved column widths are squeezed to fit a narrow window); Scheduled tasks no longer truncates names with room to spare or clips its chips; Startup and Debloat title rows wrap; the GPU video-memory bar and per-GPU cards, the Windows Update status dot and the Repair console hint are fixed.
+- **Website:** a dead menu link, a section label that covered ten unrelated features, two claims that were not true (no desktop shortcut; "never faster than once per second"), share metadata that pointed at a relative image, small text and the primary button below WCAG AA contrast, heading order, a menu that did nothing without JavaScript. Download buttons now point straight at the current files using the repo's `version.json` and fall back to the releases page. Added `404.html`, `robots.txt`, `sitemap.xml`.
+
+**Not verified on a real system:** the minimum window size assumes `OverlappedPresenter.PreferredMinimumWidth/Height` are physical pixels (the API reference gives no unit; checked at 100% scale only). The start type change, switching a 32-bit startup entry and the critical-process warning were not exercised against real services, HKLM or a real critical process, since tests must not change the machine.
+**Still open:** as in D-042 (update MSI staging, code signing). The start-up delay task is named by entry name only, so two entries with one name in different sources would share a delay task.
+**Status** Active (0.1.24).
+
+---
+
 ## D-042 - Second sweep: unelevated launches, other display languages, leftovers from D-041
 **Date** 2026-11-12
 **Decision** A second pass over the repo, plus the items D-041 left open. Fixed together:
