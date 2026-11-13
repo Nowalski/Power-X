@@ -50,6 +50,47 @@ public sealed partial class HomePage : Page
             "Permanently delete everything in the Recycle Bin?");
         AddAction("Windows Update", () => QuickActionsCore.OpenSettings("ms-settings:windowsupdate"));
         AddAction("Startup apps", () => QuickActionsCore.OpenSettings("ms-settings:startupapps"));
+        AddCopySystemInfo();
+    }
+
+    /// <summary>
+    /// Copies a short plain-text spec sheet (Windows, CPU, memory, GPU, uptime) for pasting into
+    /// a forum post or a support chat. No machine name or user name: it is meant to be shared.
+    /// </summary>
+    private void AddCopySystemInfo()
+    {
+        var btn = new Button { Content = "Copy system info" };
+        ToolTipService.SetToolTip(btn, "Copy Windows, CPU, memory, GPU and uptime as text, for a forum post or support chat. No machine or user name.");
+        btn.Click += async (_, _) =>
+        {
+            bool ok = Services.Clip.SetText(SystemInfoText());
+            btn.Content = ok ? "Copied ✓" : "Clipboard busy, try again";
+            await Task.Delay(1800);
+            btn.Content = "Copy system info";
+        };
+        QuickActions.Children.Add(btn);
+    }
+
+    internal static string SystemInfoText()
+    {
+        var info = SystemInfoProvider.Collect();
+        var hub = TelemetryHub.Instance;
+        var sb = new System.Text.StringBuilder();
+        string version = string.IsNullOrEmpty(info.DisplayVersion) ? "" : $" {info.DisplayVersion}";
+        sb.AppendLine($"OS:      {info.WindowsEdition}{version} (build {info.BuildString}, {info.Architecture})");
+        sb.AppendLine($"CPU:     {info.CpuName} ({info.LogicalProcessors} logical processors)");
+        sb.AppendLine($"Memory:  {Fmt.Bytes(info.TotalPhysicalMemory)}");
+        foreach (var gpu in hub.GpuAdapters)
+        {
+            string vram = gpu.DedicatedMemoryTotal > 0 ? $", {Fmt.Bytes(gpu.DedicatedMemoryTotal)} VRAM" : "";
+            string driver = string.IsNullOrEmpty(gpu.DriverVersion) ? "" : $", driver {gpu.DriverVersion}";
+            sb.AppendLine($"GPU:     {gpu.Name}{vram}{driver}");
+        }
+        if (hub.LastCpu?.Value is { } cpu)
+            sb.AppendLine($"Uptime:  {Fmt.Duration(cpu.Uptime)}");
+        var v = typeof(HomePage).Assembly.GetName().Version;
+        sb.Append($"(PowerX {v?.ToString(3)})");
+        return sb.ToString();
     }
 
     private void AddAction(string label, Func<ActionResult> run, string? confirm = null)

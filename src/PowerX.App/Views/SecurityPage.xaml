@@ -6,7 +6,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock Text="Security" Style="{StaticResource PageTitleStyle}" />
                     <ctl:InfoButton Title="What this is"
@@ -22,6 +22,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Microsoft Defender" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="ModeText" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
                     <ctl:WrapPanel x:Name="Chips" HorizontalSpacing="8" VerticalSpacing="8" />
                     <TextBlock x:Name="DefsText" Style="{StaticResource MutedStyle}" FontSize="12" />
@@ -32,6 +33,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Scan" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="QuickScanButton" Content="Quick scan" Click="QuickScan_Click" />
                         <Button x:Name="FullScanButton" Content="Full scan" Click="FullScan_Click" />
@@ -47,6 +49,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Threats Defender has caught" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <StackPanel x:Name="ThreatList" Spacing="6" />
                 </StackPanel>
             </Border>
@@ -54,6 +57,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Check a file" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock Style="{StaticResource MutedStyle}" FontSize="12" TextWrapping="Wrap"
                                Text="Look a file's SHA-256 up in the CIRCL hash database (hashlookup.circl.lu), a free, open catalogue of known files. Only the hash is sent." />
                     <Grid ColumnSpacing="8">

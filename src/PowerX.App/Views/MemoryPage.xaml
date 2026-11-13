@@ -7,7 +7,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <TextBlock Text="Memory" Style="{StaticResource PageTitleStyle}" />
                 <TextBlock x:Name="HwSummary" Style="{StaticResource SectionHeaderStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Reading hardware…"
@@ -75,6 +75,7 @@
                             <ctl:InfoButton Title="Windows memory terms"
                                             Body="In use is RAM actively held by processes and the kernel. Cached is standby data, mostly the file cache. It can be reclaimed instantly, so Windows counts it as available. Committed is the total memory the OS has promised to processes, backed by RAM plus the page file, and the commit limit is the ceiling. High commit with low in-use is normal. Paged and non-paged pool are kernel allocations." />
                         </StackPanel>
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Breakdown">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:NameValueVm">
@@ -97,6 +98,7 @@
                 <Border x:Name="AboutCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
                     <StackPanel Spacing="6">
                         <TextBlock Text="About your memory" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
                                    Text="Committed memory is what Windows has promised to processes, backed by RAM plus the page file. The commit limit is the ceiling." />
                         <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
@@ -110,6 +112,7 @@
                         VerticalAlignment="Top" Visibility="Collapsed">
                     <StackPanel Spacing="2">
                         <TextBlock Text="Installed modules" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Modules">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:NameValueVm">

@@ -5,7 +5,11 @@
     xmlns:ctl="using:PowerX.App.Controls">
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
-            <TextBlock Text="Tools" Style="{StaticResource PageTitleStyle}" />
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
+                <TextBlock Text="Tools" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                           Text="Power plans, Windows Update, disk cleanup, restore points and shortcuts to the Windows consoles you would otherwise dig for." />
+            </StackPanel>
 
             <InfoBar x:Name="RebootBar" IsOpen="False" IsClosable="False" Severity="Warning"
                      Title="A restart is pending">
@@ -25,6 +29,7 @@
                         <ctl:InfoButton Title="Power plans"
                                         Body="A power plan controls how hard Windows works to lower CPU frequency and park cores when idle. Balanced is right for almost everyone. High and Ultimate performance keep clocks high and cut some idle latency. That is worth a few percent in latency-sensitive work, costs battery on a laptop, and does nothing measurable for FPS in most games. Power saver caps performance to stretch battery life." />
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="PowerCurrent" Style="{StaticResource MutedStyle}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Balanced" Click="Balanced_Click" />
@@ -53,6 +58,7 @@
                                        VerticalAlignment="Center" TextWrapping="Wrap" />
                         </Grid>
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Pause 7 days" Tag="7" Click="WuPause_Click" />
                         <Button Content="Pause 35 days (max)" Tag="35" Click="WuPause_Click" />
@@ -79,6 +85,7 @@
                                 Style="{StaticResource AccentButtonStyle}" IsEnabled="False" Click="Clean_Click"
                                 VerticalAlignment="Center" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
 
                     <StackPanel Spacing="6">
                         <ctl:SegmentBar x:Name="CleanupBar" />
@@ -97,6 +104,7 @@
                         <ctl:InfoButton Title="The component store"
                                         Body="WinSxS holds every version of every Windows component, so updates can be uninstalled and system files repaired. It looks huge in Explorer because most of it is hard links shared with the live system, not a second copy. The part that is safe to reclaim is superseded components and backups. PowerX runs the Microsoft-recommended cleanup only, never /ResetBase (which would permanently block uninstalling installed updates)." />
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="WinSxsText" Style="{StaticResource MutedStyle}" Text="Not analyzed yet." TextWrapping="Wrap" />
                     <!-- While DISM runs: indeterminate until it reports its first percentage, then
                          determinate. The status line under it says what is running, how far and
@@ -123,6 +131,7 @@
                         <ctl:InfoButton Title="Battery wear"
                                         Body="Every rechargeable battery loses capacity with age and charge cycles. Wear is how much of the original (design) capacity is gone: under 15 percent is normal for a healthy battery, 30 percent or more means noticeably shorter runtime. The numbers come from powercfg's battery report. Nothing here changes any setting." />
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="BatteryHeadline" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock x:Name="BatteryDetail" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -142,6 +151,7 @@
                         <TextBlock Text="Disks" Style="{StaticResource SectionHeaderStyle}" />
                         <Button Grid.Column="1" Content="Open Disk Management" Click="DiskMgmt_Click" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <StackPanel x:Name="DiskList" Spacing="8" />
                 </StackPanel>
             </Border>
@@ -159,6 +169,7 @@
                         </StackPanel>
                         <Button x:Name="EnvAdd" Grid.Column="1" Content="Add" Click="EnvAdd_Click" VerticalAlignment="Center" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBox x:Name="EnvFilter" PlaceholderText="Filter…" TextChanged="EnvFilter_Changed" />
                     <ItemsControl x:Name="EnvList" MaxHeight="320" />
                 </StackPanel>
@@ -171,6 +182,7 @@
                         <ctl:InfoButton Title="Restore points"
                                         Body="A restore point is a snapshot of system files, drivers, the registry and installed programs. It does not include your documents. If a change breaks Windows you can roll back to one. Make one before a batch of tweaks or a driver update. Windows does the rollback itself, and it needs a restart." />
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="RestoreStatus" Style="{StaticResource MutedStyle}" Text="Checking…" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="CreateRpButton" Content="Create restore point" Click="CreateRp_Click" />
@@ -183,19 +195,23 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="14">
                     <TextBlock Text="System shortcuts" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
 
                     <StackPanel Spacing="6">
                         <TextBlock Text="Files &amp; folders" Style="{StaticResource MutedStyle}" />
                         <ctl:WrapPanel x:Name="ShortcutRow1" HorizontalSpacing="8" VerticalSpacing="8" />
                     </StackPanel>
+                    <Border Style="{StaticResource RowDividerStyle}" />
                     <StackPanel Spacing="6">
                         <TextBlock Text="Diagnostics" Style="{StaticResource MutedStyle}" />
                         <ctl:WrapPanel x:Name="ShortcutRow2" HorizontalSpacing="8" VerticalSpacing="8" />
                     </StackPanel>
+                    <Border Style="{StaticResource RowDividerStyle}" />
                     <StackPanel Spacing="6">
                         <TextBlock Text="Management consoles" Style="{StaticResource MutedStyle}" />
                         <ctl:WrapPanel x:Name="ShortcutRow3" HorizontalSpacing="8" VerticalSpacing="8" />
                     </StackPanel>
+                    <Border Style="{StaticResource RowDividerStyle}" />
                     <StackPanel Spacing="6">
                         <TextBlock Text="Settings pages" Style="{StaticResource MutedStyle}" />
                         <ctl:WrapPanel x:Name="ShortcutRow4" HorizontalSpacing="8" VerticalSpacing="8" />
@@ -210,6 +226,7 @@
                         <ctl:InfoButton Title="About these notes"
                                         Body="Short, vendor-neutral explanations of the settings PowerX can change, so you can decide for yourself. No affiliate links, no scare tactics." />
                     </StackPanel>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <StackPanel x:Name="LearnList" Spacing="8" />
                 </StackPanel>
             </Border>

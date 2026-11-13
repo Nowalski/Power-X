@@ -11,7 +11,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Spacing="2">
+        <StackPanel Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Text="Repair &amp; diagnostics" Style="{StaticResource PageTitleStyle}" />
                 <ctl:InfoButton Title="How to repair Windows"

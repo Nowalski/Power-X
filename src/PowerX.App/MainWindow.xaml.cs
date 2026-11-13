@@ -37,6 +37,9 @@ public sealed partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            // A QA run that forced its start page must not become the user's "last page".
+            if (Environment.GetEnvironmentVariable("POWERX_START_PAGE") is null)
+                AppSettings.Current.LastPage = _currentTag;
             SavePlacement();
             TelemetryHub.Instance.Shutdown();
         };
@@ -57,7 +60,8 @@ public sealed partial class MainWindow : Window
         TrackPlacement();
         ((FrameworkElement)Content).Loaded += (_, _) => ApplyMinimumSize();
 
-        var startPage = Environment.GetEnvironmentVariable("POWERX_START_PAGE")?.Trim().ToLowerInvariant();
+        var startPage = (Environment.GetEnvironmentVariable("POWERX_START_PAGE") ?? StartPageFromSettings())
+            ?.Trim().ToLowerInvariant();
         if (!string.IsNullOrEmpty(startPage) && startPage != "home")
         {
             ContentFrame.Navigate(typeof(HomePage));
@@ -81,6 +85,15 @@ public sealed partial class MainWindow : Window
                 try { PowerX.Core.Diagnostics.SystemSnapshot.CaptureIfStale(TimeSpan.FromHours(20)); }
                 catch (Exception ex) { App.Log("Snapshot", ex); }
             });
+    }
+
+    /// <summary>The navigation tag of the page on screen; remembered on close for "Last page used".</summary>
+    private string _currentTag = "home";
+
+    private static string StartPageFromSettings()
+    {
+        var s = AppSettings.Current;
+        return s.StartPage == "last" ? (string.IsNullOrEmpty(s.LastPage) ? "home" : s.LastPage) : s.StartPage;
     }
 
     private string? _updateUrl;
@@ -243,11 +256,13 @@ public sealed partial class MainWindow : Window
     {
         if (args.IsSettingsSelected)
         {
+            _currentTag = "settings";
             ContentFrame.Navigate(typeof(SettingsPage), null, new EntranceNavigationTransitionInfo());
             return;
         }
 
         if ((args.SelectedItemContainer as NavigationViewItem)?.Tag is not string tag) return;
+        _currentTag = tag;
         var page = tag switch
         {
             "home" => typeof(HomePage),

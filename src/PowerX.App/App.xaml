@@ -24,6 +24,43 @@
                 <Setter Property="Margin" Value="0,0,0,4" />
             </Style>
 
+            <!-- Dividers. Same 1 px stroke as the line above the version in the navigation pane
+                 footer (NavigationView draws that one with DividerStrokeColorDefaultBrush), so every
+                 separator in the app reads as the same material. -->
+
+            <!-- A page's title block (title, subtitle, info button): the rule under it separates the
+                 page's name from its content on every page, at the same distance. -->
+            <Style x:Key="PageHeaderStyle" TargetType="StackPanel">
+                <Setter Property="Spacing" Value="2" />
+                <Setter Property="Padding" Value="0,0,0,14" />
+                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+            </Style>
+            <!-- The same, for a title block laid out as a Grid (a title with a picker beside it). -->
+            <Style x:Key="PageHeaderGridStyle" TargetType="Grid">
+                <Setter Property="Padding" Value="0,0,0,14" />
+                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+            </Style>
+
+            <!-- Under a card's header row. The negative side margins equal CardStyle's padding, so the
+                 line runs edge to edge across the card like the pane footer's does across the pane.
+                 Only for cards with the default 18 px padding. -->
+            <Style x:Key="CardDividerStyle" TargetType="Border">
+                <Setter Property="Height" Value="1" />
+                <Setter Property="Margin" Value="-18,0,-18,0" />
+                <Setter Property="Background" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                <Setter Property="IsHitTestVisible" Value="False" />
+            </Style>
+
+            <!-- Between rows or groups inside a card (Settings rows, shortcut groups). Inset to the
+                 content, not edge to edge, so it groups without cutting the card in two. -->
+            <Style x:Key="RowDividerStyle" TargetType="Border">
+                <Setter Property="Height" Value="1" />
+                <Setter Property="Background" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                <Setter Property="IsHitTestVisible" Value="False" />
+            </Style>
+
             <Style x:Key="MetricValueStyle" TargetType="TextBlock" BasedOn="{StaticResource DisplayTextBlockStyle}">
                 <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Menlo, monospace" />
                 <Setter Property="IsTextSelectionEnabled" Value="False" />

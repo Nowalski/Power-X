@@ -21,6 +21,11 @@ public sealed class AppSettings
     public bool ConfirmProcessActions { get; set; } = true;
     public bool BackgroundThrottle { get; set; } = true;
     public bool AutoCheckUpdates { get; set; } = true;
+    /// <summary>The page PowerX opens on: a navigation tag ("home", "health", "processes"...), or
+    /// "last" for <see cref="LastPage"/>.</summary>
+    public string StartPage { get; set; } = "home";
+    /// <summary>The page that was showing when PowerX last closed.</summary>
+    public string LastPage { get; set; } = "home";
     /// <summary>When an update check last succeeded. A failed check does not move this, so the
     /// daily silent check retries next launch instead of waiting another 20 hours.</summary>
     public DateTimeOffset LastUpdateCheck { get; set; } = DateTimeOffset.MinValue;

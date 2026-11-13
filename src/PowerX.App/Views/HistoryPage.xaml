@@ -7,11 +7,13 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12">
-            <TextBlock Text="Change history" Style="{StaticResource TitleTextBlockStyle}" />
+        <StackPanel Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
+            <TextBlock Text="Change history" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Text="Every tweak PowerX has applied or restored on this PC, newest first, with the state before and after." />
         </StackPanel>
         <ScrollViewer Grid.Row="1">
-            <StackPanel x:Name="Timeline" Spacing="8" />
+            <StackPanel x:Name="Timeline" Spacing="8" Padding="0,0,0,16" />
         </ScrollViewer>
     </Grid>
 </Page>

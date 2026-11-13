@@ -6,7 +6,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock Text="Crash insights" Style="{StaticResource PageTitleStyle}" />
                     <ctl:InfoButton Title="Where this comes from"

@@ -6,7 +6,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel Spacing="16" Padding="0,0,0,24" x:Name="Root">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <TextBlock Text="Temperatures" Style="{StaticResource PageTitleStyle}" />
                 <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Reading..." TextWrapping="Wrap" />
             </StackPanel>
@@ -26,6 +26,7 @@
                         <TextBlock Text="Readings" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
                         <Button x:Name="RefreshButton" Grid.Column="1" Content="Refresh" Click="Refresh_Click" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <ItemsControl x:Name="List">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="local:TempVm">

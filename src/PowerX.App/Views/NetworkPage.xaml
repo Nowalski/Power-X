@@ -7,7 +7,11 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <TextBlock Text="Network" Style="{StaticResource PageTitleStyle}" />
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
+                <TextBlock Text="Network" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                           Text="Live throughput, adapters and connections, with ping, trace and DNS lookups for any host." />
+            </StackPanel>
 
             <Border Style="{StaticResource CardStyle}">
                 <Grid RowSpacing="10">
@@ -43,6 +47,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Diagnostics" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -73,6 +78,7 @@
                         <TextBlock Text="Network adapters" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
                         <Button x:Name="AdaptersRefresh" Grid.Column="1" Content="Refresh" Click="AdaptersRefresh_Click" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="AdaptersSummary" Style="{StaticResource MutedStyle}" Text="Loading…" />
                     <StackPanel x:Name="AdapterRows" Spacing="6" />
                 </StackPanel>
@@ -83,6 +89,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Listening ports" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="ListenSummary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
                     <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
                         <Grid.ColumnDefinitions>
@@ -126,6 +133,7 @@
             <Border x:Name="ProcNetCard" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Per-process network use" Style="{StaticResource SectionHeaderStyle}" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="ProcNetSummary" Style="{StaticResource MutedStyle}" Text="Measuring…" />
                     <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
                         <Grid.ColumnDefinitions>
@@ -176,6 +184,7 @@
                         <ToggleButton x:Name="ResolveToggle" Grid.Column="2" Content="Resolve names" Checked="Resolve_Toggled" Unchecked="Resolve_Toggled" />
                         <Button x:Name="CopyConnButton" Grid.Column="3" Content="Copy" Click="CopyConn_Click" />
                     </Grid>
+                    <Border Style="{StaticResource CardDividerStyle}" />
                     <TextBlock x:Name="ConnSummary" Style="{StaticResource MutedStyle}" Text="Scanning…" />
                     <Grid Padding="8,4" ColumnSpacing="8" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="6">
                         <Grid.ColumnDefinitions>

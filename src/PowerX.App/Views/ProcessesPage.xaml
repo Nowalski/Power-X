@@ -22,7 +22,7 @@
         </Style>
     </Page.Resources>
 
-    <Grid RowSpacing="10">
+    <Grid RowSpacing="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -30,10 +30,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Spacing="2">
-            <TextBlock Text="Processes" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock x:Name="Summary" Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <StackPanel Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
+            <TextBlock Text="Processes" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" />
         </StackPanel>
 
         <Grid Grid.Row="1" ColumnSpacing="10">

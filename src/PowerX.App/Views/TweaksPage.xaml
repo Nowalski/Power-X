@@ -4,9 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctl="using:PowerX.App.Controls">
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
-        <StackPanel x:Name="Root" Spacing="14" Padding="0,0,0,28">
+        <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <TextBlock Text="Tweaks" Style="{StaticResource PageTitleStyle}" />
                 <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" />
             </StackPanel>

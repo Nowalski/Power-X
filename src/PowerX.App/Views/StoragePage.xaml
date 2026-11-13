@@ -16,7 +16,7 @@
             <ColumnDefinition Width="16" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="0" Spacing="2">
+        <StackPanel Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
             <TextBlock Text="Storage explorer" Style="{StaticResource PageTitleStyle}" />
             <TextBlock x:Name="Summary" Style="{StaticResource MutedStyle}" Text="Pick a drive or folder to see what is using the space." />
         </StackPanel>

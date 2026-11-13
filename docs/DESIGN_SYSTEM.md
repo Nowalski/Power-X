@@ -24,6 +24,15 @@ Goal: a premium Windows engineering tool, not a crypto dashboard. Visual quality
 | `stroke.divider` | #00000010 | #FFFFFF14 | separators |
 | `accent` | system | system | selection, focus, active nav |
 
+## Dividers and spacing
+Every separator is the same 1 px `stroke.divider` line the navigation pane draws above the version in its footer (`DividerStrokeColorDefaultBrush`). Styles in `App.xaml`:
+- `PageHeaderStyle` / `PageHeaderGridStyle`: every page's title block, with 14 px under the subtitle and a rule beneath it.
+- `CardDividerStyle`: under a card's header row, edge to edge across the card (cards with the default 18 px padding only).
+- `RowDividerStyle`: between rows or groups inside a card (Settings rows, Tools shortcut groups), inset to the content.
+- The navigation pane has the same separator between its groups (Monitor, Software, Optimize & fix).
+
+Spacing: 16 px between the blocks of a page (header, cards), 12 px between the rows of a list page's grid, 18 px card padding, 10 to 12 px between items inside a card.
+
 ## Heat map
 Resource cells get a background wash whose alpha rises with intensity; the numeric value is always shown.
 - Below 20 percent: none. 20 to 50: heat 1. 50 to 80: heat 2. 80 to 95: heat 3. Above 95: heat 4.

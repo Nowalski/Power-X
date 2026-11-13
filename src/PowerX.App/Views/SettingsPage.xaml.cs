@@ -21,6 +21,8 @@ public sealed partial class SettingsPage : Page
         PageLayout.LeftCap(this, Root, 900);
 
         var s = AppSettings.Current;
+        StartPageBox.SelectedIndex = Math.Max(0, StartPageBox.Items.Cast<ComboBoxItem>()
+            .ToList().FindIndex(i => (string)i.Tag == s.StartPage));
         ThemeBox.SelectedIndex = s.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 };
         BackdropBox.SelectedIndex = s.Backdrop switch { "Acrylic" => 1, "None" => 2, _ => 0 };
         BuildAccentSwatches(s.Accent);
@@ -74,6 +76,13 @@ public sealed partial class SettingsPage : Page
         App.Log("Settings.Open", new InvalidOperationException($"{target}: {r.Message}"));
         try { await Info(failureTitle, $"{target}\n\n{r.Message}"); }
         catch (Exception ex) { App.Log("Settings.Open", ex); }
+    }
+
+    private void StartPage_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded || StartPageBox.SelectedItem is not ComboBoxItem { Tag: string tag }) return;
+        AppSettings.Current.StartPage = tag;
+        AppSettings.Current.Save();
     }
 
     private void Theme_Changed(object sender, SelectionChangedEventArgs e)

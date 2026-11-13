@@ -28,15 +28,18 @@ public sealed partial class HistoryPage : Page
             return;
         }
 
+        bool firstDay = true;
         foreach (var day in records.OrderByDescending(r => r.Timestamp)
                      .GroupBy(r => r.Timestamp.LocalDateTime.Date))
         {
+            // The first day sits right under the page header's rule; later days get room above.
             Timeline.Children.Add(new TextBlock
             {
                 Text = day.Key.ToString("dddd, d MMMM"),
                 Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
-                Margin = new Thickness(0, 12, 0, 0),
+                Margin = new Thickness(0, firstDay ? 0 : 12, 0, 0),
             });
+            firstDay = false;
 
             foreach (var r in day)
             {

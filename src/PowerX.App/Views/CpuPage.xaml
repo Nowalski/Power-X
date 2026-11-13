@@ -7,7 +7,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <StackPanel Spacing="2">
+            <StackPanel Style="{StaticResource PageHeaderStyle}">
                 <TextBlock Text="CPU" Style="{StaticResource PageTitleStyle}" />
                 <TextBlock x:Name="CpuName" Style="{StaticResource SectionHeaderStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
@@ -72,6 +72,7 @@
                             <ctl:InfoButton Title="Reading these"
                                             Body="Base speed is the guaranteed all-core clock; max speed is the best-case single-core boost. SMT (Hyper-Threading) lets one physical core run two threads. Virtualization must be on in firmware for Hyper-V, WSL2, Sandbox and Android emulators. SLAT / nested paging is required for those to run efficiently." />
                         </StackPanel>
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Spec">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:NameValueVm">
@@ -94,6 +95,7 @@
                 <Border x:Name="CoresCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
                     <StackPanel Spacing="8">
                         <TextBlock Text="Logical processors" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Cores">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:CoreVm">

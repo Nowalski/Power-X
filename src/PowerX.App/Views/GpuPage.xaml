@@ -7,7 +7,7 @@
     <ScrollViewer Style="{StaticResource PageScrollStyle}">
         <StackPanel x:Name="Root" Spacing="16" Padding="0,0,0,24">
 
-            <Grid ColumnSpacing="16">
+            <Grid ColumnSpacing="16" Style="{StaticResource PageHeaderGridStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -82,6 +82,7 @@
                 <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
                     <StackPanel Spacing="10">
                         <TextBlock Text="Engines" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Engines">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:CoreVm">
@@ -107,6 +108,7 @@
                 <Border x:Name="VramCard" Grid.Row="0" Grid.Column="1" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
                     <StackPanel Spacing="10">
                         <TextBlock Text="Video memory" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <!-- Stretches like the Engines rows and uses the same LoadBar. It used to be a
                              left-aligned Grid with a MaxWidth, which in WinUI shrinks to its content,
                              so the bar's star column fell to its 60 px minimum and a thin
@@ -130,6 +132,7 @@
                 <Border x:Name="SpecCard" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="6">
                         <TextBlock Text="Adapter" Style="{StaticResource SectionHeaderStyle}" />
+                        <Border Style="{StaticResource CardDividerStyle}" />
                         <ItemsControl x:Name="Spec">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="local:NameValueVm">

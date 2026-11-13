@@ -29,7 +29,8 @@ public sealed partial class MainWindow
         Nav("Services", "services"); Nav("Drivers", "drivers");
         Nav("Tweaks", "tweaks"); Nav("Debloat", "debloat"); Nav("Repair", "repair"); Nav("Tools", "tools");
         Nav("Storage explorer", "storage"); Nav("What changed", "changes"); Nav("Event log", "events");
-        Nav("Crash insights", "crashes"); Nav("Change history", "history");
+        Nav("Crash insights", "crashes"); Nav("Change history", "history"); Nav("Security", "security");
+        Nav("Settings", "settings");
 
         void Act(string title, Func<PowerX.Core.Processes.ActionResult> run) =>
             list.Add(new(title, "Action", async () =>
@@ -43,6 +44,11 @@ public sealed partial class MainWindow
         Act("Empty Recycle Bin", QuickActionsCore.EmptyRecycleBin);
         list.Add(new("Open Windows Update", "Action", () => { QuickActionsCore.OpenSettings("ms-settings:windowsupdate"); return Task.CompletedTask; }));
         list.Add(new("Open Startup apps settings", "Action", () => { QuickActionsCore.OpenSettings("ms-settings:startupapps"); return Task.CompletedTask; }));
+        list.Add(new("Copy system info", "Action", async () =>
+        {
+            if (!Services.Clip.SetText(Views.HomePage.SystemInfoText()))
+                await Toast("Copy system info failed", "Another app is holding the clipboard. Try again.");
+        }));
 
         // toggle recommended tweaks straight from the palette
         var engine = new TweakEngine(TweakCatalog.Default);
