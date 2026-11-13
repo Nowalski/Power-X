@@ -17,16 +17,32 @@
                 <ctl:InfoButton Title="How to repair Windows"
                                 Body="Corruption usually clears up by running DISM /RestoreHealth (rebuilds the component store from Windows Update) then SFC /scannow (repairs protected system files from the now-healthy store). The Run recommended repair button does both in order. Everything here is a standard Microsoft tool, and the output is shown live." />
             </StackPanel>
-            <TextBlock Style="{StaticResource MutedStyle}"
-                       Text="Standard Windows repair tools. Output streams live on the right. One job runs at a time." />
+            <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Text="Standard Windows repair tools. Output streams live in the console. One job runs at a time." />
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
-            <Button x:Name="RecommendedButton" Content="Run recommended repair (DISM + SFC)"
-                    Style="{StaticResource AccentButtonStyle}" Click="Recommended_Click" />
-            <Button x:Name="StopButton" Content="Stop" IsEnabled="False" Click="Stop_Click" />
-            <Button Content="Clear output" Click="Clear_Click" />
-        </StackPanel>
+        <!-- The one thing most people come here for, as its own card: what it does, how long it
+             takes, and a single button. Stop and Clear live on the console, next to what they act on. -->
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}">
+                    <FontIcon Glyph="&#xE90F;" FontSize="18" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="Recommended repair" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Text="Repairs the Windows image with DISM RestoreHealth, then the system files with SFC. Needs internet and usually takes 15 to 40 minutes." />
+                </StackPanel>
+                <Button x:Name="RecommendedButton" Grid.Column="2" Content="Run recommended repair" VerticalAlignment="Center"
+                        Style="{StaticResource AccentButtonStyle}" Click="Recommended_Click" />
+            </Grid>
+        </Border>
 
         <!-- No column spacing: the job list's PageScrollStyle already keeps 16 px clear on its
              right for the scrollbar, and spacing on top of that left a 32 px gap.
@@ -40,8 +56,10 @@
                 <ColumnDefinition Width="1.4*" />
             </Grid.ColumnDefinitions>
 
+            <!-- One card per category (Integrity, Disk, Network...), its jobs as rows split by the
+                 row divider, like Settings. Built in code from CommandRunner.Jobs. -->
             <ScrollViewer Grid.Column="0" Style="{StaticResource PageScrollStyle}">
-                <StackPanel x:Name="JobList" Spacing="6" Padding="0,0,0,12" />
+                <StackPanel x:Name="JobList" Spacing="16" Padding="0,0,0,12" />
             </ScrollViewer>
 
             <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="0">
@@ -50,26 +68,40 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Grid Padding="14,10" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                    <!-- Header like every other card's: title, then the same divider under it. -->
+                    <Grid Padding="18,12,12,12" ColumnSpacing="10" BorderThickness="0,0,0,1"
+                          BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="ConsoleTitle" Text="Console" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
-                        <ProgressRing x:Name="RunSpinner" Grid.Column="1" Width="18" Height="18" IsActive="False" />
+                        <FontIcon Glyph="&#xE756;" FontSize="14" VerticalAlignment="Center"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Center">
+                            <TextBlock x:Name="ConsoleTitle" Text="Console" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="ConsoleStatus" Style="{StaticResource MutedStyle}" Text="Idle"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <ProgressRing x:Name="RunSpinner" Grid.Column="2" Width="18" Height="18" IsActive="False" VerticalAlignment="Center" />
+                        <Button x:Name="StopButton" Grid.Column="3" Content="Stop" IsEnabled="False" Click="Stop_Click" VerticalAlignment="Center" />
+                        <Button Grid.Column="4" Content="Clear" Click="Clear_Click" VerticalAlignment="Center" />
                     </Grid>
                     <TextBox x:Name="OutputBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
-                             BorderThickness="0" Background="Transparent" Padding="12"
+                             BorderThickness="0" Background="Transparent" Padding="18,14"
                              FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                     <!-- The hint sits over the empty console rather than being its text: console
                          output must not wrap (it would break up tables), but a hint that does not
                          wrap was cut off mid-word in a narrow window. Shown only while the console
                          is empty. -->
-                    <TextBlock x:Name="ConsoleHint" Grid.Row="1" Margin="12" TextWrapping="Wrap" IsHitTestVisible="False"
+                    <TextBlock x:Name="ConsoleHint" Grid.Row="1" Margin="18,14" TextWrapping="Wrap" IsHitTestVisible="False"
                                FontFamily="Consolas, Cascadia Mono, monospace" FontSize="12"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Select a job on the left to run it. Its output appears here." />
+                               Text="Pick a job and press Run. Its output appears here, line by line." />
                 </Grid>
             </Border>
         </Grid>
@@ -82,7 +114,7 @@
              Start/Stop button has a MinWidth so its label change cannot resize it either.
              The slider's column takes the room first (100* against the spacer's 1*) up to its
              MaxWidth; past that the spacer takes the rest, keeping Start at the right edge. -->
-        <Border Grid.Row="3" Style="{StaticResource CardStyle}" Padding="14,10" Margin="0,0,0,16">
+        <Border Grid.Row="3" Style="{StaticResource CardStyle}" Padding="18,12" Margin="0,0,0,16">
             <Grid RowSpacing="6">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
