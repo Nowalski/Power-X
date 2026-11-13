@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nowalski.github.io/Power-X/sitemap.xml

@@ -5,14 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PowerX, a native Windows control center</title>
 <meta name="description" content="Monitor, configure, debloat, clean and repair Windows from one native app that treats deep system monitoring, safe configuration and premium design as equally important." />
+<link rel="canonical" href="https://nowalski.github.io/Power-X/" />
 <link rel="icon" href="assets/favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/mark-180.png" />
 <meta name="theme-color" content="#0b0c0e" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="PowerX" />
+<meta property="og:url" content="https://nowalski.github.io/Power-X/" />
 <meta property="og:title" content="PowerX, a native Windows control center" />
 <meta property="og:description" content="Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified, native, and honest about safety." />
-<meta property="og:type" content="website" />
-<meta property="og:image" content="assets/mark.png" />
+<meta property="og:image" content="https://nowalski.github.io/Power-X/assets/shot-home.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1600" />
+<meta property="og:image:height" content="1000" />
+<meta property="og:image:alt" content="The PowerX Overview page: live CPU, memory and GPU charts, quick actions, top processes and recommendations." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="PowerX, a native Windows control center" />
+<meta name="twitter:description" content="Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified, native, and honest about safety." />
+<meta name="twitter:image" content="https://nowalski.github.io/Power-X/assets/shot-home.png" />
+<meta name="twitter:image:alt" content="The PowerX Overview page: live CPU, memory and GPU charts, quick actions, top processes and recommendations." />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "PowerX",
+  "description": "A native Windows control center: monitoring, an evidence-backed tweak engine, a curated debloater, cleanup and repair, in one open-source app.",
+  "operatingSystem": "Windows 10, Windows 11",
+  "applicationCategory": "UtilitiesApplication",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "url": "https://nowalski.github.io/Power-X/",
+  "downloadUrl": "https://github.com/Nowalski/Power-X/releases/latest",
+  "license": "https://github.com/Nowalski/Power-X/blob/main/LICENSE"
+}
+</script>
 <style>
   /* ---------- tokens ---------- */
   :root{
@@ -22,8 +48,11 @@
 
     --bg:#0b0c0e; --bg-2:#0e1014; --panel:#131519; --panel-2:#171a20;
     --line:#212530; --line-soft:#1a1d25;
-    --ink:#f0f2f6; --ink-2:#a7b0be; --ink-3:#6f7887;
+    /* --ink-3 is the darkest text colour: 5.1:1 on --bg, 5.0:1 on --bg-2, 4.8:1 on --panel (WCAG AA) */
+    --ink:#f0f2f6; --ink-2:#a7b0be; --ink-3:#7a8392;
     --accent:#4c8bf5; --accent-2:#84acf9;
+    /* fill behind white button text: 4.9:1 at rest, 4.6:1 on hover (--accent itself is 3.3:1) */
+    --accent-fill:#2d6cdd; --accent-fill-hover:#3171e3;
     --c-cpu:#4c8bf5; --c-mem:#b06af0; --c-net:#33b0a6; --c-ok:#3fb950; --c-warn:#e0b13a;
 
     --measure:60ch;
@@ -48,6 +77,12 @@
   code{overflow-wrap:anywhere}
   :focus-visible{outline:2px solid var(--accent-2);outline-offset:3px;border-radius:4px}
   ::selection{background:rgba(76,139,245,.32)}
+  [hidden]{display:none!important}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+    clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+  /* links inside running text must look like links */
+  main p a{color:var(--accent-2);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+  main p a:hover{color:var(--ink)}
 
   .shell{max-width:1120px;margin:0 auto;padding-inline:clamp(20px,5vw,40px)}
   .prose{max-width:min(var(--measure),100%)}
@@ -70,8 +105,10 @@
 
   /* ---------- header ---------- */
   header{position:sticky;top:0;z-index:40;
+    background:rgba(11,12,14,.82);
     background:color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    border-bottom:1px solid transparent;transition:border-color .3s}
   header.scrolled{border-bottom-color:var(--line)}
   .bar{display:flex;align-items:center;justify-content:space-between;height:64px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:640;letter-spacing:.2px;font-size:1.02rem}
@@ -95,9 +132,15 @@
     .menu-btn{display:flex}
     #mnav[data-open]{display:block}
     #mnav{border-bottom:1px solid var(--line);background:var(--bg-2)}
-    #mnav a{display:block;padding:14px 0;color:var(--ink-2);border-top:1px solid var(--line-soft);font-size:.95rem}
+    #mnav a{display:flex;align-items:center;min-height:var(--tap);padding:10px 0;color:var(--ink-2);
+      border-top:1px solid var(--line-soft);font-size:.95rem}
+    #mnav a:hover{color:var(--ink)}
     #mnav a:first-child{border-top:0}
     #mnav .shell{padding-block:8px 16px}
+    /* without JavaScript the menu button cannot work: show the links in place instead */
+    html:not(.js) .menu-btn{display:none}
+    html:not(.js) header{position:relative}
+    html:not(.js) #mnav{display:block}
   }
 
   /* ---------- buttons ---------- */
@@ -106,8 +149,8 @@
     transition:transform var(--dur-fast) var(--ease),background var(--dur-fast),border-color var(--dur-fast),box-shadow var(--dur-fast)}
   .btn:hover{background:var(--panel);transform:translateY(-1px)}
   .btn:active{transform:translateY(0)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:#5b96f6;box-shadow:0 10px 26px -14px rgba(76,139,245,.85)}
+  .btn.primary{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
+  .btn.primary:hover{background:var(--accent-fill-hover);border-color:var(--accent-fill-hover);box-shadow:0 10px 26px -14px rgba(76,139,245,.85)}
   .btn svg{width:16px;height:16px;flex:none}
 
   /* ---------- section rhythm ---------- */
@@ -119,6 +162,8 @@
   h1{font-size:clamp(2.35rem,6vw,3.6rem);line-height:1.06;letter-spacing:-.02em;font-weight:660}
   h2{font-size:clamp(1.65rem,3.6vw,2.2rem);line-height:1.12;letter-spacing:-.015em;font-weight:620;margin-top:var(--s3)}
   h3{font-size:1.02rem;font-weight:620;letter-spacing:-.005em}
+  /* feature titles are h3 under the Features h2, but keep the section-title look */
+  .feature h3{font-size:clamp(1.65rem,3.6vw,2.2rem);line-height:1.12;letter-spacing:-.015em;font-weight:620;margin-top:var(--s3)}
   .lead{font-size:clamp(1.05rem,1.6vw,1.18rem);color:var(--ink-2)}
   [id]{scroll-margin-top:88px}
 
@@ -140,7 +185,7 @@
     background:radial-gradient(closest-side, rgba(76,139,245,.24), transparent 72%);filter:blur(34px);z-index:0}
   .screen{position:relative;z-index:1;margin-inline:auto;max-width:1000px;border:1px solid var(--line);
     border-radius:16px;overflow:hidden;background:var(--bg-2);
-    box-shadow:0 40px 90px -40px rgba(0,0,0,.8);will-change:transform}
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.8)}
   .screen__chrome{display:flex;align-items:center;gap:7px;height:34px;padding-inline:14px;
     border-bottom:1px solid var(--line-soft);background:var(--bg)}
   .screen__chrome i{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
@@ -172,12 +217,13 @@
   .feature.flip{grid-template-columns:1fr minmax(0,42ch)}
   .feature.flip .copy{order:2}
   .feature + .feature{margin-top:var(--s8)}
-  .feature .copy p{color:var(--ink-2);margin-top:var(--s3)}
+  .feature .copy p:not(.eyebrow){color:var(--ink-2);margin-top:var(--s3)}
   .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--s4)}
   .tag{font-size:.78rem;padding:5px 11px;border-radius:8px;border:1px solid var(--line);color:var(--ink-2)}
   .shot{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg-2);
     box-shadow:0 30px 70px -44px rgba(0,0,0,.75);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
-  .shot:hover{transform:translateY(-4px);box-shadow:0 44px 90px -44px rgba(0,0,0,.85)}
+  .shot:hover,.js .shot.reveal.seen:hover{transform:translateY(-4px);box-shadow:0 44px 90px -44px rgba(0,0,0,.85)}
+  .js .shot.reveal{transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
   .shot img{width:100%;display:block}
   @media(max-width:860px){
     .feature,.feature.flip{grid-template-columns:1fr;gap:var(--s4)}
@@ -193,7 +239,9 @@
   .dl-card h3{font-size:1.05rem}
   .dl-card p{color:var(--ink-2);font-size:.9rem;flex:1}
   .dl-card .btn{align-self:flex-start;margin-top:var(--s2)}
-  .dl-note{margin-top:var(--s4);font-size:.86rem;color:var(--ink-3);max-width:min(64ch,100%)}
+  .dl-card .dl-meta{flex:none;font-size:.8rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .dl-all{margin-top:var(--s4);font-size:.9rem}
+  .dl-note{margin-top:var(--s2);font-size:.86rem;color:var(--ink-3);max-width:min(64ch,100%)}
   .dl-note code{font-family:var(--mono);font-size:.82em;color:var(--ink-2)}
   @media(max-width:720px){ .dl-grid{grid-template-columns:1fr} }
 
@@ -213,9 +261,13 @@
   .closing{text-align:center}
   .closing .lead{margin:var(--s3) auto var(--s5);max-width:min(52ch,100%)}
 
-  footer{border-top:1px solid var(--line-soft);padding-block:var(--s5)}
+  footer{border-top:1px solid var(--line-soft);padding-block:var(--s4) var(--s5)}
   .foot{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s5);justify-content:space-between;
     color:var(--ink-3);font-size:.83rem}
+  .foot-links{display:flex;flex-wrap:wrap;gap:0 var(--s4);width:100%}
+  .foot-links a{display:inline-flex;align-items:center;min-height:var(--tap);color:var(--ink-2);
+    transition:color var(--dur-fast) var(--ease)}
+  .foot-links a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 
   /* ---------- motion ----------
      Hero: pure-CSS entrance that runs on load and always ends visible (works with no JS).
@@ -251,36 +303,35 @@
 
 <header id="top">
   <div class="shell bar">
-    <a class="brand" href="#top"><img src="assets/mark.png" alt="" width="24" height="24" /> PowerX</a>
+    <a class="brand" href="#top"><img src="assets/favicon.png" alt="" width="24" height="24" /> PowerX</a>
     <nav class="primary" aria-label="Primary">
       <a href="#what">What it does</a>
-      <a href="#processes">Processes</a>
+      <a href="#features">Features</a>
       <a href="#cli">CLI</a>
       <a href="#safety">Safety</a>
       <a href="#download">Download</a>
       <a class="ghost" href="https://github.com/Nowalski/Power-X">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+    <button type="button" class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
   </div>
-  <div id="mnav">
+  <nav id="mnav" aria-label="Menu">
     <div class="shell">
       <a href="#what">What it does</a>
-      <a href="#processes">Processes</a>
-      <a href="#configure">Configure</a>
+      <a href="#features">Features</a>
       <a href="#cli">CLI</a>
       <a href="#safety">Safety</a>
       <a href="#download">Download</a>
       <a href="https://github.com/Nowalski/Power-X">GitHub</a>
     </div>
-  </div>
+  </nav>
 </header>
 
 <main id="main">
 
   <section class="hero shell">
-    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.23, an early milestone build</p>
+    <p class="badge r r1"><b aria-hidden="true"></b> Version 0.1.24, an early milestone build</p>
     <h1 class="r r2">The Windows control center <span class="em">that respects your machine</span></h1>
     <p class="lead r r3">
       Task Manager, System Informer, Autoruns, a debloater and a tweak engine, unified into one
@@ -298,7 +349,7 @@
     <div class="stage r r6">
       <figure class="screen">
         <div class="screen__chrome" aria-hidden="true"><i></i><i></i><i></i><span>PowerX, Overview</span></div>
-        <img src="assets/shot-home.png" width="1600" height="1000"
+        <img src="assets/shot-home.png" width="1600" height="1000" fetchpriority="high"
              alt="The PowerX Overview page: a ring gauge and history chart for CPU load, compact bars for memory and GPU, a quick-actions row, a top-processes list and a recommendations panel." />
       </figure>
     </div>
@@ -353,11 +404,12 @@
     </div>
   </section>
 
-  <section id="processes" class="shell">
-    <div class="feature">
+  <section id="features" class="shell" aria-labelledby="features-title">
+    <h2 id="features-title" class="sr-only">Features</h2>
+    <div class="feature" id="processes">
       <div class="copy">
         <p class="eyebrow reveal">Processes</p>
-        <h2 class="reveal">See where the weight actually is</h2>
+        <h3 class="reveal">See where the weight actually is</h3>
         <p class="reveal">
           One <code>NtQuerySystemInformation</code> call per tick gives per-process CPU, disk I/O,
           working set, handles and threads, with no per-process handle storm. Resource-heat
@@ -372,15 +424,15 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-processes.png" width="1600" height="1000"
-             alt="The PowerX Processes page: a dense table of processes with resizable columns for PID, CPU, working set, private bytes, I/O rate, threads and handles; the heaviest rows are tinted and carry a coloured hog bar." />
+        <img src="assets/shot-processes.png" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="The PowerX Processes page: a dense table of processes with columns for name, PID, CPU, memory, disk I/O and threads; the heaviest rows carry a marker at the left edge and their CPU and memory cells are shaded by load." />
       </figure>
     </div>
 
-    <div class="feature flip">
+    <div class="feature flip" id="configure">
       <div class="copy">
         <p class="eyebrow reveal">Configure</p>
-        <h2 class="reveal">Curated profiles, applied with a visible diff</h2>
+        <h3 class="reveal">Curated profiles, applied with a visible diff</h3>
         <p class="reveal">
           Recommended, Privacy, Potato mode, Gaming, Restore defaults. Each applies a named set
           in one click after showing you exactly what will change. Every item stays individually
@@ -393,7 +445,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-tweaks.png" width="1600" height="1000"
+        <img src="assets/shot-tweaks.png" width="1600" height="1000" loading="lazy" decoding="async"
              alt="The PowerX Tweaks page: profile cards for Recommended, Privacy, Potato mode, Gaming and Restore defaults, above a searchable list of individual tweaks with risk labels and toggles." />
       </figure>
     </div>
@@ -401,7 +453,7 @@
     <div class="feature">
       <div class="copy">
         <p class="eyebrow reveal">Crash insights</p>
-        <h2 class="reveal">Read what Windows already wrote down</h2>
+        <h3 class="reveal">Read what Windows already wrote down</h3>
         <p class="reveal">
           PowerX reads the Windows Error Reporting store, the Application and System event logs, and,
           only if you ask and only as administrator, the metadata inside a crash dump. It never
@@ -416,7 +468,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-crashes.png" width="1600" height="1000"
+        <img src="assets/shot-crashes.png" width="1600" height="1000" loading="lazy" decoding="async"
              alt="The PowerX Crash insights page: a list of recent crashes and hangs, each expandable into observed facts, a likely cause, a confidence level, what to try, and what is still missing." />
       </figure>
     </div>
@@ -424,7 +476,7 @@
     <div class="feature flip">
       <div class="copy">
         <p class="eyebrow reveal">Startup</p>
-        <h2 class="reveal">Know what is slowing your boot</h2>
+        <h3 class="reveal">Know what is slowing your boot</h3>
         <p class="reveal">
           Every autostart location in one list, toggled the safe way Task Manager does it. On top
           of that, PowerX reads the boot-performance data Windows already records and shows how
@@ -439,15 +491,15 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-startup.png" width="1600" height="1000"
-             alt="The PowerX Startup page: a card showing the last boot took 41.6 seconds, 6.7 seconds slower than the recent average, above a list of startup entries with High and Medium impact tags." />
+        <img src="assets/shot-startup.png" width="1600" height="1050" loading="lazy" decoding="async"
+             alt="The PowerX Startup page: a card showing the last boot took 41.6 seconds, 6.7 seconds slower than the recent average, above a list of startup entries, some tagged High or Low impact." />
       </figure>
     </div>
 
     <div class="feature">
       <div class="copy">
         <p class="eyebrow reveal">What changed</p>
-        <h2 class="reveal">Answer "my PC got weird lately"</h2>
+        <h3 class="reveal">Answer "my PC got weird lately"</h3>
         <p class="reveal">
           About once a day PowerX takes a quiet snapshot of your configuration: startup entries,
           scheduled tasks, auto-start services, installed programs, signed drivers and the tweaks
@@ -462,7 +514,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-changes.png" width="1600" height="1050"
+        <img src="assets/shot-changes.png" width="1600" height="1050" loading="lazy" decoding="async"
              alt="The PowerX What changed page: a diff between last week and today showing a new Spotify startup entry, a disabled Epic Games Launcher, a new scheduled task, a new service, a Discord version bump, Steam installed, CCleaner removed and an NVIDIA driver update." />
       </figure>
     </div>
@@ -470,7 +522,7 @@
     <div class="feature flip">
       <div class="copy">
         <p class="eyebrow reveal">Network</p>
-        <h2 class="reveal">See what your machine is talking to</h2>
+        <h3 class="reveal">See what your machine is talking to</h3>
         <p class="reveal">
           Live up and down rate, per-process connections with remote address and state, and a
           listening-ports view that flags anything reachable from the network rather than just
@@ -484,7 +536,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-network.png" width="1560" height="1400"
+        <img src="assets/shot-network.png" width="1560" height="1400" loading="lazy" decoding="async"
              alt="The PowerX Network page: live download and upload charts, adapter details, a listening-ports table showing which ports are reachable from the network, and a per-process connection list." />
       </figure>
     </div>
@@ -492,7 +544,7 @@
     <div class="feature">
       <div class="copy">
         <p class="eyebrow reveal">Storage explorer</p>
-        <h2 class="reveal">Find where the space went</h2>
+        <h3 class="reveal">Find where the space went</h3>
         <p class="reveal">
           Point it at a drive or a folder and it sizes every sub-folder, largest first, so you can
           walk straight to the 40 GB you forgot about. Junctions and symlinks are skipped so
@@ -505,15 +557,15 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-storage.png" width="1600" height="1050"
-             alt="The PowerX Storage explorer page: the folders under C: sized largest first, with Users, Windows and Program Files at the top and hiberfil.sys and pagefile.sys called out as large loose files." />
+        <img src="assets/shot-storage.png" width="1600" height="1050" loading="lazy" decoding="async"
+             alt="The PowerX Storage explorer page: the top-level items on C: with their sizes and file counts, Windows, Program Files and Users at the top, and hiberfil.sys and pagefile.sys listed as large loose files." />
       </figure>
     </div>
 
     <div class="feature flip">
       <div class="copy">
         <p class="eyebrow reveal">Security</p>
-        <h2 class="reveal">Not an antivirus. A window onto the one you have.</h2>
+        <h3 class="reveal">Not an antivirus. A window onto the one you have.</h3>
         <p class="reveal">
           PowerX will never be your antivirus, because a half-working one you trust instead of
           Defender is worse than none. What it does: show Defender's real status, list the threats
@@ -528,7 +580,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-security.png" width="1600" height="980"
+        <img src="assets/shot-security.png" width="1600" height="980" loading="lazy" decoding="async"
              alt="The PowerX Security page: Microsoft Defender's protection state, the threats it has caught with dates and severity, quick and full scan buttons, and a box to check a file's hash against an open database." />
       </figure>
     </div>
@@ -536,7 +588,7 @@
     <div class="feature">
       <div class="copy">
         <p class="eyebrow reveal">Scheduled tasks</p>
-        <h2 class="reveal">Turn off the tasks you never asked for</h2>
+        <h3 class="reveal">Turn off the tasks you never asked for</h3>
         <p class="reveal">
           Every scheduled task in one place, with PowerX's position on the well-known ones: the
           telemetry and reporting tasks you can safely turn off, the third-party updaters that mean
@@ -550,15 +602,15 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-tasks.png" width="1600" height="1050"
-             alt="The PowerX Scheduled tasks page: tasks grouped as telemetry and reporting, third-party updaters, and Windows components, each with a short note and an on/off switch." />
+        <img src="assets/shot-tasks.png" width="1600" height="1050" loading="lazy" decoding="async"
+             alt="The PowerX Scheduled tasks page: telemetry and reporting tasks and third-party updaters in separate groups, each with a short note, a tag and an on/off switch." />
       </figure>
     </div>
 
     <div class="feature flip">
       <div class="copy">
-        <p class="eyebrow reveal">Firewall &amp; drivers &amp; the event log</p>
-        <h2 class="reveal">More windows onto what Windows knows</h2>
+        <p class="eyebrow reveal">Firewall, drivers and the event log</p>
+        <h3 class="reveal">More windows onto what Windows knows</h3>
         <p class="reveal">
           A read-only view of the firewall rules that flags a broad inbound hole somebody punched.
           A driver inventory that calls out the ones three or more years old, or unsigned. And a
@@ -572,7 +624,7 @@
         </div>
       </div>
       <figure class="shot reveal">
-        <img src="assets/shot-events.png" width="1600" height="1050"
+        <img src="assets/shot-events.png" width="1600" height="1050" loading="lazy" decoding="async"
              alt="The PowerX Event log page: recent errors and warnings grouped by source and id, each with a count, a date range and a plain-language explanation." />
       </figure>
     </div>
@@ -585,7 +637,7 @@
       The <code>powerx</code> CLI and the desktop app share <code>PowerX.Core</code>. Tweak logic is
       never duplicated between them.
     </p>
-    <pre class="reveal"><span class="c"># build from source (.NET 10)</span>
+    <pre class="reveal" tabindex="0" role="region" aria-label="Example CLI commands"><span class="c"># build from source (.NET 10)</span>
 git clone https://github.com/Nowalski/Power-X &amp;&amp; cd Power-X
 dotnet build
 
@@ -617,7 +669,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
         <li>No <code>irm | iex</code>, no downloaded mystery binaries, no arbitrary Defender exclusions.</li>
         <li>Every applied change is written to an append-only history and is individually reversible.</li>
         <li>No piracy, KMS or licence-bypass functionality. Ever.</li>
-        <li>Nothing queries Windows faster than once per second, and sampling runs off the UI thread.</li>
+        <li>Live sampling runs off the UI thread. By default it samples every 2 seconds (0.5 seconds at the fastest setting) and slows down while the window is hidden.</li>
         <li>Tweaks cite evidence. Claims that do not survive scrutiny do not ship.</li>
       </ul>
     </div>
@@ -626,7 +678,7 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
   <section id="download" class="download">
     <div class="shell">
       <p class="eyebrow reveal">Download</p>
-      <h2 class="reveal">Get PowerX 0.1.23</h2>
+      <h2 class="reveal">Get PowerX 0.1.24</h2>
       <p class="lead prose reveal" style="margin-top:var(--s3)">
         64-bit Windows 10 (build 19041) or Windows 11. PowerX runs as administrator because it
         manages system state. It is not code-signed yet, so Windows SmartScreen will show an
@@ -636,20 +688,22 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
       <div class="dl-grid stagger">
         <div class="dl-card">
           <h3>Installer (recommended)</h3>
-          <p>A single MSI. Installs to Program Files, adds one Start-menu entry, and updates in place when a new version ships. No desktop shortcut.</p>
-          <a class="btn primary" href="https://github.com/Nowalski/Power-X/releases/latest">Download the installer</a>
+          <p>A single MSI. Installs to Program Files, adds a Start-menu entry and a desktop shortcut, and updates in place when a new version ships.</p>
+          <p class="dl-meta" id="dlMeta" hidden></p>
+          <a class="btn primary" id="dlInstaller" href="https://github.com/Nowalski/Power-X/releases/latest">Download the installer</a>
         </div>
         <div class="dl-card">
           <h3>Portable</h3>
-          <p>A zip you can unpack and run anywhere, including a USB stick. Nothing is written outside its own folder except the change history in your profile.</p>
-          <a class="btn" href="https://github.com/Nowalski/Power-X/releases/latest">Download the portable zip</a>
+          <p>A zip you can unpack and run anywhere, including a USB stick. Nothing is written outside its own folder except its data folder, <code>%LOCALAPPDATA%\PowerX</code>, which holds settings, the change history and snapshots.</p>
+          <a class="btn" id="dlPortable" href="https://github.com/Nowalski/Power-X/releases/latest">Download the portable zip</a>
         </div>
       </div>
 
+      <p class="dl-all reveal"><a href="https://github.com/Nowalski/Power-X/releases">All releases and checksums</a></p>
       <p class="dl-note reveal">
         Every release lists a SHA-256 for each file. To check the installer:
-        <code>Get-FileHash .\PowerX-Setup-0.1.23-win-x64.msi</code> in PowerShell, and compare it to
-        the value on the <a href="https://github.com/Nowalski/Power-X/releases" style="color:var(--accent-2)">releases page</a>.
+        <code>Get-FileHash .\PowerX-Setup-0.1.24-win-x64.msi</code> in PowerShell, and compare it to
+        the value on the <a href="https://github.com/Nowalski/Power-X/releases">releases page</a>.
       </p>
     </div>
   </section>
@@ -660,12 +714,18 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
       PowerX is early. The Core library, the CLI and the WinUI app all work today on real Windows
       data. Follow along, file issues, or build it yourself.
     </p>
-    <a class="btn primary reveal" href="https://github.com/Nowalski/Power-X">Star it on GitHub</a>
+    <div class="reveal"><a class="btn primary" href="https://github.com/Nowalski/Power-X">Star it on GitHub</a></div>
   </section>
 </main>
 
 <footer>
   <div class="shell foot">
+    <nav class="foot-links" aria-label="Project links">
+      <a href="https://github.com/Nowalski/Power-X">GitHub</a>
+      <a href="https://github.com/Nowalski/Power-X/releases">Releases</a>
+      <a href="https://github.com/Nowalski/Power-X/issues">Issues</a>
+      <a href="https://github.com/Nowalski/Power-X/blob/main/LICENSE">License</a>
+    </nav>
     <span>PowerX, a native Windows control center. MIT-licensed, on GitHub.</span>
     <span>Not affiliated with Microsoft. Windows is a trademark of Microsoft Corporation.</span>
   </div>
@@ -690,10 +750,13 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
       if (open) sheet.setAttribute("data-open", ""); else sheet.removeAttribute("data-open");
       btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
     };
-    btn.addEventListener("click", function () { setOpen(btn.getAttribute("aria-expanded") !== "true"); });
-    sheet.addEventListener("click", function (e) { if (e.target.tagName === "A") setOpen(false); });
-    addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
-    addEventListener("resize", function () { if (innerWidth > 820) setOpen(false); });
+    var isOpen = function () { return btn.getAttribute("aria-expanded") === "true"; };
+    btn.addEventListener("click", function () { setOpen(!isOpen()); });
+    sheet.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) setOpen(false); });
+    addEventListener("keydown", function (e) {
+      if ((e.key === "Escape" || e.key === "Esc") && isOpen()) { setOpen(false); btn.focus(); }
+    });
+    addEventListener("resize", function () { if (innerWidth > 820 && isOpen()) setOpen(false); });
   }
 
   /* scroll reveals for below-the-fold content (the hero animates itself in CSS) */
@@ -728,13 +791,47 @@ dotnet run --project src/PowerX.Cli -- <span class="k">config export</span> my-s
   if ("IntersectionObserver" in window && sections.length) {
     var spy = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
+        var a = byId[en.target.id];
+        if (!a) return;
         if (en.isIntersecting) {
-          links.forEach(function (a) { a.classList.remove("active"); });
-          if (byId[en.target.id]) byId[en.target.id].classList.add("active");
+          links.forEach(function (l) { l.classList.remove("active"); });
+          a.classList.add("active");
+        } else {
+          a.classList.remove("active");   /* hero and closing section: nothing is underlined */
         }
       });
     }, { rootMargin: "-45% 0px -50% 0px" });
     sections.forEach(function (s) { spy.observe(s); });
+  }
+
+  /* Download buttons: the static hrefs (releases/latest) always work. If the repo's own
+     version.json (the file the app's updater reads) is readable and sane, point the buttons
+     straight at the files and show what the installer is. Any failure leaves the links alone. */
+  var inst = document.getElementById("dlInstaller"),
+      port = document.getElementById("dlPortable"),
+      meta = document.getElementById("dlMeta");
+  if (inst && port && meta && window.fetch && window.Promise) {
+    var base = "https://github.com/Nowalski/Power-X/releases/download/";
+    fetch("https://raw.githubusercontent.com/Nowalski/Power-X/main/version.json",
+          { cache: "no-cache", credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (v) {
+        if (!v || typeof v.version !== "string" || !/^\d+\.\d+\.\d+$/.test(v.version)) return;
+        var dir = base + "v" + v.version + "/";
+        var url = v.installerUrl;
+        if (typeof url !== "string" || url.indexOf(dir) !== 0 ||
+            !/^[A-Za-z0-9._-]+\.msi$/.test(url.slice(dir.length))) return;
+        inst.href = url;
+        port.href = dir + "PowerX-" + v.version + "-portable-win-x64.zip";
+        var parts = ["Version " + v.version];
+        if (typeof v.installerBytes === "number" && isFinite(v.installerBytes) && v.installerBytes > 0)
+          parts.push((v.installerBytes / 1048576).toFixed(1) + " MB");
+        if (typeof v.installerSha256 === "string" && /^[0-9a-fA-F]{64}$/.test(v.installerSha256))
+          parts.push("SHA-256 begins " + v.installerSha256.slice(0, 16).toLowerCase());
+        meta.textContent = parts.join(", ");
+        meta.hidden = false;
+      })
+      .catch(function () { /* keep the static links */ });
   }
 })();
 </script>

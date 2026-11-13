@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Page not found - PowerX</title>
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0b0c0e" />
+<!-- GitHub Pages serves this file for any missing path, at any depth, so every URL here is
+     absolute. Relative "assets/..." would only resolve for misses directly under /Power-X/. -->
+<link rel="icon" href="https://nowalski.github.io/Power-X/assets/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="https://nowalski.github.io/Power-X/assets/favicon.png" />
+<link rel="apple-touch-icon" href="https://nowalski.github.io/Power-X/assets/mark-180.png" />
+<style>
+  :root{
+    --bg:#0b0c0e; --bg-2:#0e1014; --panel:#131519;
+    --line:#212530; --line-soft:#1a1d25;
+    --ink:#f0f2f6; --ink-2:#a7b0be; --ink-3:#7a8392;
+    --accent:#4c8bf5; --accent-2:#84acf9; --accent-fill:#2d6cdd; --accent-fill-hover:#3171e3;
+    --tap:44px; --ease:cubic-bezier(.22,.61,.36,1);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+    --mono:"Cascadia Code",ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;min-width:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.65;
+    -webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+  img{display:block;max-width:100%;height:auto}
+  a{color:inherit;text-decoration:none}
+  :focus-visible{outline:2px solid var(--accent-2);outline-offset:3px;border-radius:4px}
+  .shell{width:100%;max-width:1120px;margin:0 auto;padding-inline:clamp(20px,5vw,40px)}
+  .aura{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(720px 420px at 76% -10%, rgba(76,139,245,.15), transparent 60%),
+      radial-gradient(560px 360px at 12% 4%, rgba(176,106,240,.08), transparent 60%);}
+  header{border-bottom:1px solid var(--line-soft)}
+  .bar{display:flex;align-items:center;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:640;letter-spacing:.2px;font-size:1.02rem;min-height:var(--tap)}
+  .brand img{width:24px;height:24px}
+  main{flex:1;display:flex;align-items:center;padding-block:4.5rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2);font-weight:640}
+  h1{margin-top:1rem;font-size:clamp(2rem,5vw,3rem);line-height:1.08;letter-spacing:-.02em;font-weight:660}
+  .lead{margin-top:1rem;max-width:min(52ch,100%);font-size:clamp(1.05rem,1.6vw,1.18rem);color:var(--ink-2)}
+  .actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2rem}
+  .btn{display:inline-flex;align-items:center;gap:9px;min-height:var(--tap);padding:11px 20px;border-radius:11px;
+    font-weight:560;font-size:.92rem;border:1px solid var(--line);color:var(--ink);
+    transition:background .2s var(--ease),border-color .2s var(--ease)}
+  .btn:hover{background:var(--panel)}
+  .btn.primary{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
+  .btn.primary:hover{background:var(--accent-fill-hover);border-color:var(--accent-fill-hover)}
+  footer{border-top:1px solid var(--line-soft);padding-block:2rem;color:var(--ink-3);font-size:.83rem}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition-duration:.001ms!important}
+  }
+</style>
+</head>
+<body>
+<div class="aura" aria-hidden="true"></div>
+
+<header>
+  <div class="shell bar">
+    <a class="brand" href="https://nowalski.github.io/Power-X/"><img src="https://nowalski.github.io/Power-X/assets/favicon.png" alt="" width="24" height="24" /> PowerX</a>
+  </div>
+</header>
+
+<main>
+  <div class="shell">
+    <p class="eyebrow">404</p>
+    <h1>This page does not exist</h1>
+    <p class="lead">
+      The link may be old or mistyped. Everything about PowerX is on the home page, and every
+      download is on the releases page.
+    </p>
+    <div class="actions">
+      <a class="btn primary" href="https://nowalski.github.io/Power-X/">Go to the PowerX home page</a>
+      <a class="btn" href="https://github.com/Nowalski/Power-X/releases">Releases on GitHub</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="shell">Not affiliated with Microsoft. Windows is a trademark of Microsoft Corporation.</div>
+</footer>
+</body>
+</html>

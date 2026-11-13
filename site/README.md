@@ -12,6 +12,18 @@ step and no dependencies: `index.html` carries its own CSS, everything else is i
 | `assets/favicon.ico`, `favicon.png` | Favicons |
 | `assets/shot-*.png` | App screenshots. Regenerate from a real run when the UI changes. |
 
+`404.html` is what GitHub Pages serves for a missing path, at any depth, so it links everything
+with absolute `https://nowalski.github.io/Power-X/` URLs. `robots.txt` and `sitemap.xml` list the
+single page.
+
+## Download links
+
+The two download buttons link to `releases/latest`, which always works. A small script then
+reads `version.json` from `main` (the same file the app's updater reads) and, if it is valid,
+points the buttons straight at that version's MSI and portable zip and shows the installer's
+version, size and the start of its SHA-256. The version printed in the page text is still bumped
+by hand at release time.
+
 ## Deploy
 
 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) publishes this folder on every
